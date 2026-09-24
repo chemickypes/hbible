@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Placeholder Fase 0; il tema Compute arriverà in Fase 4 (Compose Multiplatform). -->
+    <style name="Theme.HBible" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>

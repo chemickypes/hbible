@@ -1,0 +1,81 @@
+# Versioni verificate su Maven Central / Google Maven / GitHub releases
+# prima della scrittura del catalogo (Fase 0, 2026-09-23):
+# - Compose Multiplatform 1.12.1: latest STABLE (github.com/JetBrains/compose-multiplatform/releases;
+#   1.13.0-alpha01 è pre-release). Il plugin richiede KGP >= 2.0 (verificato nel jar
+#   compose-gradle-plugin-1.12.1) → compatibile con Kotlin 2.3.20.
+#   Allineamento CM 1.12.1 (tabella "Components" delle release notes):
+#   org.jetbrains.androidx.lifecycle:* = 2.11.0, org.jetbrains.androidx.navigation:* = 2.10.0-beta01.
+# - navigation-compose / lifecycle-viewmodel-compose: maven-metadata.xml su repo1.maven.org.
+# - Koin 4.2.2 (koin-bom/core/compose/compose-viewmodel): maven-metadata.xml.
+# - Ktor 3.6.0 (client core/okhttp/darwin): maven-metadata.xml.
+# - multiplatform-settings 1.3.0: maven-metadata.xml.
+# - kotlinx-io-core 0.9.1: maven-metadata.xml.
+# - KSP 2.3.12: latest su Maven Central (schema 2.3.x, KSP2 indipendente dalla versione Kotlin);
+#   stessa versione del sorgente.
+# - Room 2.8.5 + androidx.sqlite:sqlite-bundled 2.6.2 (versione sqlite dipendenza di Room 2.8.5,
+#   verificata nel POM room-runtime-2.8.5): Google Maven.
+# - Da sorgente HBible: Kotlin 2.3.20, serialization 1.11.0, coroutines 1.10.2,
+#   activity-compose 1.13.0 (ultima stabile confermata su Google Maven).
+# - AGP 9.1.0 (NON 9.0.1 del sorgente): CM 1.12.1 / JB navigation 2.10.0 / JB lifecycle 2.11.0 /
+#   material3 1.5.0-alpha22 / okhttp 5.5.0 richiedono AGP 9.1+ e compileSdk 37
+#   (verificato empiricamente al primo assembleDebug; platform android-37.0 installato).
+[versions]
+kotlin = "2.3.20"
+androidGradlePlugin = "9.1.0"
+composeMultiplatform = "1.12.1"
+# CM 1.12.1 allinea material3 a 1.12.0-alpha03 (NON esiste material3 1.12.x stable su Central;
+# confermato da maven-metadata e dalla tabella "Components" delle release notes CM 1.12.1).
+composeMaterial3 = "1.12.0-alpha03"
+# material-icons-extended è pinato upstream a 1.7.3 e non riceve più aggiornamenti
+# (deprecazione CM 1.12: migrare a Material Symbols se necessario in F4).
+composeMaterialIcons = "1.7.3"
+ksp = "2.3.12"
+room = "2.8.5"
+sqlite = "2.6.2"
+kotlinxSerializationJson = "1.11.0"
+coroutines = "1.10.2"
+ktor = "3.6.0"
+koin = "4.2.2"
+multiplatformSettings = "1.3.0"
+kotlinxIo = "0.9.1"
+navigationMultiplatform = "2.10.0-beta01"
+lifecycleMultiplatform = "2.11.0"
+androidxActivity = "1.13.0"
+junit = "4.13.2"
+
+[libraries]
+# Compose Multiplatform — coordinate dirette (gli accessori compose.* del plugin sono
+# deprecati in CM 1.12.1: "Specify dependency directly").
+compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeMultiplatform" }
+compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "composeMultiplatform" }
+compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMultiplatform" }
+compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "composeMaterial3" }
+compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatform" }
+compose-material-icons-extended = { module = "org.jetbrains.compose.material:material-icons-extended", version.ref = "composeMaterialIcons" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidxActivity" }
+androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
+androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite" }
+jetbrains-navigation-compose = { module = "org.jetbrains.androidx.navigation:navigation-compose", version.ref = "navigationMultiplatform" }
+jetbrains-lifecycle-viewmodel-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleMultiplatform" }
+koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin" }
+koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
+koin-compose = { module = "io.insert-koin:koin-compose", version.ref = "koin" }
+koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", version.ref = "koin" }
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
+ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+kotlinx-io-core = { module = "org.jetbrains.kotlinx:kotlinx-io-core", version.ref = "kotlinxIo" }
+multiplatform-settings = { module = "com.russhwolf:multiplatform-settings", version.ref = "multiplatformSettings" }
+junit = { module = "junit:junit", version.ref = "junit" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }

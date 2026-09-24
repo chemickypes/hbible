@@ -1,0 +1,26 @@
+# Gradle / build
+.gradle/
+.kotlin/
+build/
+*/build/
+local.properties
+.cxx/
+captures/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+
+# Secrets — mai versionare
+keystore.properties
+*.jks
+*.keystore
+
+# Artefatti
+*.apk
+*.aab
+*.ipa
