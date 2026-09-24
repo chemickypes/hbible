@@ -12,6 +12,10 @@ captures/
 *.iml
 .vscode/
 
+# Xcode (dati utente/locali — rigenerati da Xcode all'apertura)
+xcuserdata/
+iosApp/iosApp.xcodeproj/project.xcworkspace/
+
 # OS
 .DS_Store
 
