@@ -4,7 +4,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
 
-// Migrazioni 1→11: SQL identico al sorgente (native: callback su SQLiteConnection).
+// Migrazioni 1→12: SQL identico al sorgente (native: callback su SQLiteConnection).
 
 
 private val MIGRATION_1_2 =
@@ -132,6 +132,22 @@ private val MIGRATION_10_11 =
     }
   }
 
+/**
+ * Italian quality pass: NT-wide per-verse Italian glosses (gi channel from the
+ * interlinear dump) + fully pre-generated Italian lexicon. Regenerate both the
+ * original-text table and the lexemes table (see the Android actual for the
+ * rationale); ensureImported() re-imports because the count gates see 0.
+ */
+private val MIGRATION_11_12 =
+  object : Migration(11, 12) {
+    override fun migrate(connection: SQLiteConnection) {
+      connection.execSQL("DROP TABLE IF EXISTS `original_verses`")
+      connection.execSQL(BibleMigrationSql.CREATE_ORIGINAL_VERSES)
+      connection.execSQL("DROP TABLE IF EXISTS `lexemes`")
+      connection.execSQL(BibleMigrationSql.CREATE_LEXEMES)
+    }
+  }
+
 actual val ALL_MIGRATIONS: Array<Migration> =
   arrayOf(
     MIGRATION_1_2,
@@ -144,4 +160,5 @@ actual val ALL_MIGRATIONS: Array<Migration> =
     MIGRATION_8_9,
     MIGRATION_9_10,
     MIGRATION_10_11,
+    MIGRATION_11_12,
   )

@@ -26,7 +26,7 @@ expect object BibleDatabaseConstructor : RoomDatabaseConstructor<BibleDatabase> 
     NoteEntity::class,
     BookInfoEntity::class,
   ],
-  version = 11,
+  version = 12,
   exportSchema = false,
 )
 abstract class BibleDatabase : RoomDatabase() {
@@ -49,7 +49,7 @@ internal object BibleMigrationSql {
       "`glosses` TEXT NOT NULL, `glosses_it` TEXT NOT NULL, " +
       "PRIMARY KEY(`book`, `chapter`, `verse`))"
 
-  /** Lexemes table (identica alla Fase 2): rigenerata dalla migrazione 10→11. */
+  /** Lexemes table (identica alla Fase 2): rigenerata dalle migrazioni 10→11 e 11→12. */
   const val CREATE_LEXEMES =
     "CREATE TABLE IF NOT EXISTS `lexemes` (" +
       "`lang` TEXT NOT NULL, `number` TEXT NOT NULL, `romanized` TEXT NOT NULL, " +
@@ -58,7 +58,7 @@ internal object BibleMigrationSql {
 }
 
 /**
- * Tutte le migrazioni 1→11 in ordine; l'SQL è identico al sorgente, ma il tipo del
+ * Tutte le migrazioni 1→12 in ordine; l'SQL è identico al sorgente, ma il tipo del
  * callback `migrate` è platform-specific (SupportSQLiteDatabase su Android,
  * SQLiteConnection su native) → definizioni in androidMain/iosMain.
  */

@@ -3,7 +3,7 @@ package com.hooloovoochimico.kmp.hbible.data.local
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-// Migrazioni 1→11: SQL identico al sorgente (Android, SupportSQLiteDatabase).
+// Migrazioni 1→12: SQL identico al sorgente (Android, SupportSQLiteDatabase).
 
 
 private val MIGRATION_1_2 =
@@ -132,6 +132,23 @@ private val MIGRATION_10_11 =
     }
   }
 
+/**
+ * Italian quality pass: NT-wide per-verse Italian glosses (gi channel from the
+ * interlinear dump) + fully pre-generated Italian lexicon. Regenerate both the
+ * original-text table and the lexemes table (on-demand gloss_it translations
+ * are re-derived from the bundled Italian lexicon, so nothing of value is
+ * lost); ensureImported() re-imports because the count gates see 0.
+ */
+private val MIGRATION_11_12 =
+  object : Migration(11, 12) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+      db.execSQL("DROP TABLE IF EXISTS `original_verses`")
+      db.execSQL(BibleMigrationSql.CREATE_ORIGINAL_VERSES)
+      db.execSQL("DROP TABLE IF EXISTS `lexemes`")
+      db.execSQL(BibleMigrationSql.CREATE_LEXEMES)
+    }
+  }
+
 actual val ALL_MIGRATIONS: Array<Migration> =
   arrayOf(
     MIGRATION_1_2,
@@ -144,4 +161,5 @@ actual val ALL_MIGRATIONS: Array<Migration> =
     MIGRATION_8_9,
     MIGRATION_9_10,
     MIGRATION_10_11,
+    MIGRATION_11_12,
   )
