@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.Json
 
 /** Display names of the bundled translations, keyed by their database code. */
-val TRANSLATION_NAMES = mapOf("NR" to "Nuova Riveduta", "R2" to "Riveduta 2020")
+val TRANSLATION_NAMES = mapOf("NR" to "Nuova Riveduta", "R2" to "Riveduta 2020", "R27" to "Riveduta 1927")
 
 /** Scripture data: books, chapters, verses, original text and cached book info. */
 interface BibleRepository {
@@ -104,26 +104,31 @@ class DefaultBibleRepository(
 
   override suspend fun ensureImported() {
     val dao = db.bibleDao()
-    if (dao.verseCount() == 0) {
-      for (asset in ASSETS) {
-        val doc =
-          json.decodeFromString<BibleDoc>(Res.readBytes("files/$asset").decodeToString())
-        db.withTransaction {
+    // Per-translation gate: a translation ships with any app update, so it
+    // must import on upgrade too, not only on first launch.
+    for (asset in ASSETS) {
+      val doc =
+        json.decodeFromString<BibleDoc>(Res.readBytes("files/$asset").decodeToString())
+      if (dao.translationVerseCount(doc.meta.abbr) > 0) continue
+      db.withTransaction {
+        // The books table is shared across translations: insert once, from the
+        // first imported asset, so names/abbreviations stay stable.
+        if (dao.bookCount() == 0) {
           dao.insertBooks(doc.books.map { BookEntity(it.n, it.name, it.abbr, it.chapters) })
-          doc.verses.chunked(2000).forEach { chunk ->
-            dao.insertVerses(
-              chunk.map {
-                VerseEntity(
-                  translation = doc.meta.abbr,
-                  book = it.b,
-                  chapter = it.c,
-                  verse = it.v,
-                  title = it.t,
-                  text = it.x,
-                )
-              },
-            )
-          }
+        }
+        doc.verses.chunked(2000).forEach { chunk ->
+          dao.insertVerses(
+            chunk.map {
+              VerseEntity(
+                translation = doc.meta.abbr,
+                book = it.b,
+                chapter = it.c,
+                verse = it.v,
+                title = it.t,
+                text = it.x,
+              )
+            },
+          )
         }
       }
     }
@@ -144,6 +149,7 @@ class DefaultBibleRepository(
                 lemmas = it.lm,
                 italianNr = it.anr.joinToString(","),
                 italianR2 = it.ar2.joinToString(","),
+                italianR27 = it.ar27.joinToString(","),
               )
             },
           )
@@ -190,7 +196,7 @@ class DefaultBibleRepository(
 
   companion object {
     private val json = Json { ignoreUnknownKeys = true }
-    private val ASSETS = listOf("nuova_riveduta.json", "riveduta_2020.json")
+    private val ASSETS = listOf("nuova_riveduta.json", "riveduta_2020.json", "riveduta_1927.json")
     private const val ORIGINALS_ASSET = "originals.json"
     private const val CROSSREFS_ASSET = "crossrefs.json"
     private const val LEXICON_ASSET = "lexicon.json"

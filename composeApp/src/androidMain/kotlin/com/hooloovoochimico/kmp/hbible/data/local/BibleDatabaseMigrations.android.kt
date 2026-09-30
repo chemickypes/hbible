@@ -3,7 +3,7 @@ package com.hooloovoochimico.kmp.hbible.data.local
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-// Migrazioni 1→8: SQL identico al sorgente (Android, SupportSQLiteDatabase).
+// Migrazioni 1→9: SQL identico al sorgente (Android, SupportSQLiteDatabase).
 
 
 private val MIGRATION_1_2 =
@@ -99,6 +99,18 @@ private val MIGRATION_7_8 =
     }
   }
 
+/**
+ * Riveduta 1927 word-alignment column (it_r27): regenerate the original-text
+ * table so ensureImported() re-imports it with the third alignment channel.
+ */
+private val MIGRATION_8_9 =
+  object : Migration(8, 9) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+      db.execSQL("DROP TABLE IF EXISTS `original_verses`")
+      db.execSQL(BibleMigrationSql.CREATE_ORIGINAL_VERSES)
+    }
+  }
+
 actual val ALL_MIGRATIONS: Array<Migration> =
   arrayOf(
     MIGRATION_1_2,
@@ -108,4 +120,5 @@ actual val ALL_MIGRATIONS: Array<Migration> =
     MIGRATION_5_6,
     MIGRATION_6_7,
     MIGRATION_7_8,
+    MIGRATION_8_9,
   )

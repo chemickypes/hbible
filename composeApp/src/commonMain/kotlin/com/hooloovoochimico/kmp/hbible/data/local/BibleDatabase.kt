@@ -26,7 +26,7 @@ expect object BibleDatabaseConstructor : RoomDatabaseConstructor<BibleDatabase> 
     NoteEntity::class,
     BookInfoEntity::class,
   ],
-  version = 8,
+  version = 9,
   exportSchema = false,
 )
 abstract class BibleDatabase : RoomDatabase() {
@@ -45,12 +45,12 @@ internal object BibleMigrationSql {
     "CREATE TABLE IF NOT EXISTS `original_verses` (" +
       "`book` INTEGER NOT NULL, `chapter` INTEGER NOT NULL, `verse` INTEGER NOT NULL, " +
       "`lang` TEXT NOT NULL, `text` TEXT NOT NULL, `transliteration` TEXT NOT NULL, " +
-      "`lemmas` TEXT NOT NULL, `it_nr` TEXT NOT NULL, `it_r2` TEXT NOT NULL, " +
+      "`lemmas` TEXT NOT NULL, `it_nr` TEXT NOT NULL, `it_r2` TEXT NOT NULL, `it_r27` TEXT NOT NULL, " +
       "PRIMARY KEY(`book`, `chapter`, `verse`))"
 }
 
 /**
- * Tutte le migrazioni 1→8 in ordine; l'SQL è identico al sorgente, ma il tipo del
+ * Tutte le migrazioni 1→9 in ordine; l'SQL è identico al sorgente, ma il tipo del
  * callback `migrate` è platform-specific (SupportSQLiteDatabase su Android,
  * SQLiteConnection su native) → definizioni in androidMain/iosMain.
  */

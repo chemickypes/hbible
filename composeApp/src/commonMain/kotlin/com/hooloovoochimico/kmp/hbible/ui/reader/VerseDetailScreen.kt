@@ -180,7 +180,12 @@ fun VerseDetailScreen(
   // aligned Italian token index for the selected word (per current translation)
   val alignedArray =
     remember(original, translation) {
-      val csv = if (translation == "R2") original?.italianR2 else original?.italianNr
+      val csv =
+        when (translation) {
+          "R2" -> original?.italianR2
+          "R27" -> original?.italianR27
+          else -> original?.italianNr
+        }
       csv?.split(",")?.map { it.toIntOrNull() ?: -1 } ?: emptyList()
     }
   val italianVerseTokens = verse?.text?.split(Regex("\\s+")) ?: emptyList()

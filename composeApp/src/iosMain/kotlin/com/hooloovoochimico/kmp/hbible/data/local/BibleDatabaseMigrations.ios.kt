@@ -4,7 +4,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
 
-// Migrazioni 1→8: SQL identico al sorgente (native: callback su SQLiteConnection).
+// Migrazioni 1→9: SQL identico al sorgente (native: callback su SQLiteConnection).
 
 
 private val MIGRATION_1_2 =
@@ -100,6 +100,18 @@ private val MIGRATION_7_8 =
     }
   }
 
+/**
+ * Riveduta 1927 word-alignment column (it_r27): regenerate the original-text
+ * table so ensureImported() re-imports it with the third alignment channel.
+ */
+private val MIGRATION_8_9 =
+  object : Migration(8, 9) {
+    override fun migrate(connection: SQLiteConnection) {
+      connection.execSQL("DROP TABLE IF EXISTS `original_verses`")
+      connection.execSQL(BibleMigrationSql.CREATE_ORIGINAL_VERSES)
+    }
+  }
+
 actual val ALL_MIGRATIONS: Array<Migration> =
   arrayOf(
     MIGRATION_1_2,
@@ -109,4 +121,5 @@ actual val ALL_MIGRATIONS: Array<Migration> =
     MIGRATION_5_6,
     MIGRATION_6_7,
     MIGRATION_7_8,
+    MIGRATION_8_9,
   )

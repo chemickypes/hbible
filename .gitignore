@@ -28,3 +28,6 @@ keystore.properties
 *.apk
 *.aab
 *.ipa
+
+# Backup generati dagli script tools/ (pipeline dati)
+composeApp/src/commonMain/composeResources/files/originals.json.bak

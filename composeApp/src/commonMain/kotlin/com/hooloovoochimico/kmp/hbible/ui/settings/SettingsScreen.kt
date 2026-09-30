@@ -43,6 +43,7 @@ import com.hooloovoochimico.kmp.hbible.ui.common.ScreenTitle
 private val SOURCES = listOf(
   "Nuova Riveduta 2006 © Società Biblica di Ginevra" to "https://www.laparola.net/",
   "Riveduta 2020 © ADI-Media" to "https://www.laparola.net/",
+  "Riveduta 1927, revisione di Giovanni Luzzi (pubblico dominio)" to "http://lasacrabibbiaelaconcordanza.lanuovavia.org/bibbiapdf3.pdf",
   "Testo ebraico: Open Scriptures Hebrew Bible (WLC)" to "https://github.com/openscriptures/morphhb",
   "Testo greco: Nestle 1904 (pubblico dominio)" to "https://github.com/biblicalhumanities/Nestle1904",
   "Riferimenti incrociati: OpenBible.info (CC BY 4.0)" to "https://www.openbible.info/labs/cross-references/",

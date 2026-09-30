@@ -43,6 +43,8 @@ data class OriginalVerseEntity(
   @ColumnInfo(name = "it_nr") val italianNr: String = "",
   /** Comma-separated Italian token indices (Riveduta 2020). */
   @ColumnInfo(name = "it_r2") val italianR2: String = "",
+  /** Comma-separated Italian token indices (Riveduta 1927). */
+  @ColumnInfo(name = "it_r27") val italianR27: String = "",
 )
 
 /** A cross-reference link between two verses. */

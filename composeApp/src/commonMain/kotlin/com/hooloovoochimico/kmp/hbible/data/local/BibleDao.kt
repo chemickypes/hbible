@@ -30,6 +30,12 @@ interface BibleDao {
   @Query("SELECT COUNT(*) FROM verses")
   suspend fun verseCount(): Int
 
+  @Query("SELECT COUNT(*) FROM verses WHERE translation = :translation")
+  suspend fun translationVerseCount(translation: String): Int
+
+  @Query("SELECT COUNT(*) FROM books")
+  suspend fun bookCount(): Int
+
   @Query(
     "SELECT * FROM original_verses WHERE book = :book AND chapter = :chapter AND verse = :verse LIMIT 1",
   )

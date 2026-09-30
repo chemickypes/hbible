@@ -54,6 +54,7 @@ data class OriginalVerseDto(
   val lm: String = "",
   val anr: List<Int> = emptyList(),
   val ar2: List<Int> = emptyList(),
+  val ar27: List<Int> = emptyList(),
 )
 
 /** Flat list of cross-reference links [fromBook, fromChapter, fromVerse, toBook, toChapter, toVerse]. */
