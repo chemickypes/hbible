@@ -150,6 +150,8 @@ class DefaultBibleRepository(
                 italianNr = it.anr.joinToString(","),
                 italianR2 = it.ar2.joinToString(","),
                 italianR27 = it.ar27.joinToString(","),
+                glosses = it.ge.joinToString("\t"),
+                glossesIt = it.gi.joinToString("\t"),
               )
             },
           )
@@ -182,12 +184,12 @@ class DefaultBibleRepository(
       db.withTransaction {
         doc.he.entries.chunked(2000).forEach { chunk ->
           dao.insertLexemes(
-            chunk.map { (number, l) -> LexemeEntity("he", number, l.tr, l.g) },
+            chunk.map { (number, l) -> LexemeEntity("he", number, l.tr, l.g, glossIt = l.gi) },
           )
         }
         doc.el.entries.chunked(2000).forEach { chunk ->
           dao.insertLexemes(
-            chunk.map { (number, l) -> LexemeEntity("el", number, l.tr, l.g) },
+            chunk.map { (number, l) -> LexemeEntity("el", number, l.tr, l.g, glossIt = l.gi) },
           )
         }
       }

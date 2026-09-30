@@ -55,6 +55,10 @@ data class OriginalVerseDto(
   val anr: List<Int> = emptyList(),
   val ar2: List<Int> = emptyList(),
   val ar27: List<Int> = emptyList(),
+  /** Contextual interlinear gloss (English) per word, "" = none. */
+  val ge: List<String> = emptyList(),
+  /** Contextual interlinear gloss (Italian, where curated) per word, "" = none. */
+  val gi: List<String> = emptyList(),
 )
 
 /** Flat list of cross-reference links [fromBook, fromChapter, fromVerse, toBook, toChapter, toVerse]. */
@@ -74,4 +78,6 @@ data class LexiconDoc(
 data class LexemeDto(
   val tr: String = "",
   val g: String = "",
+  /** Italian gloss pre-generated offline (batch AI); empty = translate on demand. */
+  val gi: String = "",
 )

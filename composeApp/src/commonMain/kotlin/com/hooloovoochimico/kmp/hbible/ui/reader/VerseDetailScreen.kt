@@ -51,6 +51,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
@@ -193,6 +194,19 @@ fun VerseDetailScreen(
     if (selectable && selectedWord in alignedArray.indices) alignedArray[selectedWord] else -1
   val alignedItalianWord =
     alignedItToken.takeIf { it in italianVerseTokens.indices }?.let { italianVerseTokens[it] } ?: ""
+  // Contextual interlinear gloss for the selected word (Italian when curated, else English).
+  val contextualGloss =
+    remember(original, selectedWord) {
+      val ge = original?.glosses?.split("\t") ?: emptyList()
+      val gi = original?.glossesIt?.split("\t") ?: emptyList()
+      if (selectedWord in gi.indices && gi[selectedWord].isNotEmpty()) {
+        gi[selectedWord]
+      } else if (selectedWord in ge.indices) {
+        ge[selectedWord]
+      } else {
+        ""
+      }
+    }
   var occurrences by remember(original) { mutableStateOf(emptyList<VerseRef>()) }
   var occurrencesLoading by remember(original) { mutableStateOf(false) }
   val selectedLemma = if (selectable && selectedWord in lemmaTokens.indices) lemmaTokens[selectedWord] else ""
@@ -385,6 +399,14 @@ fun VerseDetailScreen(
                   style = ScriptureTypography.originalGloss,
                   color = MaterialTheme.colorScheme.primary,
                   fontWeight = FontWeight.Bold,
+                )
+              }
+              if (contextualGloss.isNotEmpty()) {
+                Text(
+                  contextualGloss,
+                  style = MaterialTheme.typography.bodyMedium,
+                  fontStyle = FontStyle.Italic,
+                  modifier = Modifier.padding(top = 2.dp),
                 )
               }
                 if (alignedItalianWord.isNotEmpty()) {

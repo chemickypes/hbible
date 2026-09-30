@@ -3,7 +3,7 @@ package com.hooloovoochimico.kmp.hbible.data.local
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-// Migrazioni 1→9: SQL identico al sorgente (Android, SupportSQLiteDatabase).
+// Migrazioni 1→11: SQL identico al sorgente (Android, SupportSQLiteDatabase).
 
 
 private val MIGRATION_1_2 =
@@ -44,12 +44,7 @@ private val MIGRATION_3_4 =
 private val MIGRATION_4_5 =
   object : Migration(4, 5) {
     override fun migrate(db: SupportSQLiteDatabase) {
-      db.execSQL(
-        "CREATE TABLE IF NOT EXISTS `lexemes` (" +
-          "`lang` TEXT NOT NULL, `number` TEXT NOT NULL, `romanized` TEXT NOT NULL, " +
-          "`gloss` TEXT NOT NULL, `gloss_it` TEXT NOT NULL, " +
-          "PRIMARY KEY(`lang`, `number`))",
-      )
+      db.execSQL(BibleMigrationSql.CREATE_LEXEMES)
     }
   }
 
@@ -111,6 +106,32 @@ private val MIGRATION_8_9 =
     }
   }
 
+/**
+ * Contextual interlinear gloss columns (glosses/glosses_it): regenerate the
+ * original-text table so ensureImported() re-imports it with the gloss channels.
+ */
+private val MIGRATION_9_10 =
+  object : Migration(9, 10) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+      db.execSQL("DROP TABLE IF EXISTS `original_verses`")
+      db.execSQL(BibleMigrationSql.CREATE_ORIGINAL_VERSES)
+    }
+  }
+
+/**
+ * Lexicon upgrade: clean OpenScriptures English definitions + Italian glosses
+ * pre-generated offline. Regenerate the lexemes table (on-demand gloss_it
+ * translations are re-derived from the bundled Italian lexicon, so nothing of
+ * value is lost); ensureImported() re-imports because the count gate sees 0.
+ */
+private val MIGRATION_10_11 =
+  object : Migration(10, 11) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+      db.execSQL("DROP TABLE IF EXISTS `lexemes`")
+      db.execSQL(BibleMigrationSql.CREATE_LEXEMES)
+    }
+  }
+
 actual val ALL_MIGRATIONS: Array<Migration> =
   arrayOf(
     MIGRATION_1_2,
@@ -121,4 +142,6 @@ actual val ALL_MIGRATIONS: Array<Migration> =
     MIGRATION_6_7,
     MIGRATION_7_8,
     MIGRATION_8_9,
+    MIGRATION_9_10,
+    MIGRATION_10_11,
   )

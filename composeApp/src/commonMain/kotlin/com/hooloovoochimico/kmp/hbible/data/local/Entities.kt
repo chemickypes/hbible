@@ -45,6 +45,10 @@ data class OriginalVerseEntity(
   @ColumnInfo(name = "it_r2") val italianR2: String = "",
   /** Comma-separated Italian token indices (Riveduta 1927). */
   @ColumnInfo(name = "it_r27") val italianR27: String = "",
+  /** Tab-separated contextual interlinear gloss (English) per word, "" = none. */
+  @ColumnInfo(name = "glosses") val glosses: String = "",
+  /** Tab-separated contextual interlinear gloss (Italian) per word, "" = none. */
+  @ColumnInfo(name = "glosses_it") val glossesIt: String = "",
 )
 
 /** A cross-reference link between two verses. */
