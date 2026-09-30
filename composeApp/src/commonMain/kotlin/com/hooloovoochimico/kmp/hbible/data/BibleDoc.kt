@@ -55,6 +55,16 @@ data class OriginalVerseDto(
   val anr: List<Int> = emptyList(),
   val ar2: List<Int> = emptyList(),
   val ar27: List<Int> = emptyList(),
+  /** Contextual word alignment against the Diodati translation. */
+  val ar_dio: List<Int> = emptyList(),
+  /** Contextual word alignment against Nuova Diodati. */
+  val ar_nd: List<Int> = emptyList(),
+  /** Contextual word alignment against CEI 1974. */
+  val ar_cei: List<Int> = emptyList(),
+  /** Contextual word alignment against Ricciotti. */
+  val ar_ric: List<Int> = emptyList(),
+  /** Contextual word alignment against Martini. */
+  val ar_mar: List<Int> = emptyList(),
   /** Contextual interlinear gloss (English) per word, "" = none. */
   val ge: List<String> = emptyList(),
   /** Contextual interlinear gloss (Italian, where curated) per word, "" = none. */

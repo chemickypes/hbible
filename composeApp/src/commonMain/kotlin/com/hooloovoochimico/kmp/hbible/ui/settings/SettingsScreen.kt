@@ -20,16 +20,20 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.hooloovoochimico.kmp.hbible.data.TRANSLATION_META
 import com.hooloovoochimico.kmp.hbible.data.TRANSLATION_NAMES
+import com.hooloovoochimico.kmp.hbible.data.TranslationMeta
 import com.hooloovoochimico.kmp.hbible.data.ReaderFontSize
 import com.hooloovoochimico.kmp.hbible.data.ThemeMode
 import com.hooloovoochimico.kmp.hbible.data.label
@@ -41,13 +45,71 @@ import com.hooloovoochimico.kmp.hbible.ui.common.SectionHeader
 import com.hooloovoochimico.kmp.hbible.ui.common.ScreenTitle
 
 private val SOURCES = listOf(
-  "Nuova Riveduta 2006 © Società Biblica di Ginevra" to "https://www.laparola.net/",
-  "Riveduta 2020 © ADI-Media" to "https://www.laparola.net/",
-  "Riveduta 1927, revisione di Giovanni Luzzi (pubblico dominio)" to "http://lasacrabibbiaelaconcordanza.lanuovavia.org/bibbiapdf3.pdf",
   "Testo ebraico: Open Scriptures Hebrew Bible (WLC)" to "https://github.com/openscriptures/morphhb",
   "Testo greco: Nestle 1904 (pubblico dominio)" to "https://github.com/biblicalhumanities/Nestle1904",
   "Riferimenti incrociati: OpenBible.info (CC BY 4.0)" to "https://www.openbible.info/labs/cross-references/",
 )
+
+/** Info block of one bundled translation (Settings → "Versioni della Bibbia"). */
+@Composable
+private fun TranslationMetaRow(meta: TranslationMeta) {
+  Row(
+    horizontalArrangement = Arrangement.spacedBy(8.dp),
+    verticalAlignment = Alignment.CenterVertically,
+  ) {
+    Text(meta.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+    Text(
+      meta.year,
+      style = MaterialTheme.typography.labelMedium,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    if (meta.personalUse) {
+      Surface(
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+      ) {
+        Text(
+          "Uso personale",
+          style = MaterialTheme.typography.labelSmall,
+          modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+        )
+      }
+    }
+  }
+  if (meta.fullName != meta.name) {
+    Text(
+      meta.fullName,
+      style = MaterialTheme.typography.bodySmall,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+  }
+  Text(
+    meta.license,
+    style = MaterialTheme.typography.bodySmall,
+    color = MaterialTheme.colorScheme.onSurfaceVariant,
+  )
+  if (meta.source.isNotBlank()) {
+    val isLink = meta.source.startsWith("http")
+    Text(
+      meta.source,
+      style = MaterialTheme.typography.bodySmall,
+      color =
+        if (isLink) MaterialTheme.colorScheme.primary
+        else MaterialTheme.colorScheme.onSurfaceVariant,
+      textDecoration = if (isLink) TextDecoration.Underline else null,
+      modifier = if (isLink) Modifier.clickable { openUrl(meta.source) } else Modifier,
+    )
+  }
+  if (meta.note.isNotBlank()) {
+    Text(
+      meta.note,
+      style = MaterialTheme.typography.bodySmall,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+  }
+  Spacer(Modifier.height(12.dp))
+}
 
 /** Full-screen settings page (opened from the bottom bar gear). */
 @Composable
@@ -145,6 +207,15 @@ fun SettingsScreen(
           onClick = { onSelectTranslation(code) },
         )
       }
+      SectionHeader("Versioni della Bibbia", Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
+      Column(Modifier.padding(horizontal = 24.dp)) {
+        TRANSLATION_META.forEach { meta -> TranslationMetaRow(meta) }
+        Text(
+          "Le versioni contrassegnate «Uso personale» sono testi protetti inclusi solo per uso personale (repository privata, nessuna distribuzione).",
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+      }
       SectionHeader("Ricerca AI", Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
       val aiConfig = state.aiConfig
       val configured = AiCompany.entries.filter { aiConfig.configFor(it).apiKey.isNotBlank() }
@@ -196,12 +267,6 @@ fun SettingsScreen(
           )
           Spacer(Modifier.height(8.dp))
         }
-        Text(
-          "Le versioni bibliche sono incluse per uso esclusivamente personale.",
-          style = MaterialTheme.typography.bodySmall,
-          color = MaterialTheme.colorScheme.onSurfaceVariant,
-          modifier = Modifier.padding(top = 4.dp),
-        )
       }
     }
   }

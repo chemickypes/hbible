@@ -185,6 +185,11 @@ fun VerseDetailScreen(
         when (translation) {
           "R2" -> original?.italianR2
           "R27" -> original?.italianR27
+          "DIO" -> original?.italianDio
+          "ND" -> original?.italianNd
+          "CEI" -> original?.italianCei
+          "RIC" -> original?.italianRic
+          "MAR" -> original?.italianMar
           else -> original?.italianNr
         }
       csv?.split(",")?.map { it.toIntOrNull() ?: -1 } ?: emptyList()

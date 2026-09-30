@@ -14,7 +14,16 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.Json
 
 /** Display names of the bundled translations, keyed by their database code. */
-val TRANSLATION_NAMES = mapOf("NR" to "Nuova Riveduta", "R2" to "Riveduta 2020", "R27" to "Riveduta 1927")
+val TRANSLATION_NAMES = mapOf(
+  "NR" to "Nuova Riveduta",
+  "R2" to "Riveduta 2020",
+  "R27" to "Riveduta 1927",
+  "DIO" to "Diodati",
+  "ND" to "Nuova Diodati",
+  "CEI" to "CEI 1974",
+  "RIC" to "Ricciotti",
+  "MAR" to "Martini",
+)
 
 /** Scripture data: books, chapters, verses, original text and cached book info. */
 interface BibleRepository {
@@ -106,9 +115,18 @@ class DefaultBibleRepository(
     val dao = db.bibleDao()
     // Per-translation gate: a translation ships with any app update, so it
     // must import on upgrade too, not only on first launch.
+    // Graceful fallback: a bundled translation asset may be missing (e.g. an
+    // asset produced by a parallel pipeline that has not landed yet); a failed
+    // read/parse must skip that asset without aborting the other imports or
+    // crashing the app — the missing one simply imports when it ships.
     for (asset in ASSETS) {
       val doc =
-        json.decodeFromString<BibleDoc>(Res.readBytes("files/$asset").decodeToString())
+        try {
+          json.decodeFromString<BibleDoc>(Res.readBytes("files/$asset").decodeToString())
+        } catch (t: Throwable) {
+          println("ensureImported: skipping unavailable asset '$asset': ${t.message}")
+          continue
+        }
       if (dao.translationVerseCount(doc.meta.abbr) > 0) continue
       db.withTransaction {
         // The books table is shared across translations: insert once, from the
@@ -150,6 +168,11 @@ class DefaultBibleRepository(
                 italianNr = it.anr.joinToString(","),
                 italianR2 = it.ar2.joinToString(","),
                 italianR27 = it.ar27.joinToString(","),
+                italianDio = it.ar_dio.joinToString(","),
+                italianNd = it.ar_nd.joinToString(","),
+                italianCei = it.ar_cei.joinToString(","),
+                italianRic = it.ar_ric.joinToString(","),
+                italianMar = it.ar_mar.joinToString(","),
                 glosses = it.ge.joinToString("\t"),
                 glossesIt = it.gi.joinToString("\t"),
               )
@@ -198,7 +221,19 @@ class DefaultBibleRepository(
 
   companion object {
     private val json = Json { ignoreUnknownKeys = true }
-    private val ASSETS = listOf("nuova_riveduta.json", "riveduta_2020.json", "riveduta_1927.json")
+    // Graceful fallback: the four newer translation assets are produced by a
+    // parallel pipeline and may not be present yet — same skip-and-log policy.
+    private val ASSETS =
+      listOf(
+        "nuova_riveduta.json",
+        "riveduta_2020.json",
+        "riveduta_1927.json",
+        "diodati.json",
+        "nuova_diodati.json",
+        "cei.json",
+        "ricciotti.json",
+        "martini.json",
+      )
     private const val ORIGINALS_ASSET = "originals.json"
     private const val CROSSREFS_ASSET = "crossrefs.json"
     private const val LEXICON_ASSET = "lexicon.json"

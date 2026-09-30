@@ -26,7 +26,7 @@ expect object BibleDatabaseConstructor : RoomDatabaseConstructor<BibleDatabase> 
     NoteEntity::class,
     BookInfoEntity::class,
   ],
-  version = 12,
+  version = 13,
   exportSchema = false,
 )
 abstract class BibleDatabase : RoomDatabase() {
@@ -46,6 +46,8 @@ internal object BibleMigrationSql {
       "`book` INTEGER NOT NULL, `chapter` INTEGER NOT NULL, `verse` INTEGER NOT NULL, " +
       "`lang` TEXT NOT NULL, `text` TEXT NOT NULL, `transliteration` TEXT NOT NULL, " +
       "`lemmas` TEXT NOT NULL, `it_nr` TEXT NOT NULL, `it_r2` TEXT NOT NULL, `it_r27` TEXT NOT NULL, " +
+      "`it_dio` TEXT NOT NULL, `it_nd` TEXT NOT NULL, `it_cei` TEXT NOT NULL, " +
+      "`it_ric` TEXT NOT NULL, `it_mar` TEXT NOT NULL, " +
       "`glosses` TEXT NOT NULL, `glosses_it` TEXT NOT NULL, " +
       "PRIMARY KEY(`book`, `chapter`, `verse`))"
 
@@ -58,7 +60,7 @@ internal object BibleMigrationSql {
 }
 
 /**
- * Tutte le migrazioni 1→12 in ordine; l'SQL è identico al sorgente, ma il tipo del
+ * Tutte le migrazioni 1→13 in ordine; l'SQL è identico al sorgente, ma il tipo del
  * callback `migrate` è platform-specific (SupportSQLiteDatabase su Android,
  * SQLiteConnection su native) → definizioni in androidMain/iosMain.
  */

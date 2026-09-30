@@ -45,6 +45,16 @@ data class OriginalVerseEntity(
   @ColumnInfo(name = "it_r2") val italianR2: String = "",
   /** Comma-separated Italian token indices (Riveduta 1927). */
   @ColumnInfo(name = "it_r27") val italianR27: String = "",
+  /** Comma-separated Italian token indices (Diodati). */
+  @ColumnInfo(name = "it_dio") val italianDio: String = "",
+  /** Comma-separated Italian token indices (Nuova Diodati). */
+  @ColumnInfo(name = "it_nd") val italianNd: String = "",
+  /** Comma-separated Italian token indices (CEI 1974). */
+  @ColumnInfo(name = "it_cei") val italianCei: String = "",
+  /** Comma-separated Italian token indices (Ricciotti). */
+  @ColumnInfo(name = "it_ric") val italianRic: String = "",
+  /** Comma-separated Italian token indices (Martini). */
+  @ColumnInfo(name = "it_mar") val italianMar: String = "",
   /** Tab-separated contextual interlinear gloss (English) per word, "" = none. */
   @ColumnInfo(name = "glosses") val glosses: String = "",
   /** Tab-separated contextual interlinear gloss (Italian) per word, "" = none. */
