@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.isUnspecified
+import androidx.compose.ui.graphics.takeOrElse
 import com.hooloovoochimico.kmp.hbible.theme.Spacing
 
 /**
@@ -29,7 +30,11 @@ fun HBibleCard(
   content: @Composable ColumnScope.() -> Unit,
 ) {
   val resolvedContentColor =
-    if (contentColor.isUnspecified) contentColorFor(color) else contentColor
+    if (contentColor.isUnspecified) {
+      contentColorFor(color).takeOrElse { MaterialTheme.colorScheme.onSurface }
+    } else {
+      contentColor
+    }
   if (onClick != null) {
     Surface(
       onClick = onClick,
