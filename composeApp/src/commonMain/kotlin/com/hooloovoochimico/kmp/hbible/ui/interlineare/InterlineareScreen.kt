@@ -155,6 +155,7 @@ fun InterlineareScreen(
             original = original,
             verse = state.verse,
             translation = state.translation,
+            lexiconGlosses = state.lexiconGlosses,
             onWordClick = { index ->
               onOpenWord(VerseRef(position.book, position.chapter, position.verse), index)
             },
@@ -200,6 +201,7 @@ private fun WordColumns(
   original: OriginalVerseEntity,
   verse: VerseEntity?,
   translation: String,
+  lexiconGlosses: Map<String, String>,
   onWordClick: (Int) -> Unit,
 ) {
   val words = original.text.split(" ").filter { it.isNotEmpty() }
@@ -216,11 +218,14 @@ private fun WordColumns(
       modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
     ) {
       words.forEachIndexed { index, word ->
+        val strongKey = original.lang + lemmas.getOrNull(index)?.trim().orEmpty()
         val gloss =
           glossesIt.getOrNull(index)?.takeIf { it.isNotEmpty() }
             ?: alignedArray.getOrNull(index)
               ?.takeIf { it >= 0 }
               ?.let { italianTokens.getOrNull(it)?.trim { c -> c in EDGE_PUNCT }?.takeIf { s -> s.isNotEmpty() } }
+            ?: lexiconGlosses[strongKey]
+              ?.takeIf { lemmas.getOrNull(index)?.trim() != "-" && it.isNotEmpty() }
               .orEmpty()
         OriginalWordColumn(
           word = word,

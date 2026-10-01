@@ -30,6 +30,8 @@ data class InterlineareUiState(
   val verse: VerseEntity? = null,
   /** The same verse in every bundled translation, in TRANSLATION_META order. */
   val versions: List<VerseEntity> = emptyList(),
+  /** Short Italian lexicon glosses for the verse's Strong numbers ("h7971" -> "mandare via"). */
+  val lexiconGlosses: Map<String, String> = emptyMap(),
   /** Number of the last verse of the open chapter (0 while unknown). */
   val chapterMaxVerse: Int = 0,
   val hasPrev: Boolean = false,
@@ -78,6 +80,7 @@ class InterlineareViewModel(
             original = original,
             verse = verse,
             versions = versions,
+            lexiconGlosses = lexiconGlosses(original),
             chapterMaxVerse = chapterMax,
             hasPrev = pos.verse > 1 || pos.chapter > 1 || pos.book > 1,
             hasNext =
@@ -145,6 +148,26 @@ class InterlineareViewModel(
   /** Verses of a chapter, used by the reference picker. */
   suspend fun versesOf(book: Int, chapter: Int): List<VerseEntity> =
     repository.chapter(translation.value, book, chapter).first().sortedBy { it.verse }
+
+  /** Short lexicon glosses keyed by "h7971"/"g3056" for every Strong number of the verse. */
+  private suspend fun lexiconGlosses(original: OriginalVerseEntity?): Map<String, String> {
+    if (original == null) return emptyMap()
+    val numbers =
+      original.lemmas.split(" ").filter { it.isNotBlank() && it != "-" }.distinct()
+    return numbers.mapNotNull { n ->
+      repository.lexeme(original.lang, n)?.takeIf { it.glossIt.isNotBlank() }?.let {
+        original.lang + n to shortGloss(it.glossIt)
+      }
+    }.toMap()
+  }
+
+  /** First meaningful section of the full definition: "alzarsi (in varie...)" -> "alzarsi". */
+  private fun shortGloss(gloss: String): String {
+    val bySemicolon = gloss.substringBefore(";").trim()
+    val byComma = bySemicolon.substringBefore(", ").trim()
+    val byParen = byComma.substringBefore(" (").trim()
+    return listOf(byParen, byComma, bySemicolon, gloss).first { it.isNotBlank() }
+  }
 
   /** The verse in every bundled translation that has it, in TRANSLATION_META display order. */
   private suspend fun verseInAllTranslations(book: Int, chapter: Int, verse: Int): List<VerseEntity> {
