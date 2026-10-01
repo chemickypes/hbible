@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -41,8 +40,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
@@ -100,7 +97,6 @@ fun NoteEditorScreen(
   var styles by rememberSaveable(stateSaver = stylesSaver) {
     mutableStateOf(NoteStyles.decode(note?.styles.orEmpty()))
   }
-  var readMode by rememberSaveable { mutableStateOf(false) }
   var dirty by rememberSaveable { mutableStateOf(false) }
   var confirmDelete by remember { mutableStateOf(false) }
 
@@ -171,11 +167,7 @@ fun NoteEditorScreen(
       Column(Modifier.padding(start = 4.dp).weight(1f)) {
         Text(if (note == null) "Nuova nota" else "Nota", style = MaterialTheme.typography.titleMedium)
         Text(
-          if (readMode) {
-            "Anteprima"
-          } else {
-            "Modifica" + note?.let { " · " + formatDate(it.updatedAt, "d MMMM yyyy, HH:mm") }.orEmpty()
-          },
+          "Modifica" + note?.let { " · " + formatDate(it.updatedAt, "d MMMM yyyy, HH:mm") }.orEmpty(),
           style = MaterialTheme.typography.labelSmall,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -204,145 +196,97 @@ fun NoteEditorScreen(
       )
     }
 
-    if (readMode) {
-      Column(
-        Modifier
-          .weight(1f)
-          .verticalScroll(rememberScrollState())
-          .padding(horizontal = 20.dp, vertical = 12.dp),
-      ) {
-        Text(
-          buildAnnotatedString {
-            append(content.text)
-            val len = content.text.length
-            styles.forEach { r ->
-              if (r.s < len) addStyle(spanStyleFor(r.t), r.s, r.e.coerceAtMost(len))
-            }
-            refs.forEach { m ->
-              addStyle(
-                SpanStyle(
-                  background = MaterialTheme.colorScheme.primaryContainer,
-                  color = MaterialTheme.colorScheme.onPrimaryContainer,
-                ),
-                m.start,
-                m.end.coerceAtMost(len),
-              )
-            }
-          },
-          style = ScriptureTypography.body,
-        )
-        if (refs.isNotEmpty()) {
-          Text(
-            "Riferimenti",
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 20.dp, bottom = 4.dp),
-          )
-          VerseChipRow(
-            refs = refs.map { VerseRef(it.ref.book, it.ref.chapter, it.ref.verse ?: 0) },
-            bookName = bookName,
-            loadVerse = loadVerse,
-            onOpenReference = onOpenReference,
-            onOpenDetail = onOpenDetail,
-            modifier = Modifier.padding(bottom = 16.dp),
-          )
+    Row(
+      Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      FormatButton("B", NoteStyleType.BOLD, styles, content, onStyle = { type ->
+        val sel = content.selection
+        if (!sel.collapsed) {
+          styles = toggleStyle(styles, sel.min, sel.max, type)
+          dirty = true
         }
-        Spacer(Modifier.height(24.dp))
-      }
-    } else {
-      Row(
-        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
-        verticalAlignment = Alignment.CenterVertically,
-      ) {
-        FormatButton("B", NoteStyleType.BOLD, styles, content, onStyle = { type ->
-          val sel = content.selection
-          if (!sel.collapsed) {
-            styles = toggleStyle(styles, sel.min, sel.max, type)
-            dirty = true
-          }
-        }, fontWeight = FontWeight.Bold)
-        FormatButton("I", NoteStyleType.ITALIC, styles, content, onStyle = { type ->
-          val sel = content.selection
-          if (!sel.collapsed) {
-            styles = toggleStyle(styles, sel.min, sel.max, type)
-            dirty = true
-          }
-        }, fontStyle = FontStyle.Italic)
-        FormatButton("U", NoteStyleType.UNDERLINE, styles, content, onStyle = { type ->
-          val sel = content.selection
-          if (!sel.collapsed) {
-            styles = toggleStyle(styles, sel.min, sel.max, type)
-            dirty = true
-          }
-        }, textDecoration = TextDecoration.Underline)
-        FormatButton("S", NoteStyleType.STRIKETHROUGH, styles, content, onStyle = { type ->
-          val sel = content.selection
-          if (!sel.collapsed) {
-            styles = toggleStyle(styles, sel.min, sel.max, type)
-            dirty = true
-          }
-        }, textDecoration = TextDecoration.LineThrough)
-        Spacer(Modifier.weight(1f))
-        TextButton(onClick = { readMode = true }) { Text("Anteprima") }
-      }
-      Column(
-        Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(vertical = 8.dp),
-      ) {
-        BasicTextField(
-          value = content,
-          onValueChange = { new ->
-            styles = adjustRanges(content.text, new.text, styles)
-            content = new
-            dirty = true
-          },
-          textStyle = ScriptureTypography.body.copy(color = MaterialTheme.colorScheme.onSurface),
-          cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-          decorationBox = { inner ->
-            Surface(
-              shape = RoundedCornerShape(12.dp),
-              color = MaterialTheme.colorScheme.surfaceContainerLow,
-              modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-            ) {
-              Box(Modifier.padding(12.dp).heightIn(min = 140.dp)) {
-                if (content.text.isEmpty()) {
-                  Text(
-                    "Scrivi la nota… (es. \"Gv 3:16 mi ricorda che…\")",
-                    style = ScriptureTypography.body.copy(
-                      color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    ),
-                  )
-                }
-                inner()
+      }, fontWeight = FontWeight.Bold)
+      FormatButton("I", NoteStyleType.ITALIC, styles, content, onStyle = { type ->
+        val sel = content.selection
+        if (!sel.collapsed) {
+          styles = toggleStyle(styles, sel.min, sel.max, type)
+          dirty = true
+        }
+      }, fontStyle = FontStyle.Italic)
+      FormatButton("U", NoteStyleType.UNDERLINE, styles, content, onStyle = { type ->
+        val sel = content.selection
+        if (!sel.collapsed) {
+          styles = toggleStyle(styles, sel.min, sel.max, type)
+          dirty = true
+        }
+      }, textDecoration = TextDecoration.Underline)
+      FormatButton("S", NoteStyleType.STRIKETHROUGH, styles, content, onStyle = { type ->
+        val sel = content.selection
+        if (!sel.collapsed) {
+          styles = toggleStyle(styles, sel.min, sel.max, type)
+          dirty = true
+        }
+      }, textDecoration = TextDecoration.LineThrough)
+      Spacer(Modifier.weight(1f))
+    }
+    Column(
+      Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(vertical = 8.dp),
+    ) {
+      BasicTextField(
+        value = content,
+        onValueChange = { new ->
+          styles = adjustRanges(content.text, new.text, styles)
+          content = new
+          dirty = true
+        },
+        textStyle = ScriptureTypography.body.copy(color = MaterialTheme.colorScheme.onSurface),
+        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+        decorationBox = { inner ->
+          Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+          ) {
+            Box(Modifier.padding(12.dp).heightIn(min = 140.dp)) {
+              if (content.text.isEmpty()) {
+                Text(
+                  "Scrivi la nota… (es. \"Gv 3:16 mi ricorda che…\")",
+                  style = ScriptureTypography.body.copy(
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  ),
+                )
               }
+              inner()
             }
-          },
-          visualTransformation =
-            NoteStyleTransformation(
-              styles,
-              refRanges = refs.map { it.start until it.end },
-              refColor = MaterialTheme.colorScheme.primaryContainer,
-            ),
-          modifier = Modifier.fillMaxWidth(),
+          }
+        },
+        visualTransformation =
+          NoteStyleTransformation(
+            styles,
+            refRanges = refs.map { it.start until it.end },
+            refColor = MaterialTheme.colorScheme.primaryContainer,
+          ),
+        modifier = Modifier.fillMaxWidth(),
+      )
+      if (refs.isNotEmpty()) {
+        Text(
+          "Riferimenti trovati",
+          style = MaterialTheme.typography.labelSmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+          modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp),
         )
-        if (refs.isNotEmpty()) {
-          Text(
-            "Riferimenti trovati",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp),
-          )
-          VerseChipRow(
-            refs =
-              refs.map {
-                VerseRef(it.ref.book, it.ref.chapter, it.ref.verse ?: 0, it.ref.verseEnd)
-              },
-            bookName = bookName,
-            loadVerse = loadVerse,
-            onOpenReference = onOpenReference,
-            onOpenDetail = onOpenDetail,
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
-          )
-        }
+        VerseChipRow(
+          refs =
+            refs.map {
+              VerseRef(it.ref.book, it.ref.chapter, it.ref.verse ?: 0, it.ref.verseEnd)
+            },
+          bookName = bookName,
+          loadVerse = loadVerse,
+          onOpenReference = onOpenReference,
+          onOpenDetail = onOpenDetail,
+          modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
+        )
       }
     }
   }
