@@ -390,7 +390,7 @@ private fun ReferencePickerSheet(
           modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
         )
         LazyColumn(Modifier.fillMaxWidth().heightIn(max = 520.dp).padding(bottom = 24.dp)) {
-          item { SectionHeader("Antico Testamento") }
+          item { SectionHeader("Antico Testamento", Modifier.padding(horizontal = 24.dp)) }
           items(books.filter { it.n <= 39 }, key = { it.n }) { book ->
             BookSheetRow(
               name = book.name,
@@ -404,7 +404,7 @@ private fun ReferencePickerSheet(
               },
             )
           }
-          item { SectionHeader("Nuovo Testamento") }
+          item { SectionHeader("Nuovo Testamento", Modifier.padding(horizontal = 24.dp)) }
           items(books.filter { it.n >= 40 }, key = { it.n }) { book ->
             BookSheetRow(
               name = book.name,

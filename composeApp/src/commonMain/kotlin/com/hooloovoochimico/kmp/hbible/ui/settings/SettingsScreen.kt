@@ -192,30 +192,6 @@ fun SettingsScreen(
           ) { Text(size.label()) }
         }
       }
-      Text(
-        "Versione",
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(horizontal = 24.dp),
-      )
-      TRANSLATION_NAMES.forEach { (code, name) ->
-        BookSheetRow(
-          name = name,
-          abbr = code,
-          selected = selectionTranslation == code,
-          showReadingBadge = false,
-          onClick = { onSelectTranslation(code) },
-        )
-      }
-      SectionHeader("Versioni della Bibbia", Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
-      Column(Modifier.padding(horizontal = 24.dp)) {
-        TRANSLATION_META.forEach { meta -> TranslationMetaRow(meta) }
-        Text(
-          "Le versioni contrassegnate «Uso personale» sono testi protetti inclusi solo per uso personale (repository privata, nessuna distribuzione).",
-          style = MaterialTheme.typography.bodySmall,
-          color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-      }
       SectionHeader("Ricerca AI", Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
       val aiConfig = state.aiConfig
       val configured = AiCompany.entries.filter { aiConfig.configFor(it).apiKey.isNotBlank() }
@@ -267,6 +243,31 @@ fun SettingsScreen(
           )
           Spacer(Modifier.height(8.dp))
         }
+      }
+
+      Text(
+        "Versione",
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = 24.dp),
+      )
+      TRANSLATION_NAMES.forEach { (code, name) ->
+        BookSheetRow(
+          name = name,
+          abbr = code,
+          selected = selectionTranslation == code,
+          showReadingBadge = false,
+          onClick = { onSelectTranslation(code) },
+        )
+      }
+      SectionHeader("Versioni della Bibbia", Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
+      Column(Modifier.padding(horizontal = 24.dp)) {
+        TRANSLATION_META.forEach { meta -> TranslationMetaRow(meta) }
+        Text(
+          "Le versioni contrassegnate «Uso personale» sono testi protetti inclusi solo per uso personale (repository privata, nessuna distribuzione).",
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
       }
     }
   }
