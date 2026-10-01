@@ -1,6 +1,7 @@
 package com.hooloovoochimico.kmp.hbible.di
 
 import com.hooloovoochimico.kmp.hbible.ui.explore.ExploreViewModel
+import com.hooloovoochimico.kmp.hbible.ui.interlineare.InterlineareViewModel
 import com.hooloovoochimico.kmp.hbible.ui.notes.NotesViewModel
 import com.hooloovoochimico.kmp.hbible.ui.reader.ReaderViewModel
 import com.hooloovoochimico.kmp.hbible.ui.settings.SettingsViewModel
@@ -19,5 +20,6 @@ val viewModelModule = module {
     viewModel { ReaderViewModel(get(), get(), get()) }
     viewModel { NotesViewModel(get()) }
     viewModel { ExploreViewModel(get(), get(), get(), get()) }
+    viewModel { InterlineareViewModel(get(), get()) }
     viewModel { SettingsViewModel(get()) }
 }

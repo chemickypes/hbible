@@ -61,6 +61,23 @@ data class OriginalVerseEntity(
   @ColumnInfo(name = "glosses_it") val glossesIt: String = "",
 )
 
+/**
+ * Italian token indices of the verse (translation-dependent alignment channel
+ * `ar_<version>`), -1 = unaligned. Shared by the verse detail page and the
+ * interlinear tab so both resolve Italian words the same way.
+ */
+fun OriginalVerseEntity?.alignedItalianIndices(translation: String): List<Int> =
+  when (translation) {
+    "R2" -> this?.italianR2
+    "R27" -> this?.italianR27
+    "DIO" -> this?.italianDio
+    "ND" -> this?.italianNd
+    "CEI" -> this?.italianCei
+    "RIC" -> this?.italianRic
+    "MAR" -> this?.italianMar
+    else -> this?.italianNr
+  }?.split(",")?.map { it.toIntOrNull() ?: -1 } ?: emptyList()
+
 /** A cross-reference link between two verses. */
 @Entity(
   tableName = "cross_references",

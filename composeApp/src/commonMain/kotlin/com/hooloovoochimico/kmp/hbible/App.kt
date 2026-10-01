@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
@@ -61,6 +62,8 @@ import com.hooloovoochimico.kmp.hbible.theme.HBibleTheme
 import com.hooloovoochimico.kmp.hbible.ui.common.VerseRef
 import com.hooloovoochimico.kmp.hbible.ui.explore.ExploreScreen
 import com.hooloovoochimico.kmp.hbible.ui.explore.ExploreViewModel
+import com.hooloovoochimico.kmp.hbible.ui.interlineare.InterlineareScreen
+import com.hooloovoochimico.kmp.hbible.ui.interlineare.InterlineareViewModel
 import com.hooloovoochimico.kmp.hbible.ui.notes.NoteEditorScreen
 import com.hooloovoochimico.kmp.hbible.ui.notes.NotesScreen
 import com.hooloovoochimico.kmp.hbible.ui.notes.NotesViewModel
@@ -92,6 +95,9 @@ data object NotesRoute
 data object ExploreRoute
 
 @Serializable
+data object InterlineareRoute
+
+@Serializable
 data object SettingsRoute
 
 @Serializable
@@ -101,6 +107,8 @@ data class VerseDetailRoute(
   val verse: Int,
   val index: Int,
   val count: Int,
+  /** Word initially selected in the detail card (-1 = none), from Interlineare. */
+  val word: Int = -1,
 )
 
 @Serializable
@@ -127,6 +135,7 @@ internal enum class ReaderTab {
   BIBBIA,
   NOTE,
   RICERCA,
+  INTERLINEARE,
   IMPOSTAZIONI,
 }
 
@@ -185,12 +194,14 @@ fun App() {
             val readerViewModel: ReaderViewModel = koinViewModel()
             val notesViewModel: NotesViewModel = koinViewModel()
             val exploreViewModel: ExploreViewModel = koinViewModel()
+            val interlineareViewModel: InterlineareViewModel = koinViewModel()
             val settings by settingsViewModel.uiState.collectAsStateWithLifecycle()
             HBibleTheme(themeMode = settings.themeMode, dynamicColor = settings.dynamicColor) {
                 HBibleAppShell(
                     readerViewModel = readerViewModel,
                     notesViewModel = notesViewModel,
                     exploreViewModel = exploreViewModel,
+                    interlineareViewModel = interlineareViewModel,
                     settingsViewModel = settingsViewModel,
                 )
             }
@@ -203,6 +214,7 @@ private fun HBibleAppShell(
   readerViewModel: ReaderViewModel,
   notesViewModel: NotesViewModel,
   exploreViewModel: ExploreViewModel,
+  interlineareViewModel: InterlineareViewModel,
   settingsViewModel: SettingsViewModel,
 ) {
   val navController = rememberNavController()
@@ -215,6 +227,7 @@ private fun HBibleAppShell(
         destination.hasRouteCompat<ReaderRoute>() ||
           destination.hasRouteCompat<NotesRoute>() ||
           destination.hasRouteCompat<ExploreRoute>() ||
+          destination.hasRouteCompat<InterlineareRoute>() ||
           destination.hasRouteCompat<SettingsRoute>()
       )
   }
@@ -289,12 +302,40 @@ private fun HBibleAppShell(
     }
   }
 
+  // Apre il dettaglio su una parola dalla tab Interlineare: stesso flusso di
+  // openDetailFor (sincronizza il lettore sul capitolo così il dettaglio mostra
+  // anche il versetto italiano) ma senza popUpTo, così "indietro" torna
+  // all'interlineare, e con la parola da selezionare nella card lessico.
+  val openInterlinearWord: (VerseRef, Int) -> Unit = { target, word ->
+    detailSet = listOf(target)
+    detailIndex = 0
+    readerViewModel.openVerseDetail(listOf(target), 0)
+    pendingScroll.value = PendingScroll(target.book, target.chapter, target.verse)
+    val sel = currentSelection()
+    if (target.book != sel.book) {
+      readerViewModel.selectBook(target.book)
+      if (target.chapter != 1) readerViewModel.selectChapter(target.chapter)
+    } else if (target.chapter != sel.chapter) {
+      readerViewModel.selectChapter(target.chapter)
+    }
+    navController.navigate(VerseDetailRoute(target.book, target.chapter, target.verse, 0, 1, word)) {
+      launchSingleTop = true
+    }
+  }
+
   // Salva una risposta chat AI in nota e apre l'editor (sorgente: saveChatToNote):
   // atterra sulla tab NOTE con l'editor sopra, come nel sorgente.
   val saveChatToNote: suspend (String, String, Int, Int, Int) -> Unit = { title, content, b, c, v ->
     val id = notesViewModel.createNoteFromChat(title, content, b, c, v)
     goToTab(NotesRoute)
     navController.navigate(NoteEditorRoute(id))
+  }
+
+  // Porta la tab Interlineare sul versetto indicato (azione della pagina dettaglio
+  // versetto): moveTo valida i confini, poi si seleziona la tab come dal guscio.
+  val openInterlinearFor: (VerseRef) -> Unit = { target ->
+    interlineareViewModel.moveTo(target.book, target.chapter, target.verse)
+    goToTab(InterlineareRoute)
   }
 
   Box(Modifier.fillMaxSize()) {
@@ -352,6 +393,20 @@ private fun HBibleAppShell(
           viewModel = exploreViewModel,
         )
       }
+      composable<InterlineareRoute> {
+        val readerState by readerViewModel.uiState.collectAsStateWithLifecycle()
+        val selection = (readerState as? ReaderUiState.Ready)?.selection
+        // La traduzione corrente del lettore decide il canale di allineamento
+        // ar_<versione> e il versetto italiano mostrato dalla glossa.
+        LaunchedEffect(selection?.translation) {
+          interlineareViewModel.setTranslation(selection?.translation ?: "NR")
+        }
+        InterlineareScreen(
+          translationName = TRANSLATION_NAMES[selection?.translation ?: "NR"] ?: "",
+          onOpenWord = openInterlinearWord,
+          viewModel = interlineareViewModel,
+        )
+      }
       composable<SettingsRoute> {
         val readerState by readerViewModel.uiState.collectAsStateWithLifecycle()
         val selection = (readerState as? ReaderUiState.Ready)?.selection
@@ -395,6 +450,7 @@ private fun HBibleAppShell(
           translation = selection?.translation ?: "NR",
           translationName = TRANSLATION_NAMES[selection?.translation ?: "NR"] ?: "",
           bookName = { n -> books.firstOrNull { it.n == n }?.name ?: "" },
+          initialWord = route.word,
           onSaveAiToNote =
             if (readerViewModel.aiConfigured) {
               { content ->
@@ -440,6 +496,7 @@ private fun HBibleAppShell(
             goToVerse(target.book, target.chapter, target.verse)
           },
           onOpenDetail = openDetailFor,
+          onOpenInterlinear = { openInterlinearFor(currentDetailRef) },
           viewModel = readerViewModel,
         )
       }
@@ -519,6 +576,7 @@ private fun HBibleAppShell(
             ReaderTab.BIBBIA -> goToTab(ReaderRoute)
             ReaderTab.NOTE -> goToTab(NotesRoute)
             ReaderTab.RICERCA -> goToTab(ExploreRoute)
+            ReaderTab.INTERLINEARE -> goToTab(InterlineareRoute)
             ReaderTab.IMPOSTAZIONI -> goToTab(SettingsRoute)
           }
         },
@@ -552,6 +610,7 @@ private fun FloatingBottomBar(
           ReaderTab.BIBBIA -> currentRoute?.hasRouteCompat<ReaderRoute>() == true
           ReaderTab.NOTE -> currentRoute?.hasRouteCompat<NotesRoute>() == true
           ReaderTab.RICERCA -> currentRoute?.hasRouteCompat<ExploreRoute>() == true
+          ReaderTab.INTERLINEARE -> currentRoute?.hasRouteCompat<InterlineareRoute>() == true
           ReaderTab.IMPOSTAZIONI -> currentRoute?.hasRouteCompat<SettingsRoute>() == true
         }
         val icon =
@@ -559,6 +618,7 @@ private fun FloatingBottomBar(
             ReaderTab.BIBBIA -> BibleIcon
             ReaderTab.NOTE -> Icons.Default.Edit
             ReaderTab.RICERCA -> Icons.Default.Search
+            ReaderTab.INTERLINEARE -> Icons.Default.Menu
             ReaderTab.IMPOSTAZIONI -> Icons.Default.Settings
           }
         Box(

@@ -34,6 +34,9 @@ fun ReaderFontSize.label(): String =
 /** Last reading position persisted between sessions. */
 data class LastPosition(val translation: String, val book: Int, val chapter: Int)
 
+/** Last position of the interlinear tab (with verse), persisted between sessions. */
+data class InterlinearPosition(val book: Int, val chapter: Int, val verse: Int)
+
 /** User preferences: theme, reading state and AI provider configuration. */
 interface SettingsRepository {
   fun loadThemeMode(): ThemeMode
@@ -51,6 +54,10 @@ interface SettingsRepository {
   fun loadLastPosition(): LastPosition
 
   fun saveLastPosition(position: LastPosition)
+
+  fun loadInterlinearPosition(): InterlinearPosition
+
+  fun saveInterlinearPosition(position: InterlinearPosition)
 
   // --- AI configuration ---
 
@@ -93,6 +100,13 @@ class DefaultSettingsRepository(
     ThemePreferences.saveLastPosition(settings, position)
   }
 
+  override fun loadInterlinearPosition(): InterlinearPosition =
+    ThemePreferences.loadInterlinearPosition(settings)
+
+  override fun saveInterlinearPosition(position: InterlinearPosition) {
+    ThemePreferences.saveInterlinearPosition(settings, position)
+  }
+
   override fun loadAiConfig(): AiConfig = AiSettingsStore.load(aiSettings)
 
   override fun saveAiConfig(config: AiConfig) {
@@ -111,6 +125,9 @@ object ThemePreferences {
   private const val LAST_TRANSLATION_KEY = "last_translation"
   private const val LAST_BOOK_KEY = "last_book"
   private const val LAST_CHAPTER_KEY = "last_chapter"
+  private const val LAST_INTERLINEAR_BOOK_KEY = "last_interlinear_book"
+  private const val LAST_INTERLINEAR_CHAPTER_KEY = "last_interlinear_chapter"
+  private const val LAST_INTERLINEAR_VERSE_KEY = "last_interlinear_verse"
 
   fun load(settings: Settings): ThemeMode {
     val name = settings.getStringOrNull(KEY)
@@ -148,5 +165,18 @@ object ThemePreferences {
     settings.putString(LAST_TRANSLATION_KEY, position.translation)
     settings.putInt(LAST_BOOK_KEY, position.book)
     settings.putInt(LAST_CHAPTER_KEY, position.chapter)
+  }
+
+  fun loadInterlinearPosition(settings: Settings): InterlinearPosition =
+    InterlinearPosition(
+      book = settings.getInt(LAST_INTERLINEAR_BOOK_KEY, 1).coerceIn(1, 66),
+      chapter = settings.getInt(LAST_INTERLINEAR_CHAPTER_KEY, 1).coerceAtLeast(1),
+      verse = settings.getInt(LAST_INTERLINEAR_VERSE_KEY, 1).coerceAtLeast(1),
+    )
+
+  fun saveInterlinearPosition(settings: Settings, position: InterlinearPosition) {
+    settings.putInt(LAST_INTERLINEAR_BOOK_KEY, position.book)
+    settings.putInt(LAST_INTERLINEAR_CHAPTER_KEY, position.chapter)
+    settings.putInt(LAST_INTERLINEAR_VERSE_KEY, position.verse)
   }
 }

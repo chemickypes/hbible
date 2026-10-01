@@ -27,6 +27,10 @@ interface BibleDao {
   )
   suspend fun verse(translation: String, book: Int, chapter: Int, verse: Int): VerseEntity?
 
+  /** Same verse in every translation that has it (single scan of one (b,c,v) key). */
+  @Query("SELECT * FROM verses WHERE book = :book AND chapter = :chapter AND verse = :verse")
+  suspend fun verseAllTranslations(book: Int, chapter: Int, verse: Int): List<VerseEntity>
+
   @Query("SELECT COUNT(*) FROM verses")
   suspend fun verseCount(): Int
 

@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -62,6 +63,7 @@ import com.hooloovoochimico.kmp.hbible.data.ai.AiChatMessage
 import com.hooloovoochimico.kmp.hbible.data.ai.AiPrompts
 import com.hooloovoochimico.kmp.hbible.data.local.LexemeEntity
 import com.hooloovoochimico.kmp.hbible.data.local.VerseEntity
+import com.hooloovoochimico.kmp.hbible.data.local.alignedItalianIndices
 import com.hooloovoochimico.kmp.hbible.theme.ScriptureTypography
 import com.hooloovoochimico.kmp.hbible.ui.common.AiChatPanel
 import com.hooloovoochimico.kmp.hbible.ui.common.EmptyMessage
@@ -92,12 +94,16 @@ fun VerseDetailScreen(
   translation: String,
   translationName: String,
   bookName: (Int) -> String,
+  /** Word to select on open (from the interlinear tab); -1 = none. */
+  initialWord: Int = -1,
   onSaveAiToNote: ((String) -> Unit)?,
   onDismiss: () -> Unit,
   onPrev: () -> Unit,
   onNext: () -> Unit,
   onOpenReference: (VerseRef) -> Unit,
   onOpenDetail: (VerseRef) -> Unit,
+  /** Opens the interlinear tab on this verse (top bar action, wired by the shell). */
+  onOpenInterlinear: () -> Unit,
   modifier: Modifier = Modifier,
   viewModel: ReaderViewModel,
 ) {
@@ -177,23 +183,10 @@ fun VerseDetailScreen(
   val lemmaTokens = original?.lemmas?.split(" ")?.filter { it.isNotEmpty() } ?: emptyList()
   val translitWords = original?.transliteration?.split(" ")?.filter { it.isNotEmpty() } ?: emptyList()
   val selectable = original != null && words.isNotEmpty() && words.size == lemmaTokens.size
-  var selectedWord by rememberSaveable(original, index) { mutableStateOf(-1) }
+  var selectedWord by rememberSaveable(original, index) { mutableStateOf(initialWord) }
   // aligned Italian token index for the selected word (per current translation)
   val alignedArray =
-    remember(original, translation) {
-      val csv =
-        when (translation) {
-          "R2" -> original?.italianR2
-          "R27" -> original?.italianR27
-          "DIO" -> original?.italianDio
-          "ND" -> original?.italianNd
-          "CEI" -> original?.italianCei
-          "RIC" -> original?.italianRic
-          "MAR" -> original?.italianMar
-          else -> original?.italianNr
-        }
-      csv?.split(",")?.map { it.toIntOrNull() ?: -1 } ?: emptyList()
-    }
+    remember(original, translation) { original.alignedItalianIndices(translation) }
   val italianVerseTokens = verse?.text?.split(Regex("\\s+")) ?: emptyList()
   val alignedItToken =
     if (selectable && selectedWord in alignedArray.indices) alignedArray[selectedWord] else -1
@@ -263,6 +256,11 @@ fun VerseDetailScreen(
           style = MaterialTheme.typography.labelSmall,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+      }
+      Spacer(Modifier.weight(1f))
+      // Stessa icona della tab Interlineare nella bottom bar.
+      IconButton(onClick = onOpenInterlinear) {
+        Icon(Icons.Default.Menu, contentDescription = "Apri nell'interlineare")
       }
     }
 

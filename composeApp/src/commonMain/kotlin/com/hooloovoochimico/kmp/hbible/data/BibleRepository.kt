@@ -34,6 +34,9 @@ interface BibleRepository {
   /** Loads a single verse, used to preview AI search matches. */
   suspend fun verse(translation: String, book: Int, chapter: Int, verse: Int): VerseEntity?
 
+  /** The same verse in every bundled translation that has it (interlinear "versions" list). */
+  suspend fun verseAllTranslations(book: Int, chapter: Int, verse: Int): List<VerseEntity>
+
   /** Original-language text (Hebrew/Greek) for a verse, if available. */
   fun originalVerse(book: Int, chapter: Int, verse: Int): Flow<OriginalVerseEntity?>
 
@@ -81,6 +84,12 @@ class DefaultBibleRepository(
     chapter: Int,
     verse: Int,
   ): VerseEntity? = db.bibleDao().verse(translation, book, chapter, verse)
+
+  override suspend fun verseAllTranslations(
+    book: Int,
+    chapter: Int,
+    verse: Int,
+  ): List<VerseEntity> = db.bibleDao().verseAllTranslations(book, chapter, verse)
 
   override fun originalVerse(book: Int, chapter: Int, verse: Int): Flow<OriginalVerseEntity?> =
     db.bibleDao().originalVerse(book, chapter, verse)

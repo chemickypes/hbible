@@ -1,4 +1,4 @@
-package com.hooloovoochimico.kmp.hbible.ui.reader
+package com.hooloovoochimico.kmp.hbible.ui.interlineare
 
 import com.hooloovoochimico.kmp.hbible.data.BibleRepository
 import com.hooloovoochimico.kmp.hbible.data.InterlinearPosition
@@ -6,8 +6,6 @@ import com.hooloovoochimico.kmp.hbible.data.LastPosition
 import com.hooloovoochimico.kmp.hbible.data.ReaderFontSize
 import com.hooloovoochimico.kmp.hbible.data.SettingsRepository
 import com.hooloovoochimico.kmp.hbible.data.ThemeMode
-import com.hooloovoochimico.kmp.hbible.data.ai.AiConfig
-import com.hooloovoochimico.kmp.hbible.data.ai.AiGateway
 import com.hooloovoochimico.kmp.hbible.data.local.BookEntity
 import com.hooloovoochimico.kmp.hbible.data.local.BookInfoEntity
 import com.hooloovoochimico.kmp.hbible.data.local.CrossReferenceEntity
@@ -24,13 +22,15 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class ReaderViewModelTest {
+class InterlineareViewModelTest {
 
   @BeforeTest
   fun setUp() {
@@ -43,20 +43,27 @@ class ReaderViewModelTest {
   }
 
   @Test
-  fun uiState_becomesReadyAfterImport() = runTest {
-    val viewModel = ReaderViewModel(
-      FakeBibleRepository(),
-      FakeSettingsRepository(),
-      AiGateway(configProvider = { AiConfig() }),
-    )
-    val state = viewModel.uiState.first { it is ReaderUiState.Ready }
-    assertEquals(1, (state as ReaderUiState.Ready).verses.size)
+  fun moveTo_clampsBookChapterVerseToValidBounds() = runTest {
+    val viewModel = InterlineareViewModel(FakeBibleRepository(), FakeSettingsRepository())
+    // Subscribes the stateIn flows so the books list is loaded before moving.
+    backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+      viewModel.uiState.collect {}
+    }
+    advanceUntilIdle()
+
+    viewModel.moveTo(1, 60, 10)
+    advanceUntilIdle()
+    assertEquals(InterlinearPosition(1, 50, 1), viewModel.uiState.value.position)
+
+    viewModel.moveTo(99, 200, 7)
+    advanceUntilIdle()
+    assertEquals(InterlinearPosition(66, 50, 1), viewModel.uiState.value.position)
   }
 }
 
 private class FakeBibleRepository : BibleRepository {
   override fun books(): Flow<List<BookEntity>> =
-    flowOf(listOf(BookEntity(1, "Genesi", "Gen", 50)))
+    flowOf((1..66).map { BookEntity(it, "Libro $it", "L$it", 50) })
 
   override fun chapter(translation: String, book: Int, chapter: Int): Flow<List<VerseEntity>> =
     flowOf(
@@ -94,8 +101,7 @@ private class FakeBibleRepository : BibleRepository {
     limit: Int,
   ): List<VerseRefRow> = emptyList()
 
-  override suspend fun lexeme(lang: String, number: String): LexemeEntity? =
-    null
+  override suspend fun lexeme(lang: String, number: String): LexemeEntity? = null
 
   override suspend fun saveGlossIt(lang: String, number: String, glossIt: String) {}
 
@@ -127,9 +133,10 @@ private class FakeSettingsRepository : SettingsRepository {
 
   override fun saveInterlinearPosition(position: InterlinearPosition) {}
 
-  override fun loadAiConfig(): AiConfig = AiConfig()
+  override fun loadAiConfig(): com.hooloovoochimico.kmp.hbible.data.ai.AiConfig =
+    com.hooloovoochimico.kmp.hbible.data.ai.AiConfig()
 
-  override fun saveAiConfig(config: AiConfig) {}
+  override fun saveAiConfig(config: com.hooloovoochimico.kmp.hbible.data.ai.AiConfig) {}
 
   override fun isAiConfigured(): Boolean = false
 }
