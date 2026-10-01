@@ -10,7 +10,9 @@ import com.hooloovoochimico.kmp.hbible.data.local.VerseEntity
 import com.hooloovoochimico.kmp.hbible.data.local.VerseRefRow
 import com.hooloovoochimico.kmp.hbible.data.local.withTransaction
 import com.hooloovoochimico.kmp.hbible.resources.Res
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 
 /** Display names of the bundled translations, keyed by their database code. */
@@ -120,15 +122,19 @@ class DefaultBibleRepository(
     db.bibleDao().insertBookInfo(info)
   }
 
-  override suspend fun ensureImported() {
+  override suspend fun ensureImported() = withContext(Dispatchers.Default) {
     val dao = db.bibleDao()
     // Per-translation gate: a translation ships with any app update, so it
-    // must import on upgrade too, not only on first launch.
+    // must import on upgrade too, not only on first launch. The gate runs
+    // BEFORE the asset is read: on every start the check is a handful of
+    // COUNT queries, and the (multi-MB) JSON is parsed only when actually
+    // needed — never on the caller's main thread (see Dispatchers.Default).
     // Graceful fallback: a bundled translation asset may be missing (e.g. an
     // asset produced by a parallel pipeline that has not landed yet); a failed
     // read/parse must skip that asset without aborting the other imports or
     // crashing the app — the missing one simply imports when it ships.
-    for (asset in ASSETS) {
+    for ((asset, abbr) in ASSETS) {
+      if (dao.translationVerseCount(abbr) > 0) continue
       val doc =
         try {
           json.decodeFromString<BibleDoc>(Res.readBytes("files/$asset").decodeToString())
@@ -136,7 +142,6 @@ class DefaultBibleRepository(
           println("ensureImported: skipping unavailable asset '$asset': ${t.message}")
           continue
         }
-      if (dao.translationVerseCount(doc.meta.abbr) > 0) continue
       db.withTransaction {
         // The books table is shared across translations: insert once, from the
         // first imported asset, so names/abbreviations stay stable.
@@ -230,18 +235,19 @@ class DefaultBibleRepository(
 
   companion object {
     private val json = Json { ignoreUnknownKeys = true }
-    // Graceful fallback: the four newer translation assets are produced by a
-    // parallel pipeline and may not be present yet — same skip-and-log policy.
+    // Bundled translation assets with their database code: the abbr drives the
+    // import gate (COUNT) so a start never parses an asset just to learn it.
+    // Graceful fallback: newer assets may be missing — skip-and-log policy.
     private val ASSETS =
       listOf(
-        "nuova_riveduta.json",
-        "riveduta_2020.json",
-        "riveduta_1927.json",
-        "diodati.json",
-        "nuova_diodati.json",
-        "cei.json",
-        "ricciotti.json",
-        "martini.json",
+        "nuova_riveduta.json" to "NR",
+        "riveduta_2020.json" to "R2",
+        "riveduta_1927.json" to "R27",
+        "diodati.json" to "DIO",
+        "nuova_diodati.json" to "ND",
+        "cei.json" to "CEI",
+        "ricciotti.json" to "RIC",
+        "martini.json" to "MAR",
       )
     private const val ORIGINALS_ASSET = "originals.json"
     private const val CROSSREFS_ASSET = "crossrefs.json"
