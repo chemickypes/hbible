@@ -1,5 +1,7 @@
 package com.hooloovoochimico.kmp.hbible.di
 
+import com.hooloovoochimico.kmp.hbible.data.CmsRepository
+import com.hooloovoochimico.kmp.hbible.data.DefaultCmsRepository
 import com.hooloovoochimico.kmp.hbible.data.BibleRepository
 import com.hooloovoochimico.kmp.hbible.data.DefaultBibleRepository
 import com.hooloovoochimico.kmp.hbible.data.DefaultExploreRepository
@@ -10,6 +12,7 @@ import com.hooloovoochimico.kmp.hbible.data.NotesRepository
 import com.hooloovoochimico.kmp.hbible.data.SettingsRepository
 import com.hooloovoochimico.kmp.hbible.data.SearchHistory
 import com.hooloovoochimico.kmp.hbible.data.ThemePreferences
+import com.hooloovoochimico.kmp.hbible.data.content.ContentSyncer
 import com.hooloovoochimico.kmp.hbible.data.ai.AiClientFactory
 import com.hooloovoochimico.kmp.hbible.data.ai.AiCompany
 import com.hooloovoochimico.kmp.hbible.data.ai.AiGateway
@@ -46,6 +49,12 @@ val coreModule = module {
     single<NotesRepository> { DefaultNotesRepository(get()) }
     single<ExploreRepository> { DefaultExploreRepository(get(), get(), get(named(SearchHistory.PREFS))) }
     single<SettingsRepository> { DefaultSettingsRepository(get(), get(named(AiSettingsStore.PREFS))) }
+
+    // Contenuti curati dal CMS (VOTD + feed) già applicati al DB locale.
+    single<CmsRepository> { DefaultCmsRepository(get()) }
+
+    // Sync dei contenuti dal CMS (manifest + pacchetti /content/*).
+    single { ContentSyncer(get(), get(), get(), get()) }
 
     /**
      * Single [AiGateway] per tutta l'app. La configurazione viene riletta a

@@ -16,7 +16,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -222,6 +225,95 @@ fun SettingsScreen(
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
       )
+
+      SectionHeader("Aggiornamenti contenuti", Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
+      val syncState = state.contentSync
+      Column(Modifier.padding(horizontal = 24.dp)) {
+        OutlinedTextField(
+          value = syncState.baseUrl,
+          onValueChange = { viewModel.setCmsBaseUrl(it) },
+          label = { Text("URL del CMS") },
+          placeholder = { Text("http://192.168.1.10:3001") },
+          singleLine = true,
+          modifier = Modifier.fillMaxWidth(),
+        )
+        Row(
+          Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.CenterVertically,
+        ) {
+          Text("Controllo automatico all'apertura", style = MaterialTheme.typography.bodyMedium)
+          Switch(
+            checked = syncState.autoUpdateCheck,
+            onCheckedChange = { viewModel.setAutoUpdateCheck(it) },
+          )
+        }
+        Row(
+          Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+          OutlinedButton(
+            onClick = { viewModel.checkForUpdates() },
+            enabled = !syncState.busy && syncState.baseUrl.isNotBlank(),
+          ) {
+            Text("Verifica")
+          }
+          Button(
+            onClick = { viewModel.downloadUpdates() },
+            enabled = !syncState.busy && syncState.baseUrl.isNotBlank(),
+          ) {
+            Text(
+              when {
+                syncState.busy -> "Aggiornamento…"
+                else -> "Scarica aggiornamenti"
+              },
+            )
+          }
+        }
+        if (syncState.busy && syncState.progress.isNotBlank()) {
+          Text(
+            syncState.progress,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 8.dp),
+          )
+        }
+        val lastCheck = syncState.lastCheck
+        if (lastCheck != null && !syncState.busy) {
+          Text(
+            when {
+              lastCheck.error != null -> "Errore di verifica: ${lastCheck.error}"
+              lastCheck.changed.isEmpty() -> "Contenuti aggiornati (versione ${lastCheck.version})"
+              else ->
+                "${lastCheck.changed.size} pacchetti aggiornati disponibili: " +
+                  lastCheck.changed.take(4).joinToString() +
+                  if (lastCheck.changed.size > 4) "…" else ""
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color =
+              if (lastCheck.error != null) MaterialTheme.colorScheme.error
+              else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 8.dp),
+          )
+        }
+        if (syncState.lastSyncMessage.isNotBlank() && !syncState.busy) {
+          Text(
+            syncState.lastSyncMessage,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 4.dp),
+          )
+        }
+        Text(
+          "Il CMS distribuisce bibbie, interlineare, lessico e riferimenti. " +
+            "I contenuti restano memorizzati sul dispositivo e funzionano offline.",
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+          modifier = Modifier.padding(top = 8.dp, bottom = 8.dp),
+        )
+      }
 
       SectionHeader("Fonti", Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
       Column(Modifier.padding(horizontal = 24.dp)) {

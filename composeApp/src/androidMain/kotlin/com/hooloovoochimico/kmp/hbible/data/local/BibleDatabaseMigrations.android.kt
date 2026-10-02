@@ -162,6 +162,29 @@ private val MIGRATION_12_13 =
     }
   }
 
+/**
+ * Content sync (CMS): tables tracking applied content packages and installed
+ * translation metadata. Data tables are untouched — no re-import needed.
+ */
+private val MIGRATION_13_14 =
+  object : Migration(13, 14) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+      db.execSQL(BibleMigrationSql.CREATE_CONTENT_STATE)
+      db.execSQL(BibleMigrationSql.CREATE_TRANSLATION_META)
+    }
+  }
+
+/**
+ * Verse of the day + curated feed tables (CMS content). Additive, no re-import.
+ */
+private val MIGRATION_14_15 =
+  object : Migration(14, 15) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+      db.execSQL(BibleMigrationSql.CREATE_VOTD)
+      db.execSQL(BibleMigrationSql.CREATE_POSTS)
+    }
+  }
+
 actual val ALL_MIGRATIONS: Array<Migration> =
   arrayOf(
     MIGRATION_1_2,
@@ -176,4 +199,6 @@ actual val ALL_MIGRATIONS: Array<Migration> =
     MIGRATION_10_11,
     MIGRATION_11_12,
     MIGRATION_12_13,
+    MIGRATION_13_14,
+    MIGRATION_14_15,
   )

@@ -1,6 +1,7 @@
 package com.hooloovoochimico.kmp.hbible.ui.reader
 
 import com.hooloovoochimico.kmp.hbible.data.BibleRepository
+import com.hooloovoochimico.kmp.hbible.data.CmsRepository
 import com.hooloovoochimico.kmp.hbible.data.InterlinearPosition
 import com.hooloovoochimico.kmp.hbible.data.LastPosition
 import com.hooloovoochimico.kmp.hbible.data.ReaderFontSize
@@ -13,6 +14,8 @@ import com.hooloovoochimico.kmp.hbible.data.local.BookInfoEntity
 import com.hooloovoochimico.kmp.hbible.data.local.CrossReferenceEntity
 import com.hooloovoochimico.kmp.hbible.data.local.LexemeEntity
 import com.hooloovoochimico.kmp.hbible.data.local.OriginalVerseEntity
+import com.hooloovoochimico.kmp.hbible.data.local.PostEntity
+import com.hooloovoochimico.kmp.hbible.data.local.VotdEntity
 import com.hooloovoochimico.kmp.hbible.data.local.VerseEntity
 import com.hooloovoochimico.kmp.hbible.data.local.VerseRefRow
 import kotlin.test.AfterTest
@@ -48,6 +51,7 @@ class ReaderViewModelTest {
       FakeBibleRepository(),
       FakeSettingsRepository(),
       AiGateway(configProvider = { AiConfig() }),
+      FakeCmsRepository(),
     )
     val state = viewModel.uiState.first { it is ReaderUiState.Ready }
     assertEquals(1, (state as ReaderUiState.Ready).verses.size)
@@ -127,9 +131,23 @@ private class FakeSettingsRepository : SettingsRepository {
 
   override fun saveInterlinearPosition(position: InterlinearPosition) {}
 
+  override fun loadCmsBaseUrl(): String = ""
+
+  override fun saveCmsBaseUrl(url: String) {}
+
+  override fun loadAutoUpdateCheck(): Boolean = false
+
+  override fun saveAutoUpdateCheck(enabled: Boolean) {}
+
   override fun loadAiConfig(): AiConfig = AiConfig()
 
   override fun saveAiConfig(config: AiConfig) {}
 
   override fun isAiConfigured(): Boolean = false
+}
+
+private class FakeCmsRepository : CmsRepository {
+  override fun votdForToday(): Flow<VotdEntity?> = flowOf(null)
+
+  override fun publishedPosts(): Flow<List<PostEntity>> = flowOf(emptyList())
 }

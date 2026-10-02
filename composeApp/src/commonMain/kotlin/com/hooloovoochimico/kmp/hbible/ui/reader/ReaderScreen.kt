@@ -40,6 +40,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -69,7 +71,9 @@ import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.hooloovoochimico.kmp.hbible.data.SHOW_CMS_HOME_CONTENT
 import com.hooloovoochimico.kmp.hbible.data.TRANSLATION_NAMES
+import com.hooloovoochimico.kmp.hbible.data.local.PostEntity
 import com.hooloovoochimico.kmp.hbible.data.ReaderFontSize
 import com.hooloovoochimico.kmp.hbible.data.local.BookEntity
 import com.hooloovoochimico.kmp.hbible.data.local.VerseEntity
@@ -84,6 +88,7 @@ import com.hooloovoochimico.kmp.hbible.ui.common.SectionHeader
 import com.hooloovoochimico.kmp.hbible.ui.common.VerseRef
 import com.hooloovoochimico.kmp.hbible.ui.common.displayAbbr
 import com.hooloovoochimico.kmp.hbible.ui.settings.SettingsViewModel
+import kotlinx.coroutines.flow.first
 
 /**
  * Contenuto della tab BIBBIA: lista versetti, top bar con titolo/selezione,
@@ -205,6 +210,8 @@ private fun ReaderContent(
 ) {
   var showBookSheet by rememberSaveable { mutableStateOf(false) }
   var showChapterSheet by rememberSaveable { mutableStateOf(false) }
+  val votd by viewModel.votd.collectAsStateWithLifecycle()
+  val posts by viewModel.posts.collectAsStateWithLifecycle()
   val selectedSetSaver =
     Saver<Set<Int>, List<Int>>(
       save = { it.toList() },
@@ -373,12 +380,40 @@ private fun ReaderContent(
             lastOffset = offset
           }
       }
-      LazyColumn(
-        state = listState,
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = Dimens.bottomBarClearance),
-      ) {
-        items(verses, key = { "${it.translation}-${it.book}-${it.chapter}-${it.verse}" }) { verse ->
+      // Contenuti curati dal CMS (VOTD + feed) come banner fisso, solo in
+      // "home" (Genesi 1). Fuori dalla LazyColumn: niente problemi di
+      // ancoraggio/culling con l'arrivo asincrono dei dati. Gated dal
+      // feature flag SHOW_CMS_HOME_CONTENT (struttura attiva, UI nascosta).
+      Column(Modifier.fillMaxSize()) {
+        if (SHOW_CMS_HOME_CONTENT && selection.book == 1 && selection.chapter == 1) {
+          votd?.let { display ->
+            VotdCard(
+              display = display,
+              onClick = {
+                viewModel.selectBook(display.ref.book)
+                viewModel.selectChapter(display.ref.chapter)
+                pendingScroll.value =
+                  PendingScroll(display.ref.book, display.ref.chapter, display.ref.verse)
+              },
+            )
+          }
+          if (posts.isNotEmpty()) {
+            FeedSection(
+              posts = posts,
+              onOpenVerse = { post ->
+                viewModel.selectBook(post.book)
+                viewModel.selectChapter(post.chapter)
+                pendingScroll.value = PendingScroll(post.book, post.chapter, post.verse)
+              },
+            )
+          }
+        }
+        LazyColumn(
+          state = listState,
+          modifier = Modifier.fillMaxSize(),
+          contentPadding = PaddingValues(bottom = Dimens.bottomBarClearance),
+        ) {
+          items(verses, key = { "${it.translation}-${it.book}-${it.chapter}-${it.verse}" }) { verse ->
           VerseRow(
             verse = verse,
             highlighted = verse.verse in highlightedVerses,
@@ -391,6 +426,7 @@ private fun ReaderContent(
             onLongClick = { showDetailFor(listOf(verse)) },
           )
         }
+      }
       }
       // La chiave è il VALORE dello stato (come nel sorgente con `by`): il
       // ripristino del capitolo fa ripartire l'effetto e consuma lo scroll.
@@ -570,6 +606,93 @@ private fun VerseRow(
           style = ScriptureTypography.reader(fontSize),
           onTextLayout = { textLayout = it },
         )
+      }
+    }
+  }
+}
+
+/** Card del versetto del giorno (contenuto curato dal CMS), mostrata in home. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun VotdCard(
+  display: VotdDisplay,
+  onClick: () -> Unit,
+  modifier: Modifier = Modifier,
+) {
+  Card(
+    onClick = onClick,
+    modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+  ) {
+    Column(Modifier.padding(16.dp)) {
+      Text(
+        "Versetto del giorno",
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+      )
+      Spacer(Modifier.height(6.dp))
+      Text(
+        display.text,
+        style = ScriptureTypography.reader(ReaderFontSize.NORMAL),
+        color = MaterialTheme.colorScheme.onPrimaryContainer,
+      )
+      Spacer(Modifier.height(8.dp))
+      Text(
+        "${TRANSLATION_NAMES[display.translation] ?: display.translation} · ${display.ref.book}:${display.ref.chapter}:${display.ref.verse}",
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+      )
+      display.note?.takeIf { it.isNotBlank() }?.let { note ->
+        Spacer(Modifier.height(8.dp))
+        Text(
+          note,
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.onPrimaryContainer,
+        )
+      }
+    }
+  }
+}
+
+/** Sezione feed con i contenuti curati pubblicati dal CMS. */
+@Composable
+private fun FeedSection(
+  posts: List<PostEntity>,
+  onOpenVerse: (PostEntity) -> Unit,
+  modifier: Modifier = Modifier,
+) {
+  Column(modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+    Text(
+      "In evidenza",
+      style = MaterialTheme.typography.labelMedium,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer(Modifier.height(6.dp))
+    posts.take(3).forEach { post ->
+      Card(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+      ) {
+        Column(Modifier.padding(14.dp)) {
+          Text(post.title, style = MaterialTheme.typography.titleSmall)
+          Spacer(Modifier.height(4.dp))
+          Text(
+            post.body,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 5,
+          )
+          val hasVerse = post.book > 0
+          if (hasVerse) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+              "Vai al versetto · ${post.book}:${post.chapter}:${post.verse}",
+              style = MaterialTheme.typography.labelSmall,
+              color = MaterialTheme.colorScheme.primary,
+              modifier = Modifier.clickable { onOpenVerse(post) },
+            )
+          }
+        }
       }
     }
   }

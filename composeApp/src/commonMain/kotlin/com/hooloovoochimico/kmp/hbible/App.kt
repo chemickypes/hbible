@@ -221,6 +221,9 @@ private fun HBibleAppShell(
   val backStackEntry by navController.currentBackStackEntryAsState()
   val currentDestination = backStackEntry?.destination
 
+  // Sync contenuti dal CMS all'apertura (silenzioso; niente se URL non impostato).
+  LaunchedEffect(Unit) { settingsViewModel.autoCheckOnOpen() }
+
   val isTabDestination: (NavDestination?) -> Boolean = { destination ->
     destination != null &&
       (

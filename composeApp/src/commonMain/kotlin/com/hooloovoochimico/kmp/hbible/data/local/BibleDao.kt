@@ -96,6 +96,61 @@ interface BibleDao {
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   suspend fun insertCrossReferences(refs: List<CrossReferenceEntity>)
 
+  // --- Content sync (CMS packages) ---
+
+  @Query("SELECT * FROM content_state")
+  suspend fun contentState(): List<ContentStateEntity>
+
+  @Query("SELECT * FROM content_state WHERE package_id = :packageId LIMIT 1")
+  suspend fun contentStateFor(packageId: String): ContentStateEntity?
+
+  @Insert(onConflict = OnConflictStrategy.REPLACE)
+  suspend fun upsertContentState(state: ContentStateEntity)
+
+  @Query("DELETE FROM verses WHERE translation = :translation")
+  suspend fun deleteVersesForTranslation(translation: String)
+
+  @Query("DELETE FROM original_verses WHERE book = :book")
+  suspend fun deleteOriginalVersesForBook(book: Int)
+
+  @Query("DELETE FROM lexemes")
+  suspend fun deleteAllLexemes()
+
+  @Query("DELETE FROM cross_references")
+  suspend fun deleteAllCrossReferences()
+
+  @Insert(onConflict = OnConflictStrategy.REPLACE)
+  suspend fun insertTranslationMeta(meta: TranslationMetaEntity)
+
+  @Query("SELECT * FROM translation_meta WHERE abbr = :abbr LIMIT 1")
+  suspend fun translationMeta(abbr: String): TranslationMetaEntity?
+
+  @Query("SELECT * FROM translation_meta ORDER BY abbr")
+  suspend fun allTranslationMeta(): List<TranslationMetaEntity>
+
+  // --- Verse of the day + curated feed (CMS) ---
+
+  @Query("SELECT * FROM votd_entries WHERE date IS NOT NULL")
+  fun votdOverrides(): Flow<List<VotdEntity>>
+
+  @Query("SELECT * FROM votd_entries WHERE date IS NULL ORDER BY order_index, id")
+  fun votdPool(): Flow<List<VotdEntity>>
+
+  @Insert(onConflict = OnConflictStrategy.REPLACE)
+  suspend fun insertVotdEntries(entries: List<VotdEntity>)
+
+  @Query("DELETE FROM votd_entries")
+  suspend fun deleteAllVotd()
+
+  @Query("SELECT * FROM posts WHERE published_at IS NOT NULL ORDER BY published_at DESC LIMIT 20")
+  fun publishedPosts(): Flow<List<PostEntity>>
+
+  @Insert(onConflict = OnConflictStrategy.REPLACE)
+  suspend fun insertPosts(posts: List<PostEntity>)
+
+  @Query("DELETE FROM posts")
+  suspend fun deleteAllPosts()
+
   // --- Notes ---
 
   @Query("SELECT * FROM notes ORDER BY updatedAt DESC")

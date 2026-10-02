@@ -3,13 +3,16 @@ package com.hooloovoochimico.kmp.hbible.ui.reader
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hooloovoochimico.kmp.hbible.data.BibleRepository
+import com.hooloovoochimico.kmp.hbible.data.CmsRepository
 import com.hooloovoochimico.kmp.hbible.data.LastPosition
 import com.hooloovoochimico.kmp.hbible.data.SettingsRepository
 import com.hooloovoochimico.kmp.hbible.data.ai.AiChatMessage
 import com.hooloovoochimico.kmp.hbible.data.ai.AiGateway
 import com.hooloovoochimico.kmp.hbible.data.local.BookEntity
 import com.hooloovoochimico.kmp.hbible.data.local.BookInfoEntity
+import com.hooloovoochimico.kmp.hbible.data.local.PostEntity
 import com.hooloovoochimico.kmp.hbible.data.local.VerseEntity
+import com.hooloovoochimico.kmp.hbible.data.local.VotdEntity
 import com.hooloovoochimico.kmp.hbible.ui.common.VerseRef
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -61,11 +64,20 @@ sealed interface ReaderUiState {
   ) : ReaderUiState
 }
 
+/** Verse of the day with its resolved text, ready to display in the reader home. */
+data class VotdDisplay(
+  val ref: VerseRef,
+  val translation: String,
+  val text: String,
+  val note: String?,
+)
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class ReaderViewModel(
   private val repository: BibleRepository,
   private val settingsRepository: SettingsRepository,
   private val aiGateway: AiGateway,
+  private val cmsRepository: CmsRepository,
 ) : ViewModel() {
 
   private val initialPosition = settingsRepository.loadLastPosition()
@@ -136,6 +148,29 @@ class ReaderViewModel(
         }
       }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+  /** Verse of the day (CMS), with the verse text resolved in the preferred translation. */
+  val votd: StateFlow<VotdDisplay?> =
+    cmsRepository.votdForToday().flatMapLatest<VotdEntity?, VotdDisplay?> { entry ->
+      if (entry == null) {
+        flowOf(null)
+      } else {
+        kotlinx.coroutines.flow.flow {
+          val translation = entry.translation ?: selection.value.translation
+          val text = repository.verse(translation, entry.book, entry.chapter, entry.verse)?.text
+          if (text != null) {
+            emit(VotdDisplay(VerseRef(entry.book, entry.chapter, entry.verse), translation, text, entry.note))
+          } else {
+            emit(null)
+          }
+        }
+      }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+  /** Curated feed items (CMS), newest first. */
+  val posts: StateFlow<List<PostEntity>> =
+    cmsRepository.publishedPosts()
+      .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
   fun openVerseDetail(verses: List<VerseRef>, index: Int = 0) {
     if (verses.isEmpty()) return

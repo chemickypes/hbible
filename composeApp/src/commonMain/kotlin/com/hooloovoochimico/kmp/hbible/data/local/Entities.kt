@@ -144,3 +144,60 @@ data class BookInfoEntity(
   val model: String = "",
   val updatedAt: Long,
 )
+
+/**
+ * Sync state of one content package (manifest path → last applied hash), used
+ * by [com.hooloovoochimico.kmp.hbible.data.content.ContentSyncer] to decide
+ * which packages changed and must be re-downloaded from the CMS.
+ */
+@Entity(tableName = "content_state")
+data class ContentStateEntity(
+  /** Manifest package path, e.g. "bible/NR.json" or "originals/01.json". */
+  @PrimaryKey @ColumnInfo(name = "package_id") val packageId: String,
+  val hash: String,
+  /** Manifest version the hash was taken from. */
+  val version: String,
+  @ColumnInfo(name = "synced_at") val syncedAt: Long,
+)
+
+/** Metadata of an installed Bible translation (from the CMS package's `meta`). */
+@Entity(tableName = "translation_meta")
+data class TranslationMetaEntity(
+  @PrimaryKey val abbr: String,
+  val name: String,
+  val description: String = "",
+  val publisher: String = "",
+  val year: String = "",
+  val copyright: String = "",
+)
+
+/** Verse of the day from the CMS: date=null → rotation pool, date set → calendar override. */
+@Entity(tableName = "votd_entries")
+data class VotdEntity(
+  @PrimaryKey(autoGenerate = true) val id: Long = 0,
+  /** 'YYYY-MM-DD' fixed date, null = rotation pool. */
+  val date: String? = null,
+  val book: Int,
+  val chapter: Int,
+  val verse: Int,
+  /** Preferred translation (fallback: reader's current one). */
+  val translation: String? = null,
+  /** Optional curated note (markdown). */
+  val note: String? = null,
+  /** Order inside the rotation pool. */
+  @ColumnInfo(name = "order_index") val orderIndex: Int = 0,
+)
+
+/** Curated feed item ("condivisioni") published by the CMS. */
+@Entity(tableName = "posts")
+data class PostEntity(
+  @PrimaryKey val slug: String,
+  val title: String,
+  /** Markdown body. */
+  val body: String,
+  /** Optional linked verse (book 0 = no link). */
+  val book: Int = 0,
+  val chapter: Int = 0,
+  val verse: Int = 0,
+  @ColumnInfo(name = "published_at") val publishedAt: String? = null,
+)

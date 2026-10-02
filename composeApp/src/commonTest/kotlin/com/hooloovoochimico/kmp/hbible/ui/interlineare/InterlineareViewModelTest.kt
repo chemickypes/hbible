@@ -133,6 +133,14 @@ private class FakeSettingsRepository : SettingsRepository {
 
   override fun saveInterlinearPosition(position: InterlinearPosition) {}
 
+  override fun loadCmsBaseUrl(): String = ""
+
+  override fun saveCmsBaseUrl(url: String) {}
+
+  override fun loadAutoUpdateCheck(): Boolean = false
+
+  override fun saveAutoUpdateCheck(enabled: Boolean) {}
+
   override fun loadAiConfig(): com.hooloovoochimico.kmp.hbible.data.ai.AiConfig =
     com.hooloovoochimico.kmp.hbible.data.ai.AiConfig()
 

@@ -17,9 +17,9 @@ import org.koin.dsl.module
  * istanza, con lo scoping del sorgente.
  */
 val viewModelModule = module {
-    viewModel { ReaderViewModel(get(), get(), get()) }
+    viewModel { ReaderViewModel(get(), get(), get(), get()) }
     viewModel { NotesViewModel(get()) }
     viewModel { ExploreViewModel(get(), get(), get(), get()) }
     viewModel { InterlineareViewModel(get(), get()) }
-    viewModel { SettingsViewModel(get()) }
+    viewModel { SettingsViewModel(get(), get()) }
 }

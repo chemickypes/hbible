@@ -25,8 +25,12 @@ expect object BibleDatabaseConstructor : RoomDatabaseConstructor<BibleDatabase> 
     LexemeEntity::class,
     NoteEntity::class,
     BookInfoEntity::class,
+    ContentStateEntity::class,
+    TranslationMetaEntity::class,
+    VotdEntity::class,
+    PostEntity::class,
   ],
-  version = 13,
+  version = 15,
   exportSchema = false,
 )
 abstract class BibleDatabase : RoomDatabase() {
@@ -57,6 +61,34 @@ internal object BibleMigrationSql {
       "`lang` TEXT NOT NULL, `number` TEXT NOT NULL, `romanized` TEXT NOT NULL, " +
       "`gloss` TEXT NOT NULL, `gloss_it` TEXT NOT NULL, " +
       "PRIMARY KEY(`lang`, `number`))"
+
+  /** Content sync state (CMS packages already applied) — migration 13→14. */
+  const val CREATE_CONTENT_STATE =
+    "CREATE TABLE IF NOT EXISTS `content_state` (" +
+      "`package_id` TEXT NOT NULL PRIMARY KEY, " +
+      "`hash` TEXT NOT NULL, `version` TEXT NOT NULL, `synced_at` INTEGER NOT NULL)"
+
+  /** Metadata of installed translations (from CMS package meta) — migration 13→14. */
+  const val CREATE_TRANSLATION_META =
+    "CREATE TABLE IF NOT EXISTS `translation_meta` (" +
+      "`abbr` TEXT NOT NULL PRIMARY KEY, " +
+      "`name` TEXT NOT NULL, `description` TEXT NOT NULL, `publisher` TEXT NOT NULL, " +
+      "`year` TEXT NOT NULL, `copyright` TEXT NOT NULL)"
+
+  /** Verse-of-the-day entries (pool + overrides) — migration 14→15. */
+  const val CREATE_VOTD =
+    "CREATE TABLE IF NOT EXISTS `votd_entries` (" +
+      "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+      "`date` TEXT, `book` INTEGER NOT NULL, `chapter` INTEGER NOT NULL, `verse` INTEGER NOT NULL, " +
+      "`translation` TEXT, `note` TEXT, `order_index` INTEGER NOT NULL)"
+
+  /** Curated feed items — migration 14→15. */
+  const val CREATE_POSTS =
+    "CREATE TABLE IF NOT EXISTS `posts` (" +
+      "`slug` TEXT NOT NULL PRIMARY KEY, " +
+      "`title` TEXT NOT NULL, `body` TEXT NOT NULL, " +
+      "`book` INTEGER NOT NULL, `chapter` INTEGER NOT NULL, `verse` INTEGER NOT NULL, " +
+      "`published_at` TEXT)"
 }
 
 /**

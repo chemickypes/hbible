@@ -1,0 +1,35 @@
+package com.hooloovoochimico.kmp.hbible.data.content
+
+import kotlinx.serialization.Serializable
+
+/** `/content/manifest.json` served by the CMS (see bibbia-interlineare-project). */
+@Serializable
+data class ContentManifest(
+  val version: String = "",
+  val generatedAt: String = "",
+  val packages: Map<String, PackageInfo> = emptyMap(),
+)
+
+/** One package entry in the manifest: SHA-256 of the file content. */
+@Serializable
+data class PackageInfo(
+  val hash: String,
+  val size: Long = 0,
+)
+
+/** Result of a manifest diff against the locally applied packages. */
+data class UpdateCheck(
+  /** Remote manifest version, null when the check failed. */
+  val version: String?,
+  /** Package paths whose remote hash differs from the local state. */
+  val changed: List<String>,
+  /** Non-null when the check could not complete. */
+  val error: String?,
+)
+
+/** Result of a full sync run. */
+data class SyncResult(
+  val version: String,
+  val applied: List<String>,
+  val failed: Map<String, String>,
+)

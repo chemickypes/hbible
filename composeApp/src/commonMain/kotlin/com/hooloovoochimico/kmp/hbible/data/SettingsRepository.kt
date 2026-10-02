@@ -59,6 +59,18 @@ interface SettingsRepository {
 
   fun saveInterlinearPosition(position: InterlinearPosition)
 
+  // --- Content sync (CMS) ---
+
+  /** CMS base URL, e.g. "http://192.168.1.10:3001". Empty = sync disabled. */
+  fun loadCmsBaseUrl(): String
+
+  fun saveCmsBaseUrl(url: String)
+
+  /** When true, updates are checked (and downloaded) on app open. */
+  fun loadAutoUpdateCheck(): Boolean
+
+  fun saveAutoUpdateCheck(enabled: Boolean)
+
   // --- AI configuration ---
 
   fun loadAiConfig(): AiConfig
@@ -107,6 +119,18 @@ class DefaultSettingsRepository(
     ThemePreferences.saveInterlinearPosition(settings, position)
   }
 
+  override fun loadCmsBaseUrl(): String = ThemePreferences.loadCmsBaseUrl(settings)
+
+  override fun saveCmsBaseUrl(url: String) {
+    ThemePreferences.saveCmsBaseUrl(settings, url)
+  }
+
+  override fun loadAutoUpdateCheck(): Boolean = ThemePreferences.loadAutoUpdateCheck(settings)
+
+  override fun saveAutoUpdateCheck(enabled: Boolean) {
+    ThemePreferences.saveAutoUpdateCheck(settings, enabled)
+  }
+
   override fun loadAiConfig(): AiConfig = AiSettingsStore.load(aiSettings)
 
   override fun saveAiConfig(config: AiConfig) {
@@ -128,6 +152,8 @@ object ThemePreferences {
   private const val LAST_INTERLINEAR_BOOK_KEY = "last_interlinear_book"
   private const val LAST_INTERLINEAR_CHAPTER_KEY = "last_interlinear_chapter"
   private const val LAST_INTERLINEAR_VERSE_KEY = "last_interlinear_verse"
+  private const val CMS_BASE_URL_KEY = "cms_base_url"
+  private const val AUTO_UPDATE_CHECK_KEY = "auto_update_check"
 
   fun load(settings: Settings): ThemeMode {
     val name = settings.getStringOrNull(KEY)
@@ -178,5 +204,18 @@ object ThemePreferences {
     settings.putInt(LAST_INTERLINEAR_BOOK_KEY, position.book)
     settings.putInt(LAST_INTERLINEAR_CHAPTER_KEY, position.chapter)
     settings.putInt(LAST_INTERLINEAR_VERSE_KEY, position.verse)
+  }
+
+  fun loadCmsBaseUrl(settings: Settings): String = settings.getStringOrNull(CMS_BASE_URL_KEY) ?: ""
+
+  fun saveCmsBaseUrl(settings: Settings, url: String) {
+    settings.putString(CMS_BASE_URL_KEY, url)
+  }
+
+  fun loadAutoUpdateCheck(settings: Settings): Boolean =
+    settings.getBoolean(AUTO_UPDATE_CHECK_KEY, true)
+
+  fun saveAutoUpdateCheck(settings: Settings, enabled: Boolean) {
+    settings.putBoolean(AUTO_UPDATE_CHECK_KEY, enabled)
   }
 }
