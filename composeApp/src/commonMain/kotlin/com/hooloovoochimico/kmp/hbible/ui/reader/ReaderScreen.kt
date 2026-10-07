@@ -162,7 +162,7 @@ fun ReaderScreen(
         Text("Preparazione della biblioteca", style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(8.dp))
         Text(
-          "Importo testi, lessico e riferimenti: accade solo alla prima apertura.",
+          "Installo testi, lessico e riferimenti: accade solo alla prima apertura.",
           style = MaterialTheme.typography.bodyMedium,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
           textAlign = TextAlign.Center,

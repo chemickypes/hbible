@@ -1,3 +1,4 @@
+import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -10,11 +11,33 @@ plugins {
     alias(libs.plugins.room)
 }
 
-// Fase 2: package dedicato per la classe Res generata (5 asset JSON in
-// composeResources/files, letti con Res.readBytes("files/<nome>.json")).
+// DB pre-costruito incluso nell'app (files/bible.db): generato dai JSON della
+// pipeline (src/commonMain/composeResources/files, sorgente anche per il CMS e
+// learn-hebrew) e dall'ultimo schema Room esportato. Rigenerato solo quando
+// cambiano JSON, schema o script; non versionato (~90 MB).
+val bundledDatabaseDir = layout.buildDirectory.dir("generated/bundledDatabase")
+val buildBundledDatabase by tasks.registering(Exec::class) {
+    description = "Genera files/bible.db con tools/build_bible_db.py"
+    val script = rootProject.file("tools/build_bible_db.py")
+    val output = bundledDatabaseDir.map { it.file("files/bible.db") }
+    inputs.files(fileTree("src/commonMain/composeResources/files") { include("*.json") })
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.dir("schemas").withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.file(script).withPathSensitivity(PathSensitivity.RELATIVE)
+    outputs.file(output)
+    commandLine("python3", "-I", script.absolutePath, "--out", output.get().asFile.absolutePath)
+}
+
 compose.resources {
     generateResClass = always
     packageOfResClass = "com.hooloovoochimico.kmp.hbible.resources"
+    // Le risorse dell'app vengono SOLO dalla cartella generata (bible.db): i JSON
+    // in src/commonMain/composeResources restano sorgente della pipeline e non
+    // finiscono più nell'APK/app iOS.
+    customDirectory(
+        sourceSetName = "commonMain",
+        directoryProvider = buildBundledDatabase.map { bundledDatabaseDir.get() },
+    )
 }
 
 // Schema Room esportato per versione (composeApp/schemas/<db>/<versione>.json):
@@ -100,6 +123,39 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
+
+    // Firma di release da keystore.properties (root, gitignored) con chiavi
+    // storeFile/storePassword/keyAlias/keyPassword. Senza file la release è
+    // firmata con la chiave di debug: installabile per provarla in locale,
+    // NON pubblicabile (il Play Store rifiuta APK/AAB firmati in debug).
+    val keystoreFile = rootProject.file("keystore.properties")
+    val releaseSigning =
+        if (keystoreFile.exists()) {
+            val props = Properties().apply { keystoreFile.inputStream().use { load(it) } }
+            signingConfigs.create("release") {
+                storeFile = rootProject.file(props.getProperty("storeFile"))
+                storePassword = props.getProperty("storePassword")
+                keyAlias = props.getProperty("keyAlias")
+                keyPassword = props.getProperty("keyPassword")
+            }
+        } else {
+            signingConfigs.getByName("debug")
+        }
+
+    buildTypes {
+        getByName("debug") {
+            // HTTP in chiaro solo in debug: CMS di sviluppo su LAN/emulatore (10.0.2.2).
+            manifestPlaceholders["usesCleartextTraffic"] = "true"
+        }
+        getByName("release") {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = releaseSigning
+            // In release CMS e provider AI solo via HTTPS.
+            manifestPlaceholders["usesCleartextTraffic"] = "false"
         }
     }
 

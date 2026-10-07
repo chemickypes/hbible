@@ -2,8 +2,8 @@ package com.hooloovoochimico.kmp.hbible.platform
 
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import com.hooloovoochimico.kmp.hbible.data.local.BibleDatabase
+import com.hooloovoochimico.kmp.hbible.data.local.PrepackagedSQLiteDriver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import platform.Foundation.NSDocumentDirectory
@@ -25,5 +25,5 @@ private fun documentsDirectory(): String {
 
 actual fun bibleDatabaseBuilder(): RoomDatabase.Builder<BibleDatabase> =
   Room.databaseBuilder<BibleDatabase>(name = documentsDirectory() + "/" + BibleDatabase.DB_NAME)
-    .setDriver(BundledSQLiteDriver())
+    .setDriver(PrepackagedSQLiteDriver())
     .setQueryCoroutineContext(Dispatchers.IO)

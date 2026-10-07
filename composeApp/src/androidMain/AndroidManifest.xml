@@ -6,7 +6,9 @@
     <application
         android:name=".HBibleApplication"
         android:allowBackup="true"
-        android:usesCleartextTraffic="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:usesCleartextTraffic="${usesCleartextTraffic}"
         android:icon="@mipmap/ic_launcher"
         android:label="HBible"
         android:supportsRtl="true"

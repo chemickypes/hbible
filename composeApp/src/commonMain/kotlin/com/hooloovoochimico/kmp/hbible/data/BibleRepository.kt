@@ -8,14 +8,16 @@ import com.hooloovoochimico.kmp.hbible.data.local.LexemeEntity
 import com.hooloovoochimico.kmp.hbible.data.local.OriginalVerseEntity
 import com.hooloovoochimico.kmp.hbible.data.local.VerseEntity
 import com.hooloovoochimico.kmp.hbible.data.local.VerseRefRow
-import com.hooloovoochimico.kmp.hbible.data.local.withTransaction
-import com.hooloovoochimico.kmp.hbible.resources.Res
+import com.hooloovoochimico.kmp.hbible.data.local.copyFromBundled
+import com.hooloovoochimico.kmp.hbible.platform.withBundledDatabaseFile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
 
-/** Display names of the bundled translations, keyed by their database code. */
+/**
+ * Display names of the bundled translations, keyed by their database code. Must
+ * match TRANSLATION_ASSETS in tools/build_bible_db.py (the bundled database).
+ */
 val TRANSLATION_NAMES = mapOf(
   "NR" to "Nuova Riveduta",
   "R2" to "Riveduta 2020",
@@ -61,7 +63,7 @@ interface BibleRepository {
   /** Caches the Italian translation of a dictionary gloss. */
   suspend fun saveGlossIt(lang: String, number: String, glossIt: String)
 
-  /** Imports the bundled translations into the database on first launch. */
+  /** Restores bundled content missing from the user database (new translations, emptied tables). */
   suspend fun ensureImported()
 
   // --- Book info ---
@@ -124,133 +126,20 @@ class DefaultBibleRepository(
 
   override suspend fun ensureImported() = withContext(Dispatchers.Default) {
     val dao = db.bibleDao()
-    // Per-translation gate: a translation ships with any app update, so it
-    // must import on upgrade too, not only on first launch. The gate runs
-    // BEFORE the asset is read: on every start the check is a handful of
-    // COUNT queries, and the (multi-MB) JSON is parsed only when actually
-    // needed — never on the caller's main thread (see Dispatchers.Default).
-    // Graceful fallback: a bundled translation asset may be missing (e.g. an
-    // asset produced by a parallel pipeline that has not landed yet); a failed
-    // read/parse must skip that asset without aborting the other imports or
-    // crashing the app — the missing one simply imports when it ships.
-    for ((asset, abbr) in ASSETS) {
-      if (dao.translationVerseCount(abbr) > 0) continue
-      val doc =
-        try {
-          json.decodeFromString<BibleDoc>(Res.readBytes("files/$asset").decodeToString())
-        } catch (t: Throwable) {
-          println("ensureImported: skipping unavailable asset '$asset': ${t.message}")
-          continue
-        }
-      db.withTransaction {
-        // The books table is shared across translations: insert once, from the
-        // first imported asset, so names/abbreviations stay stable.
-        if (dao.bookCount() == 0) {
-          dao.insertBooks(doc.books.map { BookEntity(it.n, it.name, it.abbr, it.chapters) })
-        }
-        doc.verses.chunked(2000).forEach { chunk ->
-          dao.insertVerses(
-            chunk.map {
-              VerseEntity(
-                translation = doc.meta.abbr,
-                book = it.b,
-                chapter = it.c,
-                verse = it.v,
-                title = it.t,
-                text = it.x,
-              )
-            },
-          )
-        }
+    // Al primo avvio il driver ha già installato il DB pre-costruito
+    // (PrepackagedSQLiteDriver): qui restano solo pochi COUNT. Su un DB
+    // esistente le righe mancanti — una traduzione nuova arrivata con un
+    // aggiornamento, una tabella svuotata da una migrazione — si ricopiano dal
+    // DB incluso con ATTACH, senza più leggere JSON.
+    val translations = TRANSLATION_NAMES.keys.filter { dao.translationVerseCount(it) == 0 }
+    val tables =
+      buildList {
+        if (dao.bookCount() == 0) add("books")
+        if (dao.originalVerseCount() == 0) add("original_verses")
+        if (dao.crossReferenceCount() == 0) add("cross_references")
+        if (dao.lexemeCount() == 0) add("lexemes")
       }
-    }
-    if (dao.originalVerseCount() == 0) {
-      val doc =
-        json.decodeFromString<OriginalDoc>(Res.readBytes("files/$ORIGINALS_ASSET").decodeToString())
-      db.withTransaction {
-        doc.verses.chunked(3000).forEach { chunk ->
-          dao.insertOriginalVerses(
-            chunk.map {
-              OriginalVerseEntity(
-                book = it.b,
-                chapter = it.c,
-                verse = it.v,
-                lang = it.lang,
-                text = it.text,
-                transliteration = it.tr,
-                lemmas = it.lm,
-                italianNr = it.anr.joinToString(","),
-                italianR2 = it.ar2.joinToString(","),
-                italianR27 = it.ar27.joinToString(","),
-                italianDio = it.ar_dio.joinToString(","),
-                italianNd = it.ar_nd.joinToString(","),
-                italianCei = it.ar_cei.joinToString(","),
-                italianRic = it.ar_ric.joinToString(","),
-                italianMar = it.ar_mar.joinToString(","),
-                glosses = it.ge.joinToString("\t"),
-                glossesIt = it.gi.joinToString("\t"),
-              )
-            },
-          )
-        }
-      }
-    }
-    if (dao.crossReferenceCount() == 0) {
-      val doc =
-        json.decodeFromString<CrossRefDoc>(Res.readBytes("files/$CROSSREFS_ASSET").decodeToString())
-      db.withTransaction {
-        doc.refs.chunked(4000).forEach { chunk ->
-          dao.insertCrossReferences(
-            chunk.map {
-              CrossReferenceEntity(
-                fromBook = it[0],
-                fromChapter = it[1],
-                fromVerse = it[2],
-                toBook = it[3],
-                toChapter = it[4],
-                toVerse = it[5],
-              )
-            },
-          )
-        }
-      }
-    }
-    if (dao.lexemeCount() == 0) {
-      val doc =
-        json.decodeFromString<LexiconDoc>(Res.readBytes("files/$LEXICON_ASSET").decodeToString())
-      db.withTransaction {
-        doc.he.entries.chunked(2000).forEach { chunk ->
-          dao.insertLexemes(
-            chunk.map { (number, l) -> LexemeEntity("he", number, l.tr, l.g, glossIt = l.gi) },
-          )
-        }
-        doc.el.entries.chunked(2000).forEach { chunk ->
-          dao.insertLexemes(
-            chunk.map { (number, l) -> LexemeEntity("el", number, l.tr, l.g, glossIt = l.gi) },
-          )
-        }
-      }
-    }
-  }
-
-  companion object {
-    private val json = Json { ignoreUnknownKeys = true }
-    // Bundled translation assets with their database code: the abbr drives the
-    // import gate (COUNT) so a start never parses an asset just to learn it.
-    // Graceful fallback: newer assets may be missing — skip-and-log policy.
-    private val ASSETS =
-      listOf(
-        "nuova_riveduta.json" to "NR",
-        "riveduta_2020.json" to "R2",
-        "riveduta_1927.json" to "R27",
-        "diodati.json" to "DIO",
-        "nuova_diodati.json" to "ND",
-        "cei.json" to "CEI",
-        "ricciotti.json" to "RIC",
-        "martini.json" to "MAR",
-      )
-    private const val ORIGINALS_ASSET = "originals.json"
-    private const val CROSSREFS_ASSET = "crossrefs.json"
-    private const val LEXICON_ASSET = "lexicon.json"
+    if (translations.isEmpty() && tables.isEmpty()) return@withContext
+    withBundledDatabaseFile { path -> db.copyFromBundled(path, translations, tables) }
   }
 }
