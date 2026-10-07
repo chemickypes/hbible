@@ -67,10 +67,10 @@ fun BookInfoScreen(
   onSaveToNote: (String) -> Unit,
   onDismiss: () -> Unit,
   modifier: Modifier = Modifier,
-  viewModel: ReaderViewModel,
+  viewModel: BookInfoViewModel,
 ) {
   BackHandler(enabled = true, onBack = onDismiss)
-  val state by viewModel.bookInfoState.collectAsStateWithLifecycle()
+  val state by viewModel.state.collectAsStateWithLifecycle()
   val testament = if (book.n <= 39) "Antico Testamento" else "Nuovo Testamento"
 
   // --- chat state (transient) ---
@@ -161,7 +161,7 @@ fun BookInfoScreen(
               color = MaterialTheme.colorScheme.onSurfaceVariant,
               modifier = Modifier.weight(1f),
             )
-            IconButton(onClick = { viewModel.generateBookInfo() }, enabled = !state.busy) {
+            IconButton(onClick = { viewModel.generate() }, enabled = !state.busy) {
               Icon(
                 Icons.Default.Refresh,
                 contentDescription = "Rigenera introduzione",
@@ -186,7 +186,7 @@ fun BookInfoScreen(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.error,
           )
-          TextButton(onClick = { viewModel.generateBookInfo() }) { Text("Riprova") }
+          TextButton(onClick = { viewModel.generate() }) { Text("Riprova") }
         }
       }
     }

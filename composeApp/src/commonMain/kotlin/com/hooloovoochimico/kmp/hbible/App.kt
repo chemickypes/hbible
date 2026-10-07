@@ -1,6 +1,10 @@
 package com.hooloovoochimico.kmp.hbible
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.VerticalDivider
+import com.hooloovoochimico.kmp.hbible.ui.reader.BookInfoViewModel
+import com.hooloovoochimico.kmp.hbible.ui.reader.VerseDetailViewModel
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -9,7 +13,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Text
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.window.core.layout.WindowSizeClass
 import com.hooloovoochimico.kmp.hbible.theme.Dimens
 import com.hooloovoochimico.kmp.hbible.theme.Spacing
@@ -212,6 +216,7 @@ fun App() {
         val notesViewModel: NotesViewModel = koinViewModel()
         val exploreViewModel: ExploreViewModel = koinViewModel()
         val interlineareViewModel: InterlineareViewModel = koinViewModel()
+        val verseDetailViewModel: VerseDetailViewModel = koinViewModel()
         val settings by settingsViewModel.uiState.collectAsStateWithLifecycle()
         HBibleTheme(themeMode = settings.themeMode, dynamicColor = settings.dynamicColor) {
             HBibleAppShell(
@@ -220,6 +225,7 @@ fun App() {
                 exploreViewModel = exploreViewModel,
                 interlineareViewModel = interlineareViewModel,
                 settingsViewModel = settingsViewModel,
+                verseDetailViewModel = verseDetailViewModel,
             )
         }
     }
@@ -232,6 +238,7 @@ private fun HBibleAppShell(
   exploreViewModel: ExploreViewModel,
   interlineareViewModel: InterlineareViewModel,
   settingsViewModel: SettingsViewModel,
+  verseDetailViewModel: VerseDetailViewModel,
 ) {
   val navController = rememberNavController()
   val backStackEntry by navController.currentBackStackEntryAsState()
@@ -258,9 +265,19 @@ private fun HBibleAppShell(
   var selectionActive by remember { mutableStateOf(false) }
   val pendingScroll = remember { mutableStateOf<PendingScroll?>(null) }
 
+  // Finestre larghe (≥ 600dp: tablet, pieghevoli aperti, telefono in
+  // orizzontale): navigation rail fissa a sinistra al posto della bottom bar
+  // flottante, che su schermi ampi è lontana dal pollice e copre il testo.
+  val windowSizeClass = currentWindowAdaptiveInfoV2().windowSizeClass
+  val useRail = windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND)
+  // Finestre espanse (≥ 840dp: tablet in orizzontale, desktop windowing): il
+  // dettaglio versetto si apre in un pannello accanto al lettore invece che a
+  // tutto schermo. Sotto questa soglia due colonne sarebbero troppo strette.
+  val twoPane = windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND)
+
   // Insieme di versetti aperto nel dettaglio (sorgente: detailSet/detailIndex
   // di ReaderContent, rememberSaveable → qui a livello di guscio, condiviso
-  // con la destinazione VerseDetail).
+  // fra la destinazione VerseDetail e il pannello accanto al lettore).
   val refListSaver =
     Saver<List<VerseRef>, List<Int>>(
       save = { list -> list.flatMap { listOf(it.book, it.chapter, it.verse) } },
@@ -268,6 +285,8 @@ private fun HBibleAppShell(
     )
   var detailSet by rememberSaveable(stateSaver = refListSaver) { mutableStateOf(emptyList<VerseRef>()) }
   var detailIndex by rememberSaveable { mutableStateOf(0) }
+  // Dettaglio mostrato come pannello del lettore (solo con twoPane).
+  var detailInPane by rememberSaveable { mutableStateOf(false) }
 
   // Selezione corrente del lettore, letta al momento dell'uso nei callback.
   fun currentSelection(): ReaderSelection =
@@ -284,61 +303,89 @@ private fun HBibleAppShell(
     }
   }
 
+  // Porta il lettore sul capitolo del versetto e lo fa scorrere fino a lì.
+  fun syncReaderTo(target: VerseRef) {
+    pendingScroll.value = PendingScroll(target.book, target.chapter, target.verse)
+    val sel = currentSelection()
+    if (target.book != sel.book) {
+      readerViewModel.selectBook(target.book)
+      if (target.chapter != 1) readerViewModel.selectChapter(target.chapter)
+    } else if (target.chapter != sel.chapter) {
+      readerViewModel.selectChapter(target.chapter)
+    }
+  }
+
   // Porta il lettore al versetto indicato (sorgente: goToVerse di ReaderContent).
   val goToVerse: (Int, Int, Int) -> Unit = { book, chapter, verse ->
     navBarVisibleByScroll = true
     selectionActive = false
-    pendingScroll.value = PendingScroll(book, chapter, verse)
-    val sel = currentSelection()
-    if (book != sel.book) {
-      readerViewModel.selectBook(book)
-      if (chapter != 1) readerViewModel.selectChapter(chapter)
-    } else if (chapter != sel.chapter) {
-      readerViewModel.selectChapter(chapter)
-    }
+    syncReaderTo(VerseRef(book, chapter, verse))
     if (currentDestination?.hasRouteCompat<ReaderRoute>() != true) {
       goToTab(ReaderRoute)
     }
   }
 
+  fun setDetail(refs: List<VerseRef>) {
+    detailSet = refs
+    detailIndex = 0
+    verseDetailViewModel.open(refs, 0)
+  }
+
+  fun closeDetail() {
+    detailSet = emptyList()
+    detailIndex = 0
+    detailInPane = false
+    verseDetailViewModel.close()
+  }
+
   // Apre il dettaglio di un versetto da chip/riferimenti (sorgente: openDetailFor):
   // chiude editor/dettaglio correnti e porta il lettore al capitolo del versetto.
+  // Con twoPane il dettaglio si apre nel pannello del lettore.
   val openDetailFor: (VerseRef) -> Unit = { target ->
-    detailSet = listOf(target)
-    detailIndex = 0
-    readerViewModel.openVerseDetail(listOf(target), 0)
-    pendingScroll.value = PendingScroll(target.book, target.chapter, target.verse)
-    val sel = currentSelection()
-    if (target.book != sel.book) {
-      readerViewModel.selectBook(target.book)
-      if (target.chapter != 1) readerViewModel.selectChapter(target.chapter)
-    } else if (target.chapter != sel.chapter) {
-      readerViewModel.selectChapter(target.chapter)
-    }
-    navController.navigate(VerseDetailRoute(target.book, target.chapter, target.verse, 0, 1)) {
-      popUpTo(navController.graph.findStartDestination().id) { saveState = false }
-      launchSingleTop = true
+    setDetail(listOf(target))
+    syncReaderTo(target)
+    if (twoPane) {
+      detailInPane = true
+      if (currentDestination?.hasRouteCompat<ReaderRoute>() != true) goToTab(ReaderRoute)
+    } else {
+      navController.navigate(VerseDetailRoute(target.book, target.chapter, target.verse, 0, 1)) {
+        popUpTo(navController.graph.findStartDestination().id) { saveState = false }
+        launchSingleTop = true
+      }
     }
   }
 
   // Apre il dettaglio su una parola dalla tab Interlineare: stesso flusso di
   // openDetailFor (sincronizza il lettore sul capitolo così il dettaglio mostra
-  // anche il versetto italiano) ma senza popUpTo, così "indietro" torna
-  // all'interlineare, e con la parola da selezionare nella card lessico.
+  // anche il versetto italiano) ma sempre come destinazione e senza popUpTo,
+  // così "indietro" torna all'interlineare, con la parola da selezionare.
   val openInterlinearWord: (VerseRef, Int) -> Unit = { target, word ->
-    detailSet = listOf(target)
-    detailIndex = 0
-    readerViewModel.openVerseDetail(listOf(target), 0)
-    pendingScroll.value = PendingScroll(target.book, target.chapter, target.verse)
-    val sel = currentSelection()
-    if (target.book != sel.book) {
-      readerViewModel.selectBook(target.book)
-      if (target.chapter != 1) readerViewModel.selectChapter(target.chapter)
-    } else if (target.chapter != sel.chapter) {
-      readerViewModel.selectChapter(target.chapter)
-    }
+    setDetail(listOf(target))
+    detailInPane = false
+    syncReaderTo(target)
     navController.navigate(VerseDetailRoute(target.book, target.chapter, target.verse, 0, 1, word)) {
       launchSingleTop = true
+    }
+  }
+
+  // Cambio di larghezza con un dettaglio aperto (rotazione, resize, pieghevole):
+  // pannello → pagina quando la finestra si stringe, pagina → pannello quando si
+  // allarga (solo se la pagina è stata aperta dal lettore).
+  LaunchedEffect(twoPane) {
+    val destination = navController.currentDestination
+    if (!twoPane && detailInPane) {
+      detailInPane = false
+      val first = detailSet.firstOrNull()
+      if (first != null && destination.hasRouteCompat<ReaderRoute>()) {
+        navController.navigate(VerseDetailRoute(first.book, first.chapter, first.verse, detailIndex, detailSet.size))
+      }
+    } else if (
+      twoPane &&
+      destination.hasRouteCompat<VerseDetailRoute>() &&
+      navController.previousBackStackEntry?.destination.hasRouteCompat<ReaderRoute>()
+    ) {
+      navController.popBackStack()
+      detailInPane = detailSet.isNotEmpty()
     }
   }
 
@@ -357,12 +404,6 @@ private fun HBibleAppShell(
     goToTab(InterlineareRoute)
   }
 
-  // Finestre larghe (≥ 600dp: tablet, pieghevoli aperti, telefono in
-  // orizzontale): navigation rail fissa a sinistra al posto della bottom bar
-  // flottante, che su schermi ampi è lontana dal pollice e copre il testo.
-  val useRail =
-    currentWindowAdaptiveInfo().windowSizeClass
-      .isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND)
   val bottomClearance =
     if (useRail) {
       WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + Spacing.lg
@@ -370,246 +411,212 @@ private fun HBibleAppShell(
       Dimens.bottomBarClearance
     }
   val selectTab: (ReaderTab) -> Unit = { tab -> goToTab(tab.route) }
+  val shellScope = rememberCoroutineScope()
+
+  // Dettaglio versetto, identico come pagina e come pannello: cambiano solo la
+  // chiusura e cosa succede aprendo un riferimento.
+  @Composable
+  fun VerseDetail(initialWord: Int, fallback: VerseRef?, onClose: () -> Unit) {
+    VerseDetailContent(
+      readerViewModel = readerViewModel,
+      viewModel = verseDetailViewModel,
+      set = detailSet.ifEmpty { listOfNotNull(fallback) },
+      index = detailIndex,
+      initialWord = initialWord,
+      onIndexChange = { detailIndex = it },
+      onSaveAiToNote = { title, content, ref ->
+        shellScope.launch { saveChatToNote(title, content, ref.book, ref.chapter, ref.verse) }
+      },
+      onDismiss = {
+        closeDetail()
+        onClose()
+      },
+      onOpenReference = { target ->
+        // Sorgente: detailSet = emptyList() chiude l'overlay, poi si porta il
+        // lettore al versetto.
+        closeDetail()
+        onClose()
+        goToVerse(target.book, target.chapter, target.verse)
+      },
+      onOpenDetail = openDetailFor,
+      onOpenInterlinear = openInterlinearFor,
+    )
+  }
 
   Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
-  Row(Modifier.fillMaxSize()) {
-    if (useRail) {
-      AppNavigationRail(currentRoute = currentDestination, onSelect = selectTab)
-    }
-    Box(Modifier.weight(1f).fillMaxHeight()) {
-      CompositionLocalProvider(LocalBottomBarClearance provides bottomClearance) {
-        NavHost(navController = navController, startDestination = ReaderRoute, modifier = Modifier.fillMaxSize()) {
-          composable<ReaderRoute> {
-            ReaderScreen(
-              pendingScroll = pendingScroll,
-              onNavBarVisibleChange = { navBarVisibleByScroll = it },
-              onSelectionActiveChange = { selectionActive = it },
-              onOpenVerseDetail = { refs ->
-                detailSet = refs
-                detailIndex = 0
-                readerViewModel.openVerseDetail(refs, 0)
-                refs.firstOrNull()?.let { ref ->
-                  navController.navigate(VerseDetailRoute(ref.book, ref.chapter, ref.verse, 0, refs.size))
-                }
-              },
-              onOpenBookInfo = {
-                val book = currentSelection().book
-                if (book > 0) navController.navigate(BookInfoRoute(book))
-              },
-              viewModel = readerViewModel,
-              settingsViewModel = settingsViewModel,
-            )
-          }
-          composable<NotesRoute> {
-            val readerState by readerViewModel.uiState.collectAsStateWithLifecycle()
-            val books = (readerState as? ReaderUiState.Ready)?.books.orEmpty()
-            ContentWidth {
-              NotesScreen(
-                books = books,
-                onDismiss = { goToTab(ReaderRoute) },
-                onOpenNote = { id -> navController.navigate(NoteEditorRoute(id)) },
-                onNewNote = { navController.navigate(NoteEditorRoute(null)) },
-                viewModel = notesViewModel,
-              )
-            }
-          }
-          composable<ExploreRoute> {
-            val readerState by readerViewModel.uiState.collectAsStateWithLifecycle()
-            val selection = (readerState as? ReaderUiState.Ready)?.selection
-            val scope = rememberCoroutineScope()
-            ContentWidth {
-              ExploreScreen(
-                translation = selection?.translation ?: "NR",
-                translationName = TRANSLATION_NAMES[selection?.translation ?: "NR"] ?: "",
-                onDismiss = { goToTab(ReaderRoute) },
-                onGoToVerse = goToVerse,
-                onOpenNote = { id ->
-                  goToTab(NotesRoute)
-                  navController.navigate(NoteEditorRoute(id))
-                },
-                onSaveReflectionToNote = { theme, reflection ->
-                  scope.launch {
-                    saveChatToNote("Pronto soccorso · $theme", reflection, 0, 0, 0)
-                  }
-                },
-                viewModel = exploreViewModel,
-              )
-            }
-          }
-          composable<InterlineareRoute> {
-            val readerState by readerViewModel.uiState.collectAsStateWithLifecycle()
-            val selection = (readerState as? ReaderUiState.Ready)?.selection
-            // La traduzione corrente del lettore decide il canale di allineamento
-            // ar_<versione> e il versetto italiano mostrato dalla glossa.
-            LaunchedEffect(selection?.translation) {
-              interlineareViewModel.setTranslation(selection?.translation ?: "NR")
-            }
-            InterlineareScreen(
-              translationName = TRANSLATION_NAMES[selection?.translation ?: "NR"] ?: "",
-              onOpenWord = openInterlinearWord,
-              viewModel = interlineareViewModel,
-            )
-          }
-          composable<SettingsRoute> {
-            val readerState by readerViewModel.uiState.collectAsStateWithLifecycle()
-            val selection = (readerState as? ReaderUiState.Ready)?.selection
-            ContentWidth {
-              SettingsScreen(
-                selectionTranslation = selection?.translation ?: "NR",
-                onSelectTranslation = readerViewModel::selectTranslation,
-                onOpenAiSettings = { navController.navigate(AiSettingsRoute) },
-                onDismiss = { goToTab(ReaderRoute) },
-                viewModel = settingsViewModel,
-              )
-            }
-          }
-          composable<VerseDetailRoute> { entry ->
-            val route = entry.toRoute<VerseDetailRoute>()
-            val readerState by readerViewModel.uiState.collectAsStateWithLifecycle()
-            val ready = readerState as? ReaderUiState.Ready
-            val books = ready?.books.orEmpty()
-            val verses = ready?.verses.orEmpty()
-            val selection = ready?.selection
-            val detail by readerViewModel.verseDetail.collectAsStateWithLifecycle()
-            val set = detailSet.ifEmpty { listOf(VerseRef(route.book, route.chapter, route.verse)) }
-            val index = detailIndex.coerceIn(0, set.lastIndex.coerceAtLeast(0))
-            val currentDetailRef = set.getOrNull(index) ?: VerseRef(route.book, route.chapter, route.verse)
-            // Ripristino dopo process death (l'insieme dettaglio è rememberSaveable
-            // nel guscio): riapre la richiesta se il ViewModel non ne ha una valida.
-            LaunchedEffect(Unit) {
-              val current = readerViewModel.verseDetail.value
-              if (current == null || current.ref != currentDetailRef) {
-                readerViewModel.openVerseDetail(set, index)
-              }
-            }
-            val scope = rememberCoroutineScope()
-            ContentWidth {
-              VerseDetailScreen(
-                verse = verses.firstOrNull {
-                  it.book == currentDetailRef.book && it.chapter == currentDetailRef.chapter && it.verse == currentDetailRef.verse
-                },
-                detail = detail?.takeIf { it.ref == currentDetailRef },
-                reference = "${books.firstOrNull { it.n == currentDetailRef.book }?.name ?: ""} " +
-                  "${currentDetailRef.chapter}:${currentDetailRef.verse}",
-                count = set.size,
-                index = index,
-                translation = selection?.translation ?: "NR",
-                translationName = TRANSLATION_NAMES[selection?.translation ?: "NR"] ?: "",
-                bookName = { n -> books.firstOrNull { it.n == n }?.name ?: "" },
-                initialWord = route.word,
-                onSaveAiToNote =
-                  if (readerViewModel.aiConfigured) {
-                    { content ->
-                      scope.launch {
-                        saveChatToNote(
-                          "Note su ${books.firstOrNull { it.n == currentDetailRef.book }?.name.orEmpty()} " +
-                            "${currentDetailRef.chapter}:${currentDetailRef.verse}",
-                          content,
-                          currentDetailRef.book,
-                          currentDetailRef.chapter,
-                          currentDetailRef.verse,
-                        )
-                      }
-                    }
-                  } else {
-                    null
-                  },
-                onDismiss = {
-                  detailSet = emptyList()
-                  detailIndex = 0
-                  readerViewModel.closeVerseDetail()
-                  navController.popBackStack()
-                },
-                onPrev = {
-                  if (index > 0) {
-                    detailIndex -= 1
-                    readerViewModel.openVerseDetail(set, detailIndex)
-                  }
-                },
-                onNext = {
-                  if (index < set.lastIndex) {
-                    detailIndex += 1
-                    readerViewModel.openVerseDetail(set, detailIndex)
-                  }
-                },
-                onOpenReference = { target ->
-                  detailSet = emptyList()
-                  detailIndex = 0
-                  readerViewModel.closeVerseDetail()
-                  // Sorgente: detailSet = emptyList() chiude l'overlay → qui si rimuove
-                  // la destinazione dal back stack, poi si porta il lettore al versetto.
-                  navController.popBackStack()
-                  goToVerse(target.book, target.chapter, target.verse)
-                },
-                onOpenDetail = openDetailFor,
-                onOpenInterlinear = { openInterlinearFor(currentDetailRef) },
-                viewModel = readerViewModel,
-              )
-            }
-          }
-          composable<BookInfoRoute> { entry ->
-            val route = entry.toRoute<BookInfoRoute>()
-            val readerState by readerViewModel.uiState.collectAsStateWithLifecycle()
-            val books = (readerState as? ReaderUiState.Ready)?.books.orEmpty()
-            val infoBook = books.firstOrNull { it.n == route.book }
-            if (infoBook != null) {
-              LaunchedEffect(infoBook.n) { readerViewModel.openBookInfo(infoBook.n) }
-              val scope = rememberCoroutineScope()
-              ContentWidth {
-                BookInfoScreen(
-                  book = infoBook,
-                  onSaveToNote = { content ->
-                    scope.launch {
-                      val id = notesViewModel.createNoteFromChat("Chat su ${infoBook.name}", content, infoBook.n, 0, 0)
-                      navController.navigate(NoteEditorRoute(id))
+    Row(Modifier.fillMaxSize()) {
+      if (useRail) {
+        AppNavigationRail(currentRoute = currentDestination, onSelect = selectTab)
+      }
+      Box(Modifier.weight(1f).fillMaxHeight()) {
+        CompositionLocalProvider(LocalBottomBarClearance provides bottomClearance) {
+          NavHost(navController = navController, startDestination = ReaderRoute, modifier = Modifier.fillMaxSize()) {
+            composable<ReaderRoute> {
+              Row(Modifier.fillMaxSize()) {
+                ReaderScreen(
+                  pendingScroll = pendingScroll,
+                  onNavBarVisibleChange = { navBarVisibleByScroll = it },
+                  onSelectionActiveChange = { selectionActive = it },
+                  onOpenVerseDetail = { refs ->
+                    val first = refs.firstOrNull() ?: return@ReaderScreen
+                    setDetail(refs)
+                    if (twoPane) {
+                      detailInPane = true
+                    } else {
+                      navController.navigate(VerseDetailRoute(first.book, first.chapter, first.verse, 0, refs.size))
                     }
                   },
-                  onDismiss = {
-                    readerViewModel.closeBookInfo()
-                    navController.popBackStack()
+                  onOpenBookInfo = {
+                    val book = currentSelection().book
+                    if (book > 0) navController.navigate(BookInfoRoute(book))
                   },
                   viewModel = readerViewModel,
+                  settingsViewModel = settingsViewModel,
+                  modifier = Modifier.weight(1f),
                 )
+                if (twoPane && detailInPane && detailSet.isNotEmpty()) {
+                  VerticalDivider()
+                  Box(Modifier.width(Dimens.detailPaneWidth).fillMaxHeight()) {
+                    VerseDetail(initialWord = -1, fallback = null, onClose = {})
+                  }
+                }
               }
             }
-          }
-          composable<NoteEditorRoute> { entry ->
-            val route = entry.toRoute<NoteEditorRoute>()
-            val noteId = route.noteId ?: 0L
-            val editorNote =
-              remember(noteId) { mutableStateOf<NoteEntity?>(null) }
-            LaunchedEffect(noteId) {
-              editorNote.value = if (noteId > 0) notesViewModel.note(noteId) else null
-            }
-            val readerState by readerViewModel.uiState.collectAsStateWithLifecycle()
-            val books = (readerState as? ReaderUiState.Ready)?.books.orEmpty()
-            // Sorgente: l'editor si mostra solo a nota caricata (o nuova).
-            if (noteId == 0L || editorNote.value != null) {
+            composable<NotesRoute> {
+              val readerState by readerViewModel.uiState.collectAsStateWithLifecycle()
+              val books = (readerState as? ReaderUiState.Ready)?.books.orEmpty()
               ContentWidth {
-                NoteEditorScreen(
-                  note = editorNote.value,
+                NotesScreen(
                   books = books,
-                  loadVerse = { ref -> readerViewModel.verse(ref.book, ref.chapter, ref.verse)?.text },
-                  onOpenReference = { target -> goToVerse(target.book, target.chapter, target.verse) },
-                  onOpenDetail = openDetailFor,
-                  onDismiss = { navController.popBackStack() },
+                  onDismiss = { goToTab(ReaderRoute) },
+                  onOpenNote = { id -> navController.navigate(NoteEditorRoute(id)) },
+                  onNewNote = { navController.navigate(NoteEditorRoute(null)) },
                   viewModel = notesViewModel,
                 )
               }
             }
-          }
-          composable<AiSettingsRoute> {
-            ContentWidth {
-              AiSettingsScreen(
-                onDismiss = { navController.popBackStack() },
-                viewModel = settingsViewModel,
+            composable<ExploreRoute> {
+              val readerState by readerViewModel.uiState.collectAsStateWithLifecycle()
+              val selection = (readerState as? ReaderUiState.Ready)?.selection
+              val scope = rememberCoroutineScope()
+              ContentWidth {
+                ExploreScreen(
+                  translation = selection?.translation ?: "NR",
+                  translationName = TRANSLATION_NAMES[selection?.translation ?: "NR"] ?: "",
+                  onDismiss = { goToTab(ReaderRoute) },
+                  onGoToVerse = goToVerse,
+                  onOpenNote = { id ->
+                    goToTab(NotesRoute)
+                    navController.navigate(NoteEditorRoute(id))
+                  },
+                  onSaveReflectionToNote = { theme, reflection ->
+                    scope.launch {
+                      saveChatToNote("Pronto soccorso · $theme", reflection, 0, 0, 0)
+                    }
+                  },
+                  viewModel = exploreViewModel,
+                )
+              }
+            }
+            composable<InterlineareRoute> {
+              val readerState by readerViewModel.uiState.collectAsStateWithLifecycle()
+              val selection = (readerState as? ReaderUiState.Ready)?.selection
+              // La traduzione corrente del lettore decide il canale di allineamento
+              // ar_<versione> e il versetto italiano mostrato dalla glossa.
+              LaunchedEffect(selection?.translation) {
+                interlineareViewModel.setTranslation(selection?.translation ?: "NR")
+              }
+              InterlineareScreen(
+                translationName = TRANSLATION_NAMES[selection?.translation ?: "NR"] ?: "",
+                onOpenWord = openInterlinearWord,
+                viewModel = interlineareViewModel,
               )
+            }
+            composable<SettingsRoute> {
+              val readerState by readerViewModel.uiState.collectAsStateWithLifecycle()
+              val selection = (readerState as? ReaderUiState.Ready)?.selection
+              ContentWidth {
+                SettingsScreen(
+                  selectionTranslation = selection?.translation ?: "NR",
+                  onSelectTranslation = readerViewModel::selectTranslation,
+                  onOpenAiSettings = { navController.navigate(AiSettingsRoute) },
+                  onDismiss = { goToTab(ReaderRoute) },
+                  viewModel = settingsViewModel,
+                )
+              }
+            }
+            composable<VerseDetailRoute> { entry ->
+              val route = entry.toRoute<VerseDetailRoute>()
+              ContentWidth {
+                VerseDetail(
+                  initialWord = route.word,
+                  fallback = VerseRef(route.book, route.chapter, route.verse),
+                  onClose = { navController.popBackStack() },
+                )
+              }
+            }
+            composable<BookInfoRoute> { entry ->
+              val route = entry.toRoute<BookInfoRoute>()
+              val readerState by readerViewModel.uiState.collectAsStateWithLifecycle()
+              val books = (readerState as? ReaderUiState.Ready)?.books.orEmpty()
+              val infoBook = books.firstOrNull { it.n == route.book }
+              if (infoBook != null) {
+                // VM legato a questa destinazione: lo stato si azzera uscendo.
+                val bookInfoViewModel: BookInfoViewModel = koinViewModel()
+                LaunchedEffect(infoBook.n) { bookInfoViewModel.open(infoBook.n) }
+                val scope = rememberCoroutineScope()
+                ContentWidth {
+                  BookInfoScreen(
+                    book = infoBook,
+                    onSaveToNote = { content ->
+                      scope.launch {
+                        val id = notesViewModel.createNoteFromChat("Chat su ${infoBook.name}", content, infoBook.n, 0, 0)
+                        navController.navigate(NoteEditorRoute(id))
+                      }
+                    },
+                    onDismiss = { navController.popBackStack() },
+                    viewModel = bookInfoViewModel,
+                  )
+                }
+              }
+            }
+            composable<NoteEditorRoute> { entry ->
+              val route = entry.toRoute<NoteEditorRoute>()
+              val noteId = route.noteId ?: 0L
+              val editorNote =
+                remember(noteId) { mutableStateOf<NoteEntity?>(null) }
+              LaunchedEffect(noteId) {
+                editorNote.value = if (noteId > 0) notesViewModel.note(noteId) else null
+              }
+              val readerState by readerViewModel.uiState.collectAsStateWithLifecycle()
+              val books = (readerState as? ReaderUiState.Ready)?.books.orEmpty()
+              // Sorgente: l'editor si mostra solo a nota caricata (o nuova).
+              if (noteId == 0L || editorNote.value != null) {
+                ContentWidth {
+                  NoteEditorScreen(
+                    note = editorNote.value,
+                    books = books,
+                    loadVerse = { ref -> readerViewModel.verse(ref.book, ref.chapter, ref.verse)?.text },
+                    onOpenReference = { target -> goToVerse(target.book, target.chapter, target.verse) },
+                    onOpenDetail = openDetailFor,
+                    onDismiss = { navController.popBackStack() },
+                    viewModel = notesViewModel,
+                  )
+                }
+              }
+            }
+            composable<AiSettingsRoute> {
+              ContentWidth {
+                AiSettingsScreen(
+                  onDismiss = { navController.popBackStack() },
+                  viewModel = settingsViewModel,
+                )
+              }
             }
           }
         }
       }
     }
-  }
 
     // Bottom bar flottante del guscio, solo su finestre compatte (sorgente:
     // ReaderTab bar di ReaderContent).
@@ -629,6 +636,78 @@ private fun HBibleAppShell(
       FloatingBottomBar(currentRoute = currentDestination, onSelect = selectTab)
     }
   }
+}
+
+/**
+ * Dettaglio versetto collegato ai ViewModel: usato dalla destinazione
+ * VerseDetail (telefono) e dal pannello accanto al lettore (finestre espanse).
+ * [set]/[index] sono l'insieme aperto, conservato nel guscio con rememberSaveable.
+ */
+@Composable
+private fun VerseDetailContent(
+  readerViewModel: ReaderViewModel,
+  viewModel: VerseDetailViewModel,
+  set: List<VerseRef>,
+  index: Int,
+  initialWord: Int,
+  onIndexChange: (Int) -> Unit,
+  onSaveAiToNote: (title: String, content: String, ref: VerseRef) -> Unit,
+  onDismiss: () -> Unit,
+  onOpenReference: (VerseRef) -> Unit,
+  onOpenDetail: (VerseRef) -> Unit,
+  onOpenInterlinear: (VerseRef) -> Unit,
+) {
+  val current = set.getOrNull(index.coerceIn(0, set.lastIndex.coerceAtLeast(0))) ?: return
+  val safeIndex = set.indexOf(current)
+  val readerState by readerViewModel.uiState.collectAsStateWithLifecycle()
+  val ready = readerState as? ReaderUiState.Ready
+  val books = ready?.books.orEmpty()
+  val translation = ready?.selection?.translation ?: "NR"
+  val detail by viewModel.verseDetail.collectAsStateWithLifecycle()
+  // Ripristino dopo process death / cambio di layout (l'insieme è nel guscio):
+  // riapre la richiesta se il ViewModel non ne ha una valida.
+  LaunchedEffect(current) {
+    if (viewModel.verseDetail.value?.ref != current) viewModel.open(set, safeIndex)
+  }
+  val bookName: (Int) -> String = { n -> books.firstOrNull { it.n == n }?.name.orEmpty() }
+  VerseDetailScreen(
+    verse = ready?.verses?.firstOrNull {
+      it.book == current.book && it.chapter == current.chapter && it.verse == current.verse
+    },
+    detail = detail?.takeIf { it.ref == current },
+    reference = "${bookName(current.book)} ${current.chapter}:${current.verse}",
+    count = set.size,
+    index = safeIndex,
+    translation = translation,
+    translationName = TRANSLATION_NAMES[translation] ?: "",
+    bookName = bookName,
+    initialWord = initialWord,
+    onSaveAiToNote =
+      if (viewModel.aiConfigured) {
+        { content ->
+          onSaveAiToNote("Note su ${bookName(current.book)} ${current.chapter}:${current.verse}", content, current)
+        }
+      } else {
+        null
+      },
+    onDismiss = onDismiss,
+    onPrev = {
+      if (safeIndex > 0) {
+        onIndexChange(safeIndex - 1)
+        viewModel.open(set, safeIndex - 1)
+      }
+    },
+    onNext = {
+      if (safeIndex < set.lastIndex) {
+        onIndexChange(safeIndex + 1)
+        viewModel.open(set, safeIndex + 1)
+      }
+    },
+    onOpenReference = onOpenReference,
+    onOpenDetail = onOpenDetail,
+    onOpenInterlinear = { onOpenInterlinear(current) },
+    viewModel = viewModel,
+  )
 }
 
 /** Route, etichetta e icona di ogni destinazione principale (bottom bar e rail). */

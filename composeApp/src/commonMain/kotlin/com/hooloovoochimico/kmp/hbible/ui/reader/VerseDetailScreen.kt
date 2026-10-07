@@ -105,14 +105,14 @@ fun VerseDetailScreen(
   /** Opens the interlinear tab on this verse (top bar action, wired by the shell). */
   onOpenInterlinear: () -> Unit,
   modifier: Modifier = Modifier,
-  viewModel: ReaderViewModel,
+  viewModel: VerseDetailViewModel,
 ) {
   BackHandler(enabled = true, onBack = onDismiss)
   val scope = rememberCoroutineScope()
   val scrollState = rememberScrollState()
   LaunchedEffect(index) { scrollState.scrollTo(0) }
   val loadVerse: suspend (VerseRef) -> VerseEntity? = { ref ->
-    viewModel.verse(ref.book, ref.chapter, ref.verse)
+    viewModel.verse(translation, ref.book, ref.chapter, ref.verse)
   }
   val occurrencesTextLoader: suspend (VerseRef) -> String? = { loadVerse(it)?.text }
 

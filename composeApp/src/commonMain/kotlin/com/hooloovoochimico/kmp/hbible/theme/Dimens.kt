@@ -30,4 +30,7 @@ object Dimens {
 
   /** Larghezza massima delle schermate a colonna singola (note, ricerca, impostazioni). */
   val contentMaxWidth = 840.dp
+
+  /** Larghezza del pannello dettaglio versetto accanto al lettore (finestre espanse). */
+  val detailPaneWidth = 400.dp
 }

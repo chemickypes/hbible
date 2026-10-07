@@ -8,7 +8,6 @@ import com.hooloovoochimico.kmp.hbible.data.ReaderFontSize
 import com.hooloovoochimico.kmp.hbible.data.SettingsRepository
 import com.hooloovoochimico.kmp.hbible.data.ThemeMode
 import com.hooloovoochimico.kmp.hbible.data.ai.AiConfig
-import com.hooloovoochimico.kmp.hbible.data.ai.AiGateway
 import com.hooloovoochimico.kmp.hbible.data.local.BookEntity
 import com.hooloovoochimico.kmp.hbible.data.local.BookInfoEntity
 import com.hooloovoochimico.kmp.hbible.data.local.CrossReferenceEntity
@@ -50,7 +49,6 @@ class ReaderViewModelTest {
     val viewModel = ReaderViewModel(
       FakeBibleRepository(),
       FakeSettingsRepository(),
-      AiGateway(configProvider = { AiConfig() }),
       FakeCmsRepository(),
     )
     val state = viewModel.uiState.first { it is ReaderUiState.Ready }
