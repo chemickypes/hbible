@@ -54,9 +54,6 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.hooloovoochimico.kmp.hbible.data.TRANSLATION_NAMES
 import com.hooloovoochimico.kmp.hbible.data.local.NoteEntity
-import com.hooloovoochimico.kmp.hbible.di.coreModule
-import com.hooloovoochimico.kmp.hbible.di.platformModule
-import com.hooloovoochimico.kmp.hbible.di.viewModelModule
 import com.hooloovoochimico.kmp.hbible.theme.ExpressiveMotion
 import com.hooloovoochimico.kmp.hbible.theme.HBibleTheme
 import com.hooloovoochimico.kmp.hbible.ui.common.VerseRef
@@ -79,9 +76,7 @@ import com.hooloovoochimico.kmp.hbible.ui.settings.SettingsScreen
 import com.hooloovoochimico.kmp.hbible.ui.settings.SettingsViewModel
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
-import org.koin.compose.KoinApplication
 import org.koin.compose.viewmodel.koinViewModel
-import org.koin.dsl.koinConfiguration
 
 // --- Destinazioni del nav graph (route type-safe) ---
 
@@ -169,42 +164,49 @@ private val BibleIcon: ImageVector =
     .build()
 
 /**
- * Owner radice dei ViewModel condivisi: nel sorgente erano activity-scoped
- * (Hilt). Su Android LocalViewModelStoreOwner ricade sull'Activity, ma su iOS
- * non c'è un default: si fornisce esplicitamente questo owner così i VM hoist
- * nel guscio vivono per tutta la sessione, su tutte le piattaforme.
+ * Owner radice dei ViewModel condivisi (nel sorgente erano activity-scoped con
+ * Hilt). Usato SOLO come fallback quando la piattaforma non fornisce un
+ * [LocalViewModelStoreOwner]: su Android c'è sempre l'Activity, che conserva i
+ * ViewModel attraverso rotazione/resize/multi-window; un owner creato con
+ * `remember` verrebbe invece distrutto (e i VM svuotati) a ogni ricreazione.
  */
 private class RootViewModelStoreOwner : ViewModelStoreOwner {
   override val viewModelStore: ViewModelStore = ViewModelStore()
 }
 
+/** Owner della piattaforma se presente, altrimenti uno legato alla composizione. */
+@Composable
+private fun rememberRootViewModelStoreOwner(): ViewModelStoreOwner {
+  LocalViewModelStoreOwner.current?.let { return it }
+  val fallback = remember { RootViewModelStoreOwner() }
+  DisposableEffect(fallback) {
+    onDispose { fallback.viewModelStore.clear() }
+  }
+  return fallback
+}
+
 @Composable
 fun App() {
-    // Bootstrap Koin (opzione A, PLAN §12): il grafo vive con la UI, uniforme
-    // su tutte le piattaforme; le definizioni sono lazy (nessun avvio DB qui).
-    // Koin 4.2: l'overload con KoinAppDeclaration è deprecato → koinConfiguration {}.
-    KoinApplication(koinConfiguration { modules(coreModule, platformModule, viewModelModule) }) {
-        val rootOwner = remember { RootViewModelStoreOwner() }
-        DisposableEffect(rootOwner) {
-            onDispose { rootOwner.viewModelStore.clear() }
-        }
-        CompositionLocalProvider(LocalViewModelStoreOwner provides rootOwner) {
-            // VM condivisi (scoping Activity del sorgente → owner radice del guscio).
-            val settingsViewModel: SettingsViewModel = koinViewModel()
-            val readerViewModel: ReaderViewModel = koinViewModel()
-            val notesViewModel: NotesViewModel = koinViewModel()
-            val exploreViewModel: ExploreViewModel = koinViewModel()
-            val interlineareViewModel: InterlineareViewModel = koinViewModel()
-            val settings by settingsViewModel.uiState.collectAsStateWithLifecycle()
-            HBibleTheme(themeMode = settings.themeMode, dynamicColor = settings.dynamicColor) {
-                HBibleAppShell(
-                    readerViewModel = readerViewModel,
-                    notesViewModel = notesViewModel,
-                    exploreViewModel = exploreViewModel,
-                    interlineareViewModel = interlineareViewModel,
-                    settingsViewModel = settingsViewModel,
-                )
-            }
+    // Koin è già avviato a livello di processo (initKoin in HBibleApplication /
+    // MainViewController): qui nessun bootstrap, così la ricreazione della UI
+    // non ricrea il grafo né riapre il DB.
+    val rootOwner = rememberRootViewModelStoreOwner()
+    CompositionLocalProvider(LocalViewModelStoreOwner provides rootOwner) {
+        // VM condivisi (scoping Activity del sorgente → owner radice del guscio).
+        val settingsViewModel: SettingsViewModel = koinViewModel()
+        val readerViewModel: ReaderViewModel = koinViewModel()
+        val notesViewModel: NotesViewModel = koinViewModel()
+        val exploreViewModel: ExploreViewModel = koinViewModel()
+        val interlineareViewModel: InterlineareViewModel = koinViewModel()
+        val settings by settingsViewModel.uiState.collectAsStateWithLifecycle()
+        HBibleTheme(themeMode = settings.themeMode, dynamicColor = settings.dynamicColor) {
+            HBibleAppShell(
+                readerViewModel = readerViewModel,
+                notesViewModel = notesViewModel,
+                exploreViewModel = exploreViewModel,
+                interlineareViewModel = interlineareViewModel,
+                settingsViewModel = settingsViewModel,
+            )
         }
     }
 }

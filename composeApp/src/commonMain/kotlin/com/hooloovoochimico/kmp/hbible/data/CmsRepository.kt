@@ -43,7 +43,9 @@ class DefaultCmsRepository(
 
   private fun todayIso(): String {
     val d = GMTDate()
-    return "%04d-%02d-%02d".format(d.year, d.month.ordinal + 1, d.dayOfMonth)
+    // String.format è solo JVM: padding manuale per compilare anche su native.
+    fun pad(n: Int, len: Int) = n.toString().padStart(len, '0')
+    return "${pad(d.year, 4)}-${pad(d.month.ordinal + 1, 2)}-${pad(d.dayOfMonth, 2)}"
   }
 
   private fun dayOfYear(): Int = GMTDate().dayOfYear
