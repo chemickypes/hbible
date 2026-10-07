@@ -1,6 +1,7 @@
 package com.hooloovoochimico.kmp.hbible.ui.notes
 
 import com.hooloovoochimico.kmp.hbible.platform.BackHandler
+import com.hooloovoochimico.kmp.hbible.ui.common.LocalBottomBarClearance
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -43,7 +44,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hooloovoochimico.kmp.hbible.data.local.BookEntity
 import com.hooloovoochimico.kmp.hbible.data.local.NoteEntity
 import com.hooloovoochimico.kmp.hbible.platform.formatDate
-import com.hooloovoochimico.kmp.hbible.theme.Dimens
 import com.hooloovoochimico.kmp.hbible.ui.common.EmptyMessage
 
 /** Full-screen list of personal notes with live filter. */
@@ -136,7 +136,7 @@ fun NotesScreen(
     } else {
       LazyColumn(
         Modifier.fillMaxWidth().padding(top = 4.dp),
-        contentPadding = PaddingValues(bottom = Dimens.bottomBarClearance),
+        contentPadding = PaddingValues(bottom = LocalBottomBarClearance.current),
       ) {
         items(filtered, key = { it.id }) { note ->
           NoteRow(

@@ -21,4 +21,13 @@ object Dimens {
    * above the floating navigation bar.
    */
   val bottomBarClearance = 130.dp
+
+  /**
+   * Larghezza massima del testo biblico: oltre questa le righe diventano troppo
+   * lunghe da leggere (tablet in orizzontale). Il lettore centra il testo.
+   */
+  val readingMaxWidth = 680.dp
+
+  /** Larghezza massima delle schermate a colonna singola (note, ricerca, impostazioni). */
+  val contentMaxWidth = 840.dp
 }

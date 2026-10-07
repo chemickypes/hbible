@@ -1,6 +1,7 @@
 package com.hooloovoochimico.kmp.hbible.ui.explore
 
 import com.hooloovoochimico.kmp.hbible.platform.BackHandler
+import com.hooloovoochimico.kmp.hbible.ui.common.LocalBottomBarClearance
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
@@ -83,7 +84,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hooloovoochimico.kmp.hbible.data.BibleReferenceParser
 import com.hooloovoochimico.kmp.hbible.data.SearchScope
 import com.hooloovoochimico.kmp.hbible.platform.formatDate
-import com.hooloovoochimico.kmp.hbible.theme.Dimens
 import com.hooloovoochimico.kmp.hbible.ui.common.EmptyMessage
 import com.hooloovoochimico.kmp.hbible.ui.common.HBibleCard
 import com.hooloovoochimico.kmp.hbible.ui.common.ScreenTitle
@@ -371,7 +371,7 @@ fun ExploreScreen(
     if (query.trim().isEmpty()) {
       LazyColumn(
         Modifier.weight(1f).fillMaxWidth(),
-        contentPadding = PaddingValues(bottom = Dimens.bottomBarClearance),
+        contentPadding = PaddingValues(bottom = LocalBottomBarClearance.current),
       ) {
         item(key = "hint") {
           Text(
@@ -517,7 +517,7 @@ fun ExploreScreen(
             val bookNames = remember(books) { books.associate { it.n to it.name } }
             LazyColumn(
               Modifier.weight(1f).navigationBarsPadding(),
-              contentPadding = PaddingValues(bottom = Dimens.bottomBarClearance),
+              contentPadding = PaddingValues(bottom = LocalBottomBarClearance.current),
             ) {
               val reflection = savedAi?.matches?.riflessione.orEmpty()
               if (reflection.isNotBlank()) {
@@ -610,7 +610,7 @@ fun ExploreScreen(
         } else {
           LazyColumn(
             Modifier.weight(1f).navigationBarsPadding(),
-            contentPadding = PaddingValues(bottom = Dimens.bottomBarClearance),
+            contentPadding = PaddingValues(bottom = LocalBottomBarClearance.current),
           ) {
             items(state.noteResults, key = { "note-${it.id}" }) { note ->
               Row(
@@ -661,7 +661,7 @@ fun ExploreScreen(
         } else {
           LazyColumn(
             Modifier.weight(1f).navigationBarsPadding(),
-            contentPadding = PaddingValues(bottom = Dimens.bottomBarClearance),
+            contentPadding = PaddingValues(bottom = LocalBottomBarClearance.current),
           ) {
             items(state.results, key = { "${it.translation}-${it.book}-${it.chapter}-${it.verse}" }) { verse ->
               Row(

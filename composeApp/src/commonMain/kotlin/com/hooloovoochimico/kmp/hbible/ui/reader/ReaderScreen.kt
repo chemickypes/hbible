@@ -1,5 +1,8 @@
 package com.hooloovoochimico.kmp.hbible.ui.reader
 
+import androidx.compose.foundation.layout.BoxWithConstraints
+import com.hooloovoochimico.kmp.hbible.ui.common.LocalBottomBarClearance
+import com.hooloovoochimico.kmp.hbible.ui.common.centeringPadding
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -408,10 +411,15 @@ private fun ReaderContent(
             )
           }
         }
+        // Testo centrato e largo al massimo Dimens.readingMaxWidth (tablet): il
+        // margine sta nel contentPadding, così si scorre su tutta la larghezza.
+        val bottomClearance = LocalBottomBarClearance.current
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+        val side = centeringPadding(maxWidth, Dimens.readingMaxWidth)
         LazyColumn(
           state = listState,
           modifier = Modifier.fillMaxSize(),
-          contentPadding = PaddingValues(bottom = Dimens.bottomBarClearance),
+          contentPadding = PaddingValues(start = side, end = side, bottom = bottomClearance),
         ) {
           items(verses, key = { "${it.translation}-${it.book}-${it.chapter}-${it.verse}" }) { verse ->
           VerseRow(
@@ -426,6 +434,7 @@ private fun ReaderContent(
             onLongClick = { showDetailFor(listOf(verse)) },
           )
         }
+      }
       }
       }
       // La chiave è il VALORE dello stato (come nel sorgente con `by`): il
