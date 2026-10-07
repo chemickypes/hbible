@@ -1,0 +1,432 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 12,
+    "identityHash": "1e17a575ba00f3a5e01238ace18126f9",
+    "entities": [
+      {
+        "tableName": "books",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`n` INTEGER NOT NULL, `name` TEXT NOT NULL, `abbr` TEXT NOT NULL, `chapters` INTEGER NOT NULL, PRIMARY KEY(`n`))",
+        "fields": [
+          {
+            "fieldPath": "n",
+            "columnName": "n",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "abbr",
+            "columnName": "abbr",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chapters",
+            "columnName": "chapters",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "n"
+          ]
+        }
+      },
+      {
+        "tableName": "verses",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`translation` TEXT NOT NULL, `book` INTEGER NOT NULL, `chapter` INTEGER NOT NULL, `verse` INTEGER NOT NULL, `title` TEXT, `text` TEXT NOT NULL, PRIMARY KEY(`translation`, `book`, `chapter`, `verse`))",
+        "fields": [
+          {
+            "fieldPath": "translation",
+            "columnName": "translation",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "book",
+            "columnName": "book",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chapter",
+            "columnName": "chapter",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "verse",
+            "columnName": "verse",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "text",
+            "columnName": "text",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "translation",
+            "book",
+            "chapter",
+            "verse"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_verses_translation_book_chapter",
+            "unique": false,
+            "columnNames": [
+              "translation",
+              "book",
+              "chapter"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_verses_translation_book_chapter` ON `${TABLE_NAME}` (`translation`, `book`, `chapter`)"
+          }
+        ]
+      },
+      {
+        "tableName": "original_verses",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`book` INTEGER NOT NULL, `chapter` INTEGER NOT NULL, `verse` INTEGER NOT NULL, `lang` TEXT NOT NULL, `text` TEXT NOT NULL, `transliteration` TEXT NOT NULL, `lemmas` TEXT NOT NULL, `it_nr` TEXT NOT NULL, `it_r2` TEXT NOT NULL, `it_r27` TEXT NOT NULL, `glosses` TEXT NOT NULL, `glosses_it` TEXT NOT NULL, PRIMARY KEY(`book`, `chapter`, `verse`))",
+        "fields": [
+          {
+            "fieldPath": "book",
+            "columnName": "book",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chapter",
+            "columnName": "chapter",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "verse",
+            "columnName": "verse",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lang",
+            "columnName": "lang",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "text",
+            "columnName": "text",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "transliteration",
+            "columnName": "transliteration",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lemmas",
+            "columnName": "lemmas",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "italianNr",
+            "columnName": "it_nr",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "italianR2",
+            "columnName": "it_r2",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "italianR27",
+            "columnName": "it_r27",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "glosses",
+            "columnName": "glosses",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "glossesIt",
+            "columnName": "glosses_it",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "book",
+            "chapter",
+            "verse"
+          ]
+        }
+      },
+      {
+        "tableName": "cross_references",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`fromBook` INTEGER NOT NULL, `fromChapter` INTEGER NOT NULL, `fromVerse` INTEGER NOT NULL, `toBook` INTEGER NOT NULL, `toChapter` INTEGER NOT NULL, `toVerse` INTEGER NOT NULL, PRIMARY KEY(`fromBook`, `fromChapter`, `fromVerse`, `toBook`, `toChapter`, `toVerse`))",
+        "fields": [
+          {
+            "fieldPath": "fromBook",
+            "columnName": "fromBook",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fromChapter",
+            "columnName": "fromChapter",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fromVerse",
+            "columnName": "fromVerse",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "toBook",
+            "columnName": "toBook",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "toChapter",
+            "columnName": "toChapter",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "toVerse",
+            "columnName": "toVerse",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "fromBook",
+            "fromChapter",
+            "fromVerse",
+            "toBook",
+            "toChapter",
+            "toVerse"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_cross_references_from",
+            "unique": false,
+            "columnNames": [
+              "fromBook",
+              "fromChapter",
+              "fromVerse"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_cross_references_from` ON `${TABLE_NAME}` (`fromBook`, `fromChapter`, `fromVerse`)"
+          }
+        ]
+      },
+      {
+        "tableName": "lexemes",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`lang` TEXT NOT NULL, `number` TEXT NOT NULL, `romanized` TEXT NOT NULL, `gloss` TEXT NOT NULL, `gloss_it` TEXT NOT NULL, PRIMARY KEY(`lang`, `number`))",
+        "fields": [
+          {
+            "fieldPath": "lang",
+            "columnName": "lang",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "number",
+            "columnName": "number",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "romanized",
+            "columnName": "romanized",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gloss",
+            "columnName": "gloss",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "glossIt",
+            "columnName": "gloss_it",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "lang",
+            "number"
+          ]
+        }
+      },
+      {
+        "tableName": "notes",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `content` TEXT NOT NULL, `styles` TEXT NOT NULL, `book` INTEGER NOT NULL, `chapter` INTEGER NOT NULL, `verse` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "content",
+            "columnName": "content",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "styles",
+            "columnName": "styles",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "book",
+            "columnName": "book",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chapter",
+            "columnName": "chapter",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "verse",
+            "columnName": "verse",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_notes_updatedAt",
+            "unique": false,
+            "columnNames": [
+              "updatedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_notes_updatedAt` ON `${TABLE_NAME}` (`updatedAt`)"
+          }
+        ]
+      },
+      {
+        "tableName": "book_info",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`book` INTEGER NOT NULL, `context_text` TEXT NOT NULL, `protagonists` TEXT NOT NULL, `christocentric` TEXT NOT NULL, `model` TEXT NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`book`))",
+        "fields": [
+          {
+            "fieldPath": "book",
+            "columnName": "book",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "contextText",
+            "columnName": "context_text",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "protagonists",
+            "columnName": "protagonists",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "christocentric",
+            "columnName": "christocentric",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "model",
+            "columnName": "model",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "book"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '1e17a575ba00f3a5e01238ace18126f9')"
+    ]
+  }
+}

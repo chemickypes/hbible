@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.room)
 }
 
 // Fase 2: package dedicato per la classe Res generata (5 asset JSON in
@@ -14,6 +15,13 @@ plugins {
 compose.resources {
     generateResClass = always
     packageOfResClass = "com.hooloovoochimico.kmp.hbible.resources"
+}
+
+// Schema Room esportato per versione (composeApp/schemas/<db>/<versione>.json):
+// base dei test di migrazione. Le versioni 8–13 sono state rigenerate dai commit
+// storici (PLAN §12, 2026-10-07); 10 e 14 non sono mai state committate.
+room {
+    schemaDirectory("$projectDir/schemas")
 }
 
 kotlin {
@@ -63,6 +71,13 @@ kotlin {
             implementation(kotlin("test"))
             implementation(libs.kotlinx.coroutines.test)
         }
+        // Test strumentali (device/emulatore): migrazioni Room con MigrationTestHelper.
+        androidInstrumentedTest.dependencies {
+            implementation(libs.androidx.room.testing)
+            implementation(libs.androidx.test.runner)
+            implementation(libs.androidx.test.ext.junit)
+            implementation(libs.junit)
+        }
     }
 }
 
@@ -78,6 +93,7 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     packaging {

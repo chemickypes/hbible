@@ -4,7 +4,6 @@ import androidx.room.ConstructedBy
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
-import androidx.room.migration.Migration
 
 /**
  * Il [RoomDatabaseConstructor] è implementato dal compilatore Room per i target
@@ -31,7 +30,7 @@ expect object BibleDatabaseConstructor : RoomDatabaseConstructor<BibleDatabase> 
     PostEntity::class,
   ],
   version = 15,
-  exportSchema = false,
+  exportSchema = true,
 )
 abstract class BibleDatabase : RoomDatabase() {
 
@@ -90,10 +89,3 @@ internal object BibleMigrationSql {
       "`book` INTEGER NOT NULL, `chapter` INTEGER NOT NULL, `verse` INTEGER NOT NULL, " +
       "`published_at` TEXT)"
 }
-
-/**
- * Tutte le migrazioni 1→13 in ordine; l'SQL è identico al sorgente, ma il tipo del
- * callback `migrate` è platform-specific (SupportSQLiteDatabase su Android,
- * SQLiteConnection su native) → definizioni in androidMain/iosMain.
- */
-expect val ALL_MIGRATIONS: Array<Migration>
