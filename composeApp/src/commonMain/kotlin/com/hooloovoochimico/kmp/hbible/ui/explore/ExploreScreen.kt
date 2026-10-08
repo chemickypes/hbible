@@ -146,7 +146,8 @@ fun ExploreScreen(
   onDismiss: () -> Unit,
   onGoToVerse: (Int, Int, Int) -> Unit,
   onOpenNote: (Long) -> Unit,
-  onSaveReflectionToNote: ((String, String) -> Unit)? = null,
+  onSaveReflectionToNote: (String, String) -> Unit,
+  focusSearchRequest: Int = 0,
   modifier: Modifier = Modifier,
   viewModel: ExploreViewModel,
 ) {
@@ -165,6 +166,12 @@ fun ExploreScreen(
 
   // Only pop the keyboard for a fresh search; a restored one shows its results.
   LaunchedEffect(Unit) { if (query.isEmpty()) focusRequester.requestFocus() }
+
+  // Ctrl+F dal guscio (6e): ogni incremento della richiesta porta il focus
+  // sul campo di ricerca.
+  LaunchedEffect(focusSearchRequest) {
+    if (focusSearchRequest > 0) focusRequester.requestFocus()
+  }
 
   // Shared pieces of the search bar's trailing controls; in AI mode they are drawn
   // as overlays instead of icon slots so they never get vertically centered.

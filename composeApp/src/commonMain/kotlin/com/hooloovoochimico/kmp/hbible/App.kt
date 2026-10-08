@@ -51,10 +51,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.foundation.focusable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
@@ -298,6 +307,10 @@ private fun HBibleAppShell(
   // Info libro mostrate come pannello del lettore (6c, solo con twoPane),
   // alternativa al pannello del dettaglio: aprire uno chiude l'altro.
   var bookInfoInPane by rememberSaveable { mutableStateOf(false) }
+
+  // Richiesta di focus sul campo di ricerca di Esplora (6e, Ctrl+F): contatore,
+  // così ogni pressione ritriggera il LaunchedEffect della schermata.
+  var exploreFocusSearchRequest by rememberSaveable { mutableStateOf(0) }
 
   // Selezione corrente del lettore, letta al momento dell'uso nei callback.
   fun currentSelection(): ReaderSelection =
@@ -547,7 +560,57 @@ private fun HBibleAppShell(
     )
   }
 
-  Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
+  val rootFocus = remember { FocusRequester() }
+  Box(
+    Modifier
+      .fillMaxSize()
+      .background(MaterialTheme.colorScheme.surface)
+      // Scorciatoie da tastiera (6e): focusabile per ricevere onKeyEvent;
+      // onKeyEvent (bolla) e non onPreviewKeyEvent, così i campi di testo
+      // consumano i tasti per primi.
+      .focusRequester(rootFocus)
+      .focusable()
+      .onKeyEvent { event ->
+        if (event.type != KeyEventType.KeyDown) return@onKeyEvent false
+        when {
+          event.isCtrlPressed && event.key == Key.F -> {
+            goToTab(ExploreRoute)
+            exploreFocusSearchRequest += 1
+            true
+          }
+          event.key == Key.Escape -> {
+            when {
+              detailInPane || exploreDetailOpen -> closeDetail()
+              bookInfoInPane -> closeBookInfoPane()
+              notesPaneId != null -> notesPaneId = null
+              else -> return@onKeyEvent false
+            }
+            true
+          }
+          event.key == Key.DirectionRight || event.key == Key.DirectionLeft -> {
+            // Capitolo successivo/precedente solo sul lettore e senza selezione
+            // attiva: nei limiti del libro.
+            val onReader = currentDestination?.hasRouteCompat<ReaderRoute>() == true
+            val ready = readerViewModel.uiState.value as? ReaderUiState.Ready
+            if (!onReader || ready == null || selectionActive) return@onKeyEvent false
+            val max = ready.books.firstOrNull { it.n == ready.selection.book }?.chapters ?: return@onKeyEvent false
+            when {
+              event.key == Key.DirectionRight && ready.selection.chapter < max -> {
+                readerViewModel.selectChapter(ready.selection.chapter + 1)
+                true
+              }
+              event.key == Key.DirectionLeft && ready.selection.chapter > 1 -> {
+                readerViewModel.selectChapter(ready.selection.chapter - 1)
+                true
+              }
+              else -> false
+            }
+          }
+          else -> false
+        }
+      },
+  ) {
+    LaunchedEffect(Unit) { rootFocus.requestFocus() }
     Row(Modifier.fillMaxSize()) {
       if (useRail) {
         AppNavigationRail(currentRoute = currentDestination, onSelect = selectTab)
@@ -718,6 +781,7 @@ private fun HBibleAppShell(
                             saveChatToNote("Pronto soccorso · $theme", reflection, 0, 0, 0)
                           }
                         },
+                        focusSearchRequest = exploreFocusSearchRequest,
                         viewModel = exploreViewModel,
                       )
                     }
@@ -742,6 +806,7 @@ private fun HBibleAppShell(
                         saveChatToNote("Pronto soccorso · $theme", reflection, 0, 0, 0)
                       }
                     },
+                    focusSearchRequest = exploreFocusSearchRequest,
                     viewModel = exploreViewModel,
                   )
                 }
