@@ -290,6 +290,11 @@ private fun HBibleAppShell(
   // null = nessuna nota aperta, 0L = nota nuova, >0 = id della nota.
   var notesPaneId by rememberSaveable { mutableStateOf<Long?>(null) }
 
+  // Dettaglio versetto mostrato come pannello di Esplora (6b, solo con
+  // twoPane). Mutuamente esclusivo con il pannello del lettore (detailInPane):
+  // aprendo l'uno si chiude l'altro.
+  var exploreDetailOpen by rememberSaveable { mutableStateOf(false) }
+
   // Selezione corrente del lettore, letta al momento dell'uso nei callback.
   fun currentSelection(): ReaderSelection =
     (readerViewModel.uiState.value as? ReaderUiState.Ready)?.selection ?: ReaderSelection()
@@ -337,6 +342,7 @@ private fun HBibleAppShell(
     detailSet = emptyList()
     detailIndex = 0
     detailInPane = false
+    exploreDetailOpen = false
     verseDetailViewModel.close()
   }
 
@@ -348,6 +354,7 @@ private fun HBibleAppShell(
     syncReaderTo(target)
     if (twoPane) {
       detailInPane = true
+      exploreDetailOpen = false
       if (currentDestination?.hasRouteCompat<ReaderRoute>() != true) goToTab(ReaderRoute)
     } else {
       navController.navigate(VerseDetailRoute(target.book, target.chapter, target.verse, 0, 1)) {
@@ -413,12 +420,55 @@ private fun HBibleAppShell(
     }
   }
 
+  // Pannello di Esplora (6b): restringendo, il dettaglio nel pannello diventa
+  // pagina; allargando, la pagina aperta da Esplora torna pannello.
+  LaunchedEffect(twoPane) {
+    val destination = navController.currentDestination
+    if (!twoPane && exploreDetailOpen) {
+      exploreDetailOpen = false
+      val first = detailSet.firstOrNull()
+      if (first != null && destination.hasRouteCompat<ExploreRoute>()) {
+        navController.navigate(VerseDetailRoute(first.book, first.chapter, first.verse, detailIndex, detailSet.size))
+      }
+    } else if (
+      twoPane &&
+      destination.hasRouteCompat<VerseDetailRoute>() &&
+      navController.previousBackStackEntry?.destination.hasRouteCompat<ExploreRoute>()
+    ) {
+      navController.popBackStack()
+      exploreDetailOpen = detailSet.isNotEmpty()
+    }
+  }
+
+  // Apre l'editor di una nota: nel pannello dell'elenco con twoPane (6a),
+  // come pagina a tutto schermo altrimenti.
+  val openNote: (Long?) -> Unit = { id ->
+    goToTab(NotesRoute)
+    if (twoPane) {
+      notesPaneId = id ?: 0L
+    } else {
+      navController.navigate(NoteEditorRoute(id))
+    }
+  }
+
   // Salva una risposta chat AI in nota e apre l'editor (sorgente: saveChatToNote):
   // atterra sulla tab NOTE con l'editor sopra, come nel sorgente.
   val saveChatToNote: suspend (String, String, Int, Int, Int) -> Unit = { title, content, b, c, v ->
     val id = notesViewModel.createNoteFromChat(title, content, b, c, v)
-    goToTab(NotesRoute)
-    navController.navigate(NoteEditorRoute(id))
+    openNote(id)
+  }
+
+  // Apre il dettaglio di un versetto da Esplora (6b): con twoPane resta su
+  // Esplora e lo mostra nel pannello a destra (chiudendo quello del lettore),
+  // altrimenti porta al lettore come nel sorgente.
+  val openDetailFromExplore: (Int, Int, Int) -> Unit = { b, c, v ->
+    setDetail(listOf(VerseRef(b, c, v)))
+    if (twoPane) {
+      detailInPane = false
+      exploreDetailOpen = true
+    } else {
+      goToVerse(b, c, v)
+    }
   }
 
   // Porta la tab Interlineare sul versetto indicato (azione della pagina dettaglio
@@ -486,6 +536,7 @@ private fun HBibleAppShell(
                     setDetail(refs)
                     if (twoPane) {
                       detailInPane = true
+                      exploreDetailOpen = false
                     } else {
                       navController.navigate(VerseDetailRoute(first.book, first.chapter, first.verse, 0, refs.size))
                     }
@@ -578,23 +629,51 @@ private fun HBibleAppShell(
               val readerState by readerViewModel.uiState.collectAsStateWithLifecycle()
               val selection = (readerState as? ReaderUiState.Ready)?.selection
               val scope = rememberCoroutineScope()
-              ContentWidth {
-                ExploreScreen(
-                  translation = selection?.translation ?: "NR",
-                  translationName = TRANSLATION_NAMES[selection?.translation ?: "NR"] ?: "",
-                  onDismiss = { goToTab(ReaderRoute) },
-                  onGoToVerse = goToVerse,
-                  onOpenNote = { id ->
-                    goToTab(NotesRoute)
-                    navController.navigate(NoteEditorRoute(id))
-                  },
-                  onSaveReflectionToNote = { theme, reflection ->
-                    scope.launch {
-                      saveChatToNote("Pronto soccorso · $theme", reflection, 0, 0, 0)
+              if (twoPane) {
+                // Risultati + dettaglio affiancati (6b): i versetti puntati da
+                // ricerca AI, "Pronto soccorso" e chip si aprono nel pannello
+                // invece di portare al lettore.
+                Row(Modifier.fillMaxSize()) {
+                  Box(Modifier.weight(1f)) {
+                    ContentWidth {
+                      ExploreScreen(
+                        translation = selection?.translation ?: "NR",
+                        translationName = TRANSLATION_NAMES[selection?.translation ?: "NR"] ?: "",
+                        onDismiss = { goToTab(ReaderRoute) },
+                        onGoToVerse = openDetailFromExplore,
+                        onOpenNote = openNote,
+                        onSaveReflectionToNote = { theme, reflection ->
+                          scope.launch {
+                            saveChatToNote("Pronto soccorso · $theme", reflection, 0, 0, 0)
+                          }
+                        },
+                        viewModel = exploreViewModel,
+                      )
                     }
-                  },
-                  viewModel = exploreViewModel,
-                )
+                  }
+                  if (exploreDetailOpen && detailSet.isNotEmpty()) {
+                    VerticalDivider()
+                    Box(Modifier.width(Dimens.detailPaneWidth).fillMaxHeight()) {
+                      VerseDetail(initialWord = -1, fallback = null, onClose = { exploreDetailOpen = false })
+                    }
+                  }
+                }
+              } else {
+                ContentWidth {
+                  ExploreScreen(
+                    translation = selection?.translation ?: "NR",
+                    translationName = TRANSLATION_NAMES[selection?.translation ?: "NR"] ?: "",
+                    onDismiss = { goToTab(ReaderRoute) },
+                    onGoToVerse = goToVerse,
+                    onOpenNote = openNote,
+                    onSaveReflectionToNote = { theme, reflection ->
+                      scope.launch {
+                        saveChatToNote("Pronto soccorso · $theme", reflection, 0, 0, 0)
+                      }
+                    },
+                    viewModel = exploreViewModel,
+                  )
+                }
               }
             }
             composable<InterlineareRoute> {
@@ -650,7 +729,7 @@ private fun HBibleAppShell(
                     onSaveToNote = { content ->
                       scope.launch {
                         val id = notesViewModel.createNoteFromChat("Chat su ${infoBook.name}", content, infoBook.n, 0, 0)
-                        navController.navigate(NoteEditorRoute(id))
+                        openNote(id)
                       }
                     },
                     onDismiss = { navController.popBackStack() },
