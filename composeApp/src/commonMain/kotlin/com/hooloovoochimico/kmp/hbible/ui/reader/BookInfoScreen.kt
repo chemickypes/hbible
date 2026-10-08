@@ -1,9 +1,8 @@
 package com.hooloovoochimico.kmp.hbible.ui.reader
 
-import com.hooloovoochimico.kmp.hbible.platform.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,7 +14,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -36,14 +34,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.hooloovoochimico.kmp.hbible.appLog
 import com.hooloovoochimico.kmp.hbible.data.ai.AiChatMessage
 import com.hooloovoochimico.kmp.hbible.data.ai.AiPrompts
 import com.hooloovoochimico.kmp.hbible.data.local.BookEntity
+import com.hooloovoochimico.kmp.hbible.platform.BackHandler
 import com.hooloovoochimico.kmp.hbible.platform.formatDate
 import com.hooloovoochimico.kmp.hbible.theme.ScriptureTypography
-import com.hooloovoochimico.kmp.hbible.ui.common.HBibleCard
 import com.hooloovoochimico.kmp.hbible.ui.common.AiChatPanel
 import com.hooloovoochimico.kmp.hbible.ui.common.AppIcons
+import com.hooloovoochimico.kmp.hbible.ui.common.HBibleCard
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
@@ -98,6 +98,7 @@ fun BookInfoScreen(
       } catch (t: CancellationException) {
         throw t
       } catch (t: Throwable) {
+        appLog.w(t) { "Chat AI sul libro fallita" }
         chatError = t.message ?: "Errore durante la chat"
       }
       chatBusy = false

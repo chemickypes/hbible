@@ -1,5 +1,6 @@
 package com.hooloovoochimico.kmp.hbible.data.ai
 
+import com.hooloovoochimico.kmp.hbible.appLog
 import com.hooloovoochimico.kmp.hbible.platform.SecretStore
 import com.russhwolf.settings.Settings
 import kotlinx.serialization.Serializable
@@ -152,6 +153,7 @@ object AiSettingsStore {
     try {
       json.decodeFromString<AiConfig>(raw)
     } catch (e: Exception) {
+      appLog.w(e) { "Configurazione AI salvata non leggibile: ignorata" }
       null
     }
 

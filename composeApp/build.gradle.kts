@@ -75,6 +75,7 @@ kotlin {
             implementation(libs.jetbrains.navigation.compose)
             implementation(project.dependencies.platform(libs.koin.bom))
             implementation(libs.koin.core)
+            implementation(libs.kermit)
             implementation(libs.koin.compose)
             implementation(libs.koin.compose.viewmodel)
             api(libs.androidx.room.runtime)

@@ -2,6 +2,7 @@ package com.hooloovoochimico.kmp.hbible.ui.explore
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.hooloovoochimico.kmp.hbible.appLog
 import com.hooloovoochimico.kmp.hbible.data.BibleRef
 import com.hooloovoochimico.kmp.hbible.data.BibleReferenceParser
 import com.hooloovoochimico.kmp.hbible.data.BibleRepository
@@ -16,6 +17,7 @@ import com.hooloovoochimico.kmp.hbible.data.local.BookEntity
 import com.hooloovoochimico.kmp.hbible.data.local.NoteEntity
 import com.hooloovoochimico.kmp.hbible.data.local.VerseEntity
 import com.hooloovoochimico.kmp.hbible.ui.common.displayAbbr
+import kotlin.time.Clock
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -24,17 +26,16 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlin.time.Clock
 
 /** Whole state of the explore (search) screen. */
 data class ExploreUiState(
@@ -116,7 +117,10 @@ class ExploreViewModel(
             val found =
               try {
                 notesRepository.searchNotes(spec.query)
+              } catch (e: CancellationException) {
+                throw e
               } catch (t: Throwable) {
+                appLog.w(t) { "Ricerca nelle note fallita" }
                 emptyList()
               }
             _uiState.update { it.copy(searching = false, noteResults = found) }
@@ -124,7 +128,10 @@ class ExploreViewModel(
             val found =
               try {
                 exploreRepository.search(translation.value, spec.query, spec.scope)
+              } catch (e: CancellationException) {
+                throw e
               } catch (t: Throwable) {
+                appLog.w(t) { "Ricerca testuale fallita" }
                 emptyList()
               }
             _uiState.update { it.copy(searching = false, results = found) }
@@ -227,6 +234,7 @@ class ExploreViewModel(
         } catch (t: CancellationException) {
           throw t
         } catch (t: Throwable) {
+          appLog.w(t) { "Ricerca AI fallita" }
           val message = t.message ?: "Errore durante la ricerca AI"
           exploreRepository.saveAi(prompt, null, message)
           _uiState.update { it.copy(ai = SavedAiSearch(prompt, null, message), aiSearching = false) }

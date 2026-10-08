@@ -2,6 +2,7 @@ package com.hooloovoochimico.kmp.hbible.ui.reader
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.hooloovoochimico.kmp.hbible.appLog
 import com.hooloovoochimico.kmp.hbible.data.BibleRepository
 import com.hooloovoochimico.kmp.hbible.data.CmsRepository
 import com.hooloovoochimico.kmp.hbible.data.LastPosition
@@ -11,6 +12,7 @@ import com.hooloovoochimico.kmp.hbible.data.local.PostEntity
 import com.hooloovoochimico.kmp.hbible.data.local.VerseEntity
 import com.hooloovoochimico.kmp.hbible.data.local.VotdEntity
 import com.hooloovoochimico.kmp.hbible.ui.common.VerseRef
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -65,7 +67,10 @@ class ReaderViewModel(
     viewModelScope.launch {
       try {
         repository.ensureImported()
+      } catch (e: CancellationException) {
+        throw e
       } catch (t: Throwable) {
+        appLog.e(t) { "Importazione iniziale del database fallita" }
         error.value = t
         return@launch
       }

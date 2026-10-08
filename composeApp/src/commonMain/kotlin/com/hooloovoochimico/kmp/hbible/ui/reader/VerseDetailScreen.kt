@@ -1,6 +1,5 @@
 package com.hooloovoochimico.kmp.hbible.ui.reader
 
-import com.hooloovoochimico.kmp.hbible.platform.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,14 +21,12 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -42,8 +39,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -58,19 +53,24 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.hooloovoochimico.kmp.hbible.appLog
 import com.hooloovoochimico.kmp.hbible.data.ai.AiChatMessage
 import com.hooloovoochimico.kmp.hbible.data.ai.AiPrompts
 import com.hooloovoochimico.kmp.hbible.data.local.LexemeEntity
 import com.hooloovoochimico.kmp.hbible.data.local.VerseEntity
 import com.hooloovoochimico.kmp.hbible.data.local.alignedItalianIndices
+import com.hooloovoochimico.kmp.hbible.platform.BackHandler
 import com.hooloovoochimico.kmp.hbible.theme.ScriptureTypography
 import com.hooloovoochimico.kmp.hbible.ui.common.AiChatPanel
+import com.hooloovoochimico.kmp.hbible.ui.common.AppIcons
 import com.hooloovoochimico.kmp.hbible.ui.common.EmptyMessage
 import com.hooloovoochimico.kmp.hbible.ui.common.HBibleCard
 import com.hooloovoochimico.kmp.hbible.ui.common.SectionHeader
 import com.hooloovoochimico.kmp.hbible.ui.common.VerseChipRow
 import com.hooloovoochimico.kmp.hbible.ui.common.VerseRef
-import com.hooloovoochimico.kmp.hbible.ui.common.AppIcons
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
 
 private const val LEMMA_LIMIT = 40
 
@@ -141,6 +141,7 @@ fun VerseDetailScreen(
       } catch (t: CancellationException) {
         throw t
       } catch (t: Throwable) {
+        appLog.w(t) { "Chat AI sul versetto fallita" }
         chatError = t.message ?: "Errore durante la chat"
       }
       chatBusy = false

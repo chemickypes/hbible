@@ -1,5 +1,6 @@
 package com.hooloovoochimico.kmp.hbible.data.ai
 
+import com.hooloovoochimico.kmp.hbible.appLog
 import kotlinx.coroutines.CancellationException
 
 /** System/user prompts shared by every provider. */
@@ -116,6 +117,7 @@ class AiGateway(
       } catch (e: CancellationException) {
         throw e
       } catch (t: Throwable) {
+        appLog.w(t) { "AI search: provider ${client.company.label} fallito, provo il successivo" }
         lastError = t
       }
     }
@@ -136,6 +138,7 @@ class AiGateway(
       } catch (e: CancellationException) {
         throw e
       } catch (t: Throwable) {
+        appLog.w(t) { "AI firstAid: provider ${client.company.label} fallito, provo il successivo" }
         lastError = t
       }
     }
@@ -153,6 +156,7 @@ class AiGateway(
       } catch (e: CancellationException) {
         throw e
       } catch (t: Throwable) {
+        appLog.w(t) { "AI translateGloss: provider ${client.company.label} fallito, provo il successivo" }
         lastError = t
       }
     }
@@ -174,6 +178,7 @@ class AiGateway(
       } catch (e: CancellationException) {
         throw e
       } catch (t: Throwable) {
+        appLog.w(t) { "AI bookInfo: provider ${client.company.label} fallito, provo il successivo" }
         lastError = t
       }
     }
@@ -190,6 +195,7 @@ class AiGateway(
       } catch (e: CancellationException) {
         throw e
       } catch (t: Throwable) {
+        appLog.w(t) { "AI chat: provider ${client.company.label} fallito, provo il successivo" }
         lastError = t
       }
     }

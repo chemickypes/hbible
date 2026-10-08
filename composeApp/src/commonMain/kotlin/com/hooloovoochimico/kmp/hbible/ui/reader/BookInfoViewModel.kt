@@ -2,11 +2,13 @@ package com.hooloovoochimico.kmp.hbible.ui.reader
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.hooloovoochimico.kmp.hbible.appLog
 import com.hooloovoochimico.kmp.hbible.data.BibleRepository
 import com.hooloovoochimico.kmp.hbible.data.SettingsRepository
 import com.hooloovoochimico.kmp.hbible.data.ai.AiChatMessage
 import com.hooloovoochimico.kmp.hbible.data.ai.AiGateway
 import com.hooloovoochimico.kmp.hbible.data.local.BookInfoEntity
+import kotlin.time.Clock
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -15,7 +17,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlin.time.Clock
 
 /** State of the book info page: cached introduction plus generation progress. */
 data class BookInfoUiState(
@@ -49,6 +50,7 @@ class BookInfoViewModel(
         } catch (e: CancellationException) {
           throw e
         } catch (t: Throwable) {
+          appLog.w(t) { "Lettura info libro dalla cache fallita (libro $book)" }
           null
         }
       if (stateInternal.value.book != book) return@launch
@@ -87,6 +89,7 @@ class BookInfoViewModel(
       } catch (t: CancellationException) {
         throw t
       } catch (t: Throwable) {
+        appLog.w(t) { "Generazione info libro fallita (libro $book)" }
         if (stateInternal.value.book == book) {
           stateInternal.value =
             stateInternal.value.copy(busy = false, error = t.message ?: "Generazione non riuscita")

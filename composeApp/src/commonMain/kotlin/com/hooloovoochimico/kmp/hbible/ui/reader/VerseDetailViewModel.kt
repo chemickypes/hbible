@@ -2,6 +2,7 @@ package com.hooloovoochimico.kmp.hbible.ui.reader
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.hooloovoochimico.kmp.hbible.appLog
 import com.hooloovoochimico.kmp.hbible.data.BibleRepository
 import com.hooloovoochimico.kmp.hbible.data.SettingsRepository
 import com.hooloovoochimico.kmp.hbible.data.ai.AiChatMessage
@@ -104,6 +105,7 @@ class VerseDetailViewModel(
     } catch (e: CancellationException) {
       throw e
     } catch (t: Throwable) {
+      appLog.w(t) { "Traduzione glossa Strong $number fallita" }
       null
     }
 

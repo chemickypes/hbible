@@ -1,5 +1,6 @@
 package com.hooloovoochimico.kmp.hbible.data.content
 
+import com.hooloovoochimico.kmp.hbible.appLog
 import com.hooloovoochimico.kmp.hbible.data.BibleDoc
 import com.hooloovoochimico.kmp.hbible.data.BookDto
 import com.hooloovoochimico.kmp.hbible.data.CrossRefDoc
@@ -23,8 +24,8 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.util.date.GMTDate
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -124,7 +125,10 @@ class ContentSyncer(
           .map { it.key }
           .sorted()
       UpdateCheck(manifest.version, changed, null)
+    } catch (e: CancellationException) {
+      throw e
     } catch (t: Throwable) {
+      appLog.w(t) { "Controllo aggiornamenti CMS fallito" }
       UpdateCheck(null, emptyList(), t.message ?: "Errore di rete")
     }
   }
@@ -157,6 +161,7 @@ class ContentSyncer(
       }
     } catch (t: Throwable) {
       if (t is CancellationException) throw t
+      appLog.w(t) { "Impostazioni AI del CMS non raggiungibili" }
       AiSettingsFetch(reachable = false, available = false)
     }
   }
@@ -189,7 +194,10 @@ class ContentSyncer(
           verifyHash(bytes, manifest.packages[path]?.hash)
           importPackage(path, bytes, manifest.version)
           applied += path
+        } catch (e: CancellationException) {
+          throw e
         } catch (t: Throwable) {
+          appLog.e(t) { "Sync pacchetto CMS fallito: $path" }
           failed[path] = t.message ?: "errore sconosciuto"
         }
       }
