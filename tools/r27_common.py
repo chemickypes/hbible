@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# ATTENZIONE (dal 2026-10-08): i JSON in FILES_DIR sono generati dal CMS
+# (bibbia-interlineare-project, `npm run publish` + `npm run export:hbible`).
+# Non scriverci con questi script: le modifiche vanno fatte nel CMS, altrimenti
+# il prossimo export le sovrascrive. Vedi AGENTS.md.
 """Shared helpers for the Riveduta 1927 (R27) pipeline tools.
 
 The R27 source text embeds editorial versification markers such as "(H21-11)"
