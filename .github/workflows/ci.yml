@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  android:
+    name: Android build, test, iOS compile
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # JDK solo per avviare il wrapper Gradle: il daemon usa JBR 25 scaricato
+      # da Gradle stesso via gradle-daemon-jvm.properties (URL foojay) +
+      # foojay-resolver-convention in settings.gradle.kts.
+      - name: Setup JDK 21 (temurin)
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+
+      # Cache Gradle User Home (dipendenze, wrapper) e job summary.
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      # Su ubuntu-latest l'Android SDK è preinstallato (ANDROID_HOME impostato),
+      # ma compileSdk 37 (platform android-37.0) e build-tools 36.0.0 (default
+      # AGP 9.1) potrebbero mancare: li installiamo accettando le licenze.
+      - name: Android SDK
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" "build-tools;36.0.0" > /dev/null
+
+      # assembleRelease senza keystore.properties è firmato in debug (solo build check).
+      # Il task buildBundledDatabase (bible.db) usa python3, presente su ubuntu-latest.
+      - name: Build, test, iOS compile
+        run: ./gradlew :composeApp:assembleDebug :composeApp:testDebugUnitTest :composeApp:compileKotlinIosSimulatorArm64 :composeApp:assembleRelease --stacktrace
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results
+          path: composeApp/build/test-results/
+          retention-days: 7
