@@ -295,6 +295,10 @@ private fun HBibleAppShell(
   // aprendo l'uno si chiude l'altro.
   var exploreDetailOpen by rememberSaveable { mutableStateOf(false) }
 
+  // Info libro mostrate come pannello del lettore (6c, solo con twoPane),
+  // alternativa al pannello del dettaglio: aprire uno chiude l'altro.
+  var bookInfoInPane by rememberSaveable { mutableStateOf(false) }
+
   // Selezione corrente del lettore, letta al momento dell'uso nei callback.
   fun currentSelection(): ReaderSelection =
     (readerViewModel.uiState.value as? ReaderUiState.Ready)?.selection ?: ReaderSelection()
@@ -346,6 +350,11 @@ private fun HBibleAppShell(
     verseDetailViewModel.close()
   }
 
+  // Chiude il pannello info libro (6c): X del pannello o apertura del dettaglio.
+  fun closeBookInfoPane() {
+    bookInfoInPane = false
+  }
+
   // Apre il dettaglio di un versetto da chip/riferimenti (sorgente: openDetailFor):
   // chiude editor/dettaglio correnti e porta il lettore al capitolo del versetto.
   // Con twoPane il dettaglio si apre nel pannello del lettore.
@@ -355,6 +364,7 @@ private fun HBibleAppShell(
     if (twoPane) {
       detailInPane = true
       exploreDetailOpen = false
+      closeBookInfoPane()
       if (currentDestination?.hasRouteCompat<ReaderRoute>() != true) goToTab(ReaderRoute)
     } else {
       navController.navigate(VerseDetailRoute(target.book, target.chapter, target.verse, 0, 1)) {
@@ -437,6 +447,26 @@ private fun HBibleAppShell(
     ) {
       navController.popBackStack()
       exploreDetailOpen = detailSet.isNotEmpty()
+    }
+  }
+
+  // Pannello info libro (6c): restringendo diventa pagina; allargando, la
+  // pagina aperta dal lettore torna pannello.
+  LaunchedEffect(twoPane) {
+    val destination = navController.currentDestination
+    if (!twoPane && bookInfoInPane) {
+      val book = currentSelection().book
+      bookInfoInPane = false
+      if (book > 0 && destination.hasRouteCompat<ReaderRoute>()) {
+        navController.navigate(BookInfoRoute(book))
+      }
+    } else if (
+      twoPane &&
+      destination.hasRouteCompat<BookInfoRoute>() &&
+      navController.previousBackStackEntry?.destination.hasRouteCompat<ReaderRoute>()
+    ) {
+      navController.popBackStack()
+      bookInfoInPane = true
     }
   }
 
@@ -526,6 +556,9 @@ private fun HBibleAppShell(
         CompositionLocalProvider(LocalBottomBarClearance provides bottomClearance) {
           NavHost(navController = navController, startDestination = ReaderRoute, modifier = Modifier.fillMaxSize()) {
             composable<ReaderRoute> {
+              val readerState by readerViewModel.uiState.collectAsStateWithLifecycle()
+              val books = (readerState as? ReaderUiState.Ready)?.books.orEmpty()
+              val paneScope = rememberCoroutineScope()
               Row(Modifier.fillMaxSize()) {
                 ReaderScreen(
                   pendingScroll = pendingScroll,
@@ -537,13 +570,23 @@ private fun HBibleAppShell(
                     if (twoPane) {
                       detailInPane = true
                       exploreDetailOpen = false
+                      closeBookInfoPane()
                     } else {
                       navController.navigate(VerseDetailRoute(first.book, first.chapter, first.verse, 0, refs.size))
                     }
                   },
                   onOpenBookInfo = {
                     val book = currentSelection().book
-                    if (book > 0) navController.navigate(BookInfoRoute(book))
+                    if (book > 0) {
+                      if (twoPane) {
+                        // Pannello info libro (6c), alternativo al dettaglio.
+                        detailInPane = false
+                        exploreDetailOpen = false
+                        bookInfoInPane = true
+                      } else {
+                        navController.navigate(BookInfoRoute(book))
+                      }
+                    }
                   },
                   viewModel = readerViewModel,
                   settingsViewModel = settingsViewModel,
@@ -553,6 +596,33 @@ private fun HBibleAppShell(
                   VerticalDivider()
                   Box(Modifier.width(Dimens.detailPaneWidth).fillMaxHeight()) {
                     VerseDetail(initialWord = -1, fallback = null, onClose = {})
+                  }
+                }
+                if (twoPane && bookInfoInPane) {
+                  // Pannello info libro (6c): VM separato da quello della
+                  // pagina, riaperto al cambio di libro del lettore.
+                  VerticalDivider()
+                  Box(Modifier.width(Dimens.detailPaneWidth).fillMaxHeight()) {
+                    val bookInfoViewModel: BookInfoViewModel = koinViewModel(key = "bookinfo-pane")
+                    val paneBook =
+                      (readerState as? ReaderUiState.Ready)?.let { state ->
+                        state.books.firstOrNull { it.n == state.selection?.book }
+                      }
+                    if (paneBook != null) {
+                      LaunchedEffect(paneBook.n) { bookInfoViewModel.open(paneBook.n) }
+                      BookInfoScreen(
+                        book = paneBook,
+                        onSaveToNote = { content ->
+                          paneScope.launch {
+                            val id =
+                              notesViewModel.createNoteFromChat("Chat su ${paneBook.name}", content, paneBook.n, 0, 0)
+                            openNote(id)
+                          }
+                        },
+                        onDismiss = { closeBookInfoPane() },
+                        viewModel = bookInfoViewModel,
+                      )
+                    }
                   }
                 }
               }
