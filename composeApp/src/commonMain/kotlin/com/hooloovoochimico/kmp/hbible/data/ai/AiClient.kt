@@ -229,4 +229,23 @@ object AiClientFactory {
     val company = AiCompany.valueOf(config.company)
     return create(company, config.apiKey.trim(), config.model.trim().ifBlank { fallbackModel }, client)
   }
+
+  /** Builds the client for the CMS-provided default service. */
+  fun createCms(cms: CmsAiSettings, client: HttpClient = aiHttpClient()): AiChatClient {
+    val company = AiCompany.valueOf(cms.provider)
+    return create(company, cms.apiKey.trim(), cms.model.trim().ifBlank { company.defaultModel }, client)
+  }
+
+  /** Builds the client for a chain entry, resolving the CMS default ([CMS_COMPANY]) when needed. */
+  fun createForEntry(
+    entry: AiProviderConfig,
+    config: AiConfig,
+    client: HttpClient = aiHttpClient(),
+  ): AiChatClient =
+    if (entry.company == CMS_COMPANY) {
+      val cms = requireNotNull(config.cms) { "Configurazione AI del CMS non disponibile" }
+      createCms(cms, client)
+    } else {
+      create(entry, config.effectiveModel(AiCompany.valueOf(entry.company)), client)
+    }
 }

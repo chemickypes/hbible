@@ -6,6 +6,7 @@ import com.hooloovoochimico.kmp.hbible.data.CrossRefDoc
 import com.hooloovoochimico.kmp.hbible.data.LexiconDoc
 import com.hooloovoochimico.kmp.hbible.data.OriginalDoc
 import com.hooloovoochimico.kmp.hbible.data.SettingsRepository
+import com.hooloovoochimico.kmp.hbible.data.ai.CmsAiSettings
 import com.hooloovoochimico.kmp.hbible.data.local.BibleDao
 import com.hooloovoochimico.kmp.hbible.data.local.BibleDatabase
 import com.hooloovoochimico.kmp.hbible.data.local.BookEntity
@@ -23,6 +24,7 @@ import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.util.date.GMTDate
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -50,6 +52,15 @@ data class PostsDoc(
   val posts: List<PostDto> = emptyList(),
 )
 
+/** Body of GET /api/ai/settings (CMS). */
+@Serializable
+data class CmsAiSettingsDto(
+  val configured: Boolean = false,
+  val provider: String = "",
+  val token: String = "",
+  val model: String = "",
+)
+
 @Serializable
 data class PostDto(
   val slug: String,
@@ -59,6 +70,17 @@ data class PostDto(
   val chapter: Int? = null,
   val verse: Int? = null,
   val publishedAt: String? = null,
+)
+
+/**
+ * Result of GET /api/ai/settings from the CMS.
+ * `reachable=false` → network error (keep local state); reachable with
+ * `available=false` → the CMS publishes no default AI (drop local state).
+ */
+data class AiSettingsFetch(
+  val reachable: Boolean,
+  val available: Boolean,
+  val settings: CmsAiSettings? = null,
 )
 
 /**
@@ -111,6 +133,32 @@ class ContentSyncer(
   private suspend fun fetchManifest(base: String): ContentManifest {
     val text: String = client.get("$base/content/manifest.json").body()
     return json.decodeFromString<ContentManifest>(text)
+  }
+
+  /**
+   * Fetches the CMS-published default AI ("casa madre" + token + modello).
+   * Never throws: network failures yield `reachable=false` so callers keep
+   * the last known state.
+   */
+  suspend fun fetchAiSettings(): AiSettingsFetch {
+    val base = baseUrl()
+    if (base.isBlank()) return AiSettingsFetch(reachable = false, available = false)
+    return try {
+      val text: String = client.get("$base/api/ai/settings").body()
+      val dto = json.decodeFromString<CmsAiSettingsDto>(text)
+      if (dto.configured && dto.token.isNotBlank() && dto.provider.isNotBlank()) {
+        AiSettingsFetch(
+          reachable = true,
+          available = true,
+          settings = CmsAiSettings(provider = dto.provider, apiKey = dto.token, model = dto.model),
+        )
+      } else {
+        AiSettingsFetch(reachable = true, available = false)
+      }
+    } catch (t: Throwable) {
+      if (t is CancellationException) throw t
+      AiSettingsFetch(reachable = false, available = false)
+    }
   }
 
   /**

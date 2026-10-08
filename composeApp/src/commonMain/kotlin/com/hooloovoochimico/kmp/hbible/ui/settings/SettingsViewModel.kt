@@ -8,6 +8,7 @@ import com.hooloovoochimico.kmp.hbible.data.ThemeMode
 import com.hooloovoochimico.kmp.hbible.data.ai.AiCompany
 import com.hooloovoochimico.kmp.hbible.data.ai.AiConfig
 import com.hooloovoochimico.kmp.hbible.data.ai.AiProviderConfig
+import com.hooloovoochimico.kmp.hbible.data.ai.CMS_COMPANY
 import com.hooloovoochimico.kmp.hbible.data.content.ContentSyncer
 import com.hooloovoochimico.kmp.hbible.data.content.UpdateCheck
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -83,12 +84,58 @@ class SettingsViewModel(
   }
 
   fun updateAiProvider(company: AiCompany, change: (AiProviderConfig) -> AiProviderConfig) {
+    updateAiProviderNamed(company.name, change)
+  }
+
+  /** [updateAiProvider] for any provider name, including the CMS default ([CMS_COMPANY]). */
+  fun updateAiProviderNamed(name: String, change: (AiProviderConfig) -> AiProviderConfig) {
     val config = _uiState.value.aiConfig
-    updateAiConfig(config.withProvider(change(config.configFor(company))))
+    val current =
+      config.providers.firstOrNull { it.company == name } ?: AiProviderConfig(company = name)
+    updateAiConfig(config.withProvider(change(current)))
   }
 
   fun moveAiProvider(company: AiCompany, delta: Int) {
     updateAiConfig(_uiState.value.aiConfig.move(company, delta))
+  }
+
+  fun moveAiProviderNamed(name: String, delta: Int) {
+    updateAiConfig(_uiState.value.aiConfig.moveNamed(name, delta))
+  }
+
+  /**
+   * Fetches the CMS-published default AI and merges it into the config as the
+   * [CMS_COMPANY] entry (enable flag and position are kept across refreshes).
+   * No-op when the CMS is unreachable; drops the entry when the CMS no longer
+   * publishes a default.
+   */
+  fun refreshCmsAiSettings() {
+    viewModelScope.launch {
+      val fetch = contentSyncer.fetchAiSettings()
+      val config = _uiState.value.aiConfig
+      if (!fetch.reachable) return@launch
+      if (!fetch.available || fetch.settings == null) {
+        if (config.hasCmsEntry() || config.cms != null) {
+          updateAiConfig(
+            config.copy(
+              providers = config.providers.filterNot { it.company == CMS_COMPANY },
+              order = config.order.filterNot { it == CMS_COMPANY },
+              cms = null,
+            ),
+          )
+        }
+        return@launch
+      }
+      val cms = fetch.settings
+      val existing = config.cmsEntry() ?: AiProviderConfig(company = CMS_COMPANY)
+      updateAiConfig(
+        config
+          .copy(cms = cms)
+          .withProvider(
+            existing.copy(apiKey = cms.apiKey, model = cms.model),
+          ),
+      )
+    }
   }
 
   // --- Content sync (CMS) ---
@@ -105,6 +152,7 @@ class SettingsViewModel(
 
   fun checkForUpdates() {
     if (!contentSyncer.isConfigured() || _uiState.value.contentSync.busy) return
+    refreshCmsAiSettings()
     _uiState.update {
       it.copy(contentSync = it.contentSync.copy(busy = true, progress = "", lastSyncMessage = ""))
     }
@@ -175,6 +223,7 @@ class SettingsViewModel(
   /** Silent check at app open; starts the download automatically when enabled. */
   fun autoCheckOnOpen() {
     if (!contentSyncer.isConfigured()) return
+    refreshCmsAiSettings()
     if (!settingsRepository.loadAutoUpdateCheck()) return
     if (_uiState.value.contentSync.busy) return
     downloadUpdates()

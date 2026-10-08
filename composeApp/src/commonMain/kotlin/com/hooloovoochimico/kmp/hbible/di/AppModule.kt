@@ -14,7 +14,6 @@ import com.hooloovoochimico.kmp.hbible.data.SearchHistory
 import com.hooloovoochimico.kmp.hbible.data.ThemePreferences
 import com.hooloovoochimico.kmp.hbible.data.content.ContentSyncer
 import com.hooloovoochimico.kmp.hbible.data.ai.AiClientFactory
-import com.hooloovoochimico.kmp.hbible.data.ai.AiCompany
 import com.hooloovoochimico.kmp.hbible.data.ai.AiGateway
 import com.hooloovoochimico.kmp.hbible.data.ai.AiSettingsStore
 import com.hooloovoochimico.kmp.hbible.data.ai.aiHttpClient
@@ -65,7 +64,7 @@ val coreModule = module {
         AiGateway(
             configProvider = { get<SettingsRepository>().loadAiConfig() },
             clientFactory = { p, c ->
-                AiClientFactory.create(p, c.effectiveModel(AiCompany.valueOf(p.company)), client = get())
+                AiClientFactory.createForEntry(p, c, client = get())
             },
         )
     }

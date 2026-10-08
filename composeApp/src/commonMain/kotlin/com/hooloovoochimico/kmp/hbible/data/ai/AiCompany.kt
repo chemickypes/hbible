@@ -30,8 +30,8 @@ enum class AiCompany(
   ),
   GEMINI(
     "Google (Gemini)",
-    "gemini-2.5-flash",
-    listOf("gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash"),
+    "gemini-3.8-flash",
+    listOf("gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-flash-latest"),
     "https://generativelanguage.googleapis.com/v1beta/models",
   ),
 }

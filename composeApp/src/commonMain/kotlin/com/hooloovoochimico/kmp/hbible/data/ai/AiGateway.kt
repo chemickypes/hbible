@@ -84,7 +84,7 @@ object AiPrompts {
 class AiGateway(
   private val configProvider: () -> AiConfig,
   private val clientFactory: (AiProviderConfig, AiConfig) -> AiChatClient =
-    { p, c -> AiClientFactory.create(p, c.effectiveModel(AiCompany.valueOf(p.company))) },
+    { p, c -> AiClientFactory.createForEntry(p, c) },
 ) {
 
   /** The usable chain: enabled providers with a key, in priority order. */

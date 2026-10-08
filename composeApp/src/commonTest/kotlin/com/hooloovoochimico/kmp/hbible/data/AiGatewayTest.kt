@@ -5,8 +5,10 @@ import com.hooloovoochimico.kmp.hbible.data.ai.AiChatMessage
 import com.hooloovoochimico.kmp.hbible.data.ai.AiCompany
 import com.hooloovoochimico.kmp.hbible.data.ai.AiConfig
 import com.hooloovoochimico.kmp.hbible.data.ai.AiGateway
-import com.hooloovoochimico.kmp.hbible.data.ai.AiMatches
 import com.hooloovoochimico.kmp.hbible.data.ai.AiProviderConfig
+import com.hooloovoochimico.kmp.hbible.data.ai.AiSettingsStore
+import com.hooloovoochimico.kmp.hbible.data.ai.CMS_COMPANY
+import com.hooloovoochimico.kmp.hbible.data.ai.CmsAiSettings
 import kotlinx.coroutines.test.runTest
 import kotlinx.io.IOException
 import kotlin.test.Test
@@ -140,6 +142,74 @@ class AiGatewayTest {
     } catch (e: IllegalStateException) {
       assertTrue(e.message!!.contains("Nessun servizio AI configurato"))
     }
+  }
+
+  @Test
+  fun `cms default joins the enabled chain when enabled and user keys keep precedence by order`() = runTest {
+    val user = FakeClient(AiCompany.Z_AI) { """{"corrispondenze_perfette": ["Gv 3:16"], "simili": []}""" }
+    val cms = FakeClient(AiCompany.GEMINI) { """{"corrispondenze_perfette": ["Sal 23"], "simili": []}""" }
+    val cfg =
+      AiConfig(
+        providers =
+          listOf(
+            AiProviderConfig(AiCompany.Z_AI.name, apiKey = "zai", enabled = true),
+            AiProviderConfig(CMS_COMPANY, apiKey = "cms-key", enabled = true),
+          ),
+        order = listOf(AiCompany.Z_AI.name, CMS_COMPANY),
+        cms = CmsAiSettings(AiCompany.GEMINI.name, apiKey = "cms-key", model = "gemini-2.5-flash-lite"),
+      )
+    // La voce CMS parte in coda: la chiave personale dell'utente ha la precedenza.
+    assertEquals(listOf(AiCompany.Z_AI.name, CMS_COMPANY), cfg.enabledChain().map { it.company })
+    // Con l'ordine invertito è il default CMS a essere interrogato per primo.
+    val cmsFirst = cfg.copy(order = listOf(CMS_COMPANY, AiCompany.Z_AI.name))
+    assertEquals(listOf(CMS_COMPANY, AiCompany.Z_AI.name), cmsFirst.enabledChain().map { it.company })
+    assertEquals(listOf(CMS_COMPANY), cmsFirst.ordered().map { it.company }.take(1))
+  }
+
+  @Test
+  fun `cms entry is dropped from the chain when disabled or cms data is missing`() {
+    val disabled =
+      AiConfig(
+        providers =
+          listOf(
+            AiProviderConfig(AiCompany.Z_AI.name, apiKey = "zai", enabled = true),
+            AiProviderConfig(CMS_COMPANY, apiKey = "cms-key", enabled = false),
+          ),
+        order = listOf(AiCompany.Z_AI.name, CMS_COMPANY),
+        cms = CmsAiSettings(AiCompany.GEMINI.name, apiKey = "cms-key"),
+      )
+    assertEquals(listOf(AiCompany.Z_AI.name), disabled.enabledChain().map { it.company })
+    // Nessun dato CMS → normalize() non deve ricreare la voce.
+    val store = AiSettingsStore
+    val cleaned = store.run {
+      disabled.copy(cms = null).let { cfg ->
+        cfg.copy(
+          providers = cfg.providers.filterNot { it.company == CMS_COMPANY },
+          order = cfg.order.filterNot { it == CMS_COMPANY },
+        )
+      }
+    }
+    assertTrue(cleaned.ordered().none { it.company == CMS_COMPANY })
+  }
+
+  @Test
+  fun `moveNamed reorders the cms default like any other provider`() {
+    val cfg =
+      AiConfig(
+        providers =
+          listOf(
+            AiProviderConfig(AiCompany.Z_AI.name, apiKey = "zai", enabled = true),
+            AiProviderConfig(CMS_COMPANY, apiKey = "cms-key", enabled = true),
+          ),
+        order = listOf(AiCompany.Z_AI.name, CMS_COMPANY),
+        cms = CmsAiSettings(AiCompany.GEMINI.name, apiKey = "cms-key"),
+      )
+    val moved = cfg.moveNamed(CMS_COMPANY, -1)
+    assertEquals(
+      listOf(CMS_COMPANY, AiCompany.Z_AI.name, AiCompany.OPENAI.name, AiCompany.ANTHROPIC.name, AiCompany.GEMINI.name),
+      moved.order,
+    )
+    assertEquals(listOf(CMS_COMPANY, AiCompany.Z_AI.name), moved.ordered().take(2).map { it.company })
   }
 
   @Test
