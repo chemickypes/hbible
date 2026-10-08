@@ -20,7 +20,11 @@
 #   material3 1.5.0-alpha22 / okhttp 5.5.0 richiedono AGP 9.1+ e compileSdk 37
 #   (verificato empiricamente al primo assembleDebug; platform android-37.0 installato).
 [versions]
-kotlin = "2.3.20"
+# Kotlin 2.4.21 (stabile su Maven Central, 2026-10-08; 2.5.0-Beta1 ignorata). Verificato con una sola
+# modifica: KSP 2.3.12 (ultimo disponibile, schema 2.3.x indipendente dal Kotlin), CM 1.12.1, Room 2.8.5,
+# Koin/Ktor/serialization/coroutines/kotlinx-io/navigation/lifecycle invariati. Le klib iOS delle librerie
+# esistenti (abi 2.3.x) restano leggibili: un compilatore piu' nuovo legge klib piu' vecchie.
+kotlin = "2.4.21"
 androidGradlePlugin = "9.1.0"
 composeMultiplatform = "1.12.1"
 # CM 1.12.1 allinea material3 a 1.12.0-alpha03 (NON esiste material3 1.12.x stable su Central;
