@@ -790,8 +790,8 @@ private fun FloatingBottomBar(
         .padding(horizontal = 16.dp, vertical = 10.dp),
   ) {
     Row(
-      Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-      horizontalArrangement = Arrangement.spacedBy(4.dp),
+      Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+      horizontalArrangement = Arrangement.spacedBy(2.dp),
       verticalAlignment = Alignment.CenterVertically,
     ) {
       ReaderTab.entries.forEach { tab ->
@@ -803,7 +803,10 @@ private fun FloatingBottomBar(
               if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
             )
             .clickable { onSelect(tab) }
-            .padding(horizontal = 20.dp, vertical = 10.dp),
+            // 5 voci × (24dp icona + 2×14dp) + gap + padding: deve stare in 360dp
+            // (telefoni stretti): a 20dp la quinta voce (Impostazioni) usciva
+            // dallo schermo di ~28dp e non era raggiungibile.
+            .padding(horizontal = 14.dp, vertical = 10.dp),
           contentAlignment = Alignment.Center,
         ) {
           Icon(
