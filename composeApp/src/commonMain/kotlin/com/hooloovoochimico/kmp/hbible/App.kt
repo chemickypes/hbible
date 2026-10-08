@@ -41,6 +41,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -285,6 +286,10 @@ private fun HBibleAppShell(
   // Dettaglio mostrato come pannello del lettore (solo con twoPane).
   var detailInPane by rememberSaveable { mutableStateOf(false) }
 
+  // Editor note mostrato come pannello dell'elenco (6a, solo con twoPane):
+  // null = nessuna nota aperta, 0L = nota nuova, >0 = id della nota.
+  var notesPaneId by rememberSaveable { mutableStateOf<Long?>(null) }
+
   // Selezione corrente del lettore, letta al momento dell'uso nei callback.
   fun currentSelection(): ReaderSelection =
     (readerViewModel.uiState.value as? ReaderUiState.Ready)?.selection ?: ReaderSelection()
@@ -386,6 +391,28 @@ private fun HBibleAppShell(
     }
   }
 
+  // Pannello note (6a): se la finestra si stringe, l'editor del pannello diventa
+  // pagina (solo se l'elenco note è la destinazione corrente); se si allarga e
+  // l'editor è pagina aperta dall'elenco, diventa pannello.
+  LaunchedEffect(twoPane) {
+    val destination = navController.currentDestination
+    if (!twoPane && notesPaneId != null) {
+      val id = notesPaneId
+      notesPaneId = null
+      if (destination.hasRouteCompat<NotesRoute>()) {
+        navController.navigate(NoteEditorRoute(id?.takeIf { it > 0L }))
+      }
+    } else if (
+      twoPane &&
+      destination.hasRouteCompat<NoteEditorRoute>() &&
+      navController.previousBackStackEntry?.destination.hasRouteCompat<NotesRoute>()
+    ) {
+      val editing = navController.currentBackStackEntry?.toRoute<NoteEditorRoute>()?.noteId ?: 0L
+      navController.popBackStack()
+      notesPaneId = editing
+    }
+  }
+
   // Salva una risposta chat AI in nota e apre l'editor (sorgente: saveChatToNote):
   // atterra sulla tab NOTE con l'editor sopra, come nel sorgente.
   val saveChatToNote: suspend (String, String, Int, Int, Int) -> Unit = { title, content, b, c, v ->
@@ -482,14 +509,69 @@ private fun HBibleAppShell(
             composable<NotesRoute> {
               val readerState by readerViewModel.uiState.collectAsStateWithLifecycle()
               val books = (readerState as? ReaderUiState.Ready)?.books.orEmpty()
-              ContentWidth {
-                NotesScreen(
-                  books = books,
-                  onDismiss = { goToTab(ReaderRoute) },
-                  onOpenNote = { id -> navController.navigate(NoteEditorRoute(id)) },
-                  onNewNote = { navController.navigate(NoteEditorRoute(null)) },
-                  viewModel = notesViewModel,
-                )
+              if (twoPane) {
+                // Elenco + editor affiancati (6a): l'editor ha più spazio
+                // (weight 1.4) e key(notesPaneId) ne azzera lo stato interno
+                // cambiando nota; chiudere non tocca il back stack.
+                Row(Modifier.fillMaxSize()) {
+                  Box(Modifier.weight(1f)) {
+                    ContentWidth {
+                      NotesScreen(
+                        books = books,
+                        onDismiss = { goToTab(ReaderRoute) },
+                        onOpenNote = { id -> notesPaneId = id },
+                        onNewNote = { notesPaneId = 0L },
+                        viewModel = notesViewModel,
+                      )
+                    }
+                  }
+                  VerticalDivider()
+                  Box(Modifier.weight(1.4f).fillMaxHeight()) {
+                    val paneId = notesPaneId
+                    if (paneId == null) {
+                      Text(
+                        "Seleziona una nota",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.align(Alignment.Center),
+                      )
+                    } else {
+                      key(paneId) {
+                        val editorNote = remember { mutableStateOf<NoteEntity?>(null) }
+                        LaunchedEffect(paneId) {
+                          editorNote.value = if (paneId > 0L) notesViewModel.note(paneId) else null
+                        }
+                        // Come nella pagina: l'editor si mostra solo a nota
+                        // caricata (o nota nuova).
+                        if (paneId == 0L || editorNote.value != null) {
+                          NoteEditorScreen(
+                            note = editorNote.value,
+                            books = books,
+                            loadVerse = { ref ->
+                              readerViewModel.verse(ref.book, ref.chapter, ref.verse)?.text
+                            },
+                            onOpenReference = { target ->
+                              goToVerse(target.book, target.chapter, target.verse)
+                            },
+                            onOpenDetail = openDetailFor,
+                            onDismiss = { notesPaneId = null },
+                            viewModel = notesViewModel,
+                          )
+                        }
+                      }
+                    }
+                  }
+                }
+              } else {
+                ContentWidth {
+                  NotesScreen(
+                    books = books,
+                    onDismiss = { goToTab(ReaderRoute) },
+                    onOpenNote = { id -> navController.navigate(NoteEditorRoute(id)) },
+                    onNewNote = { navController.navigate(NoteEditorRoute(null)) },
+                    viewModel = notesViewModel,
+                  )
+                }
               }
             }
             composable<ExploreRoute> {
