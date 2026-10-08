@@ -30,7 +30,8 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.SheetValue
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -380,7 +381,12 @@ private fun ReferencePickerSheet(
 
   ModalBottomSheet(
     onDismissRequest = onDismiss,
-    sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    sheetState =
+      rememberBottomSheetState(
+        initialValue = SheetValue.Hidden,
+        // Tutto espanso: parzialmente espanso escluso (come skipPartiallyExpanded = true).
+        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
+      ),
   ) {
     when (step) {
       0 -> {
