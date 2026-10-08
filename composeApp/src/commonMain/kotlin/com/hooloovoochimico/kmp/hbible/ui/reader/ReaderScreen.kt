@@ -4,9 +4,12 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import com.hooloovoochimico.kmp.hbible.ui.common.LocalBottomBarClearance
 import com.hooloovoochimico.kmp.hbible.ui.common.centeringPadding
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -17,8 +20,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -43,6 +48,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -78,6 +84,7 @@ import com.hooloovoochimico.kmp.hbible.data.local.PostEntity
 import com.hooloovoochimico.kmp.hbible.data.ReaderFontSize
 import com.hooloovoochimico.kmp.hbible.data.local.BookEntity
 import com.hooloovoochimico.kmp.hbible.data.local.VerseEntity
+import com.hooloovoochimico.kmp.hbible.platform.BackHandler
 import com.hooloovoochimico.kmp.hbible.platform.copyToClipboard
 import com.hooloovoochimico.kmp.hbible.platform.shareText
 import com.hooloovoochimico.kmp.hbible.platform.toast
@@ -144,6 +151,7 @@ fun ReaderScreen(
   onSelectionActiveChange: (Boolean) -> Unit,
   onOpenVerseDetail: (List<VerseRef>) -> Unit,
   onOpenBookInfo: () -> Unit,
+  widePickers: Boolean = false,
   modifier: Modifier = Modifier,
   viewModel: ReaderViewModel,
   settingsViewModel: SettingsViewModel,
@@ -189,6 +197,7 @@ fun ReaderScreen(
         onSelectionActiveChange = onSelectionActiveChange,
         onOpenVerseDetail = onOpenVerseDetail,
         onOpenBookInfo = onOpenBookInfo,
+        widePickers = widePickers,
         modifier = modifier,
       )
     }
@@ -208,6 +217,7 @@ private fun ReaderContent(
   onSelectionActiveChange: (Boolean) -> Unit,
   onOpenVerseDetail: (List<VerseRef>) -> Unit,
   onOpenBookInfo: () -> Unit,
+  widePickers: Boolean,
   modifier: Modifier = Modifier,
 ) {
   var showBookSheet by rememberSaveable { mutableStateOf(false) }
@@ -355,6 +365,12 @@ private fun ReaderContent(
   ) { padding ->
     Box(Modifier.fillMaxSize().padding(padding)) {
       val listState = rememberLazyListState()
+      // Pannello picker laterale (6d): su finestre ampie sostituisce i bottom
+      // sheet; si chiude con X, scegliendo una voce o con il tasto indietro.
+      BackHandler(enabled = widePickers && (showBookSheet || showChapterSheet)) {
+        showBookSheet = false
+        showChapterSheet = false
+      }
       LaunchedEffect(selection) {
         onNavBarVisibleChange(true)
       }
@@ -386,7 +402,60 @@ private fun ReaderContent(
       // "home" (Genesi 1). Fuori dalla LazyColumn: niente problemi di
       // ancoraggio/culling con l'arrivo asincrono dei dati. Gated dal
       // feature flag SHOW_CMS_HOME_CONTENT (struttura attiva, UI nascosta).
-      Column(Modifier.fillMaxSize()) {
+      Row(Modifier.fillMaxSize()) {
+        if (widePickers) {
+          AnimatedVisibility(
+            visible = showBookSheet || showChapterSheet,
+            enter = expandHorizontally() + fadeIn(ExpressiveMotion.effectsTween()),
+            exit = shrinkHorizontally() + fadeOut(ExpressiveMotion.effectsTween()),
+          ) {
+            Surface(
+              tonalElevation = 2.dp,
+              modifier = Modifier.width(360.dp).fillMaxHeight(),
+            ) {
+              Column {
+                Row(
+                  Modifier
+                    .fillMaxWidth()
+                    .padding(start = 24.dp, end = 8.dp, top = 8.dp),
+                  horizontalArrangement = Arrangement.SpaceBetween,
+                  verticalAlignment = Alignment.CenterVertically,
+                ) {
+                  Text(
+                    if (showBookSheet) "Scegli un libro" else "$bookName — capitolo",
+                    style = MaterialTheme.typography.titleMedium,
+                  )
+                  IconButton(onClick = { showBookSheet = false; showChapterSheet = false }) {
+                    Icon(AppIcons.Close, contentDescription = "Chiudi")
+                  }
+                }
+                if (showBookSheet) {
+                  BookPicker(
+                    books = books,
+                    selectedBook = selection.book,
+                    onPick = { book ->
+                      viewModel.selectBook(book.n)
+                      showBookSheet = false
+                      showChapterSheet = true
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                  )
+                } else {
+                  ChapterPicker(
+                    maxChapters = maxChapters,
+                    selectedChapter = selection.chapter,
+                    onPick = { chapter ->
+                      viewModel.selectChapter(chapter)
+                      showChapterSheet = false
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                  )
+                }
+              }
+            }
+          }
+        }
+        Column(Modifier.weight(1f).fillMaxSize()) {
         if (SHOW_CMS_HOME_CONTENT && selection.book == 1 && selection.chapter == 1) {
           votd?.let { display ->
             VotdCard(
@@ -435,6 +504,7 @@ private fun ReaderContent(
         }
       }
       }
+        }
       }
       // La chiave è il VALORE dello stato (come nel sorgente con `by`): il
       // ripristino del capitolo fa ripartire l'effetto e consuma lo scroll.
@@ -449,7 +519,7 @@ private fun ReaderContent(
     }
   }
 
-  if (showBookSheet) {
+  if (!widePickers && showBookSheet) {
     ModalBottomSheet(
       onDismissRequest = { showBookSheet = false },
       sheetState =
@@ -464,85 +534,108 @@ private fun ReaderContent(
         style = MaterialTheme.typography.titleMedium,
         modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
       )
-      LazyColumn(Modifier.fillMaxWidth().padding(bottom = 24.dp)) {
-        item { SectionHeader("Antico Testamento", Modifier.padding(horizontal = 24.dp)) }
-        items(books.filter { it.n <= 39 }, key = { it.n }) { book ->
-          BookSheetRow(
-            name = book.name,
-            abbr = book.displayAbbr,
-            selected = book.n == selection.book,
-            onClick = {
-              viewModel.selectBook(book.n)
-              showBookSheet = false
-              showChapterSheet = true
-            },
-          )
-        }
-        item { SectionHeader("Nuovo Testamento", Modifier.padding(horizontal = 24.dp)) }
-        items(books.filter { it.n >= 40 }, key = { it.n }) { book ->
-          BookSheetRow(
-            name = book.name,
-            abbr = book.displayAbbr,
-            selected = book.n == selection.book,
-            onClick = {
-              viewModel.selectBook(book.n)
-              showBookSheet = false
-              showChapterSheet = true
-            },
-          )
-        }
-      }
+      BookPicker(
+        books = books,
+        selectedBook = selection.book,
+        onPick = { book ->
+          viewModel.selectBook(book.n)
+          showBookSheet = false
+          showChapterSheet = true
+        },
+        modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+      )
     }
   }
 
-  if (showChapterSheet) {
+  if (!widePickers && showChapterSheet) {
     ModalBottomSheet(onDismissRequest = { showChapterSheet = false }) {
       Text(
         "$bookName — capitolo",
         style = MaterialTheme.typography.titleMedium,
         modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
       )
-      LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = 56.dp),
-        modifier =
-          Modifier
-            .fillMaxWidth()
-            .heightIn(max = 480.dp)
-            .padding(horizontal = 16.dp)
-            .padding(bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
-      ) {
-        items((1..maxChapters).toList()) { chapter ->
-          val selected = chapter == selection.chapter
-          Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            Box(
-              modifier =
-                Modifier
-                  .size(44.dp)
-                  .clip(CircleShape)
-                  .then(
-                    if (selected) {
-                      Modifier.background(MaterialTheme.colorScheme.primary)
-                    } else {
-                      Modifier
-                    }
-                  )
-                  .clickable {
-                    viewModel.selectChapter(chapter)
-                    showChapterSheet = false
-                  },
-              contentAlignment = Alignment.Center,
-            ) {
-              Text(
-                chapter.toString(),
-                style = MaterialTheme.typography.bodyLarge,
-                color =
-                  if (selected) MaterialTheme.colorScheme.onPrimary
-                  else MaterialTheme.colorScheme.onSurface,
+      ChapterPicker(
+        maxChapters = maxChapters,
+        selectedChapter = selection.chapter,
+        onPick = { chapter ->
+          viewModel.selectChapter(chapter)
+          showChapterSheet = false
+        },
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 24.dp),
+      )
+    }
+  }
+}
+
+/** Elenco dei libri per testamenti (contenuto riusato da foglio e pannello, 6d). */
+@Composable
+private fun BookPicker(
+  books: List<BookEntity>,
+  selectedBook: Int,
+  onPick: (BookEntity) -> Unit,
+  modifier: Modifier = Modifier,
+) {
+  LazyColumn(modifier) {
+    item { SectionHeader("Antico Testamento", Modifier.padding(horizontal = 24.dp)) }
+    items(books.filter { it.n <= 39 }, key = { it.n }) { book ->
+      BookSheetRow(
+        name = book.name,
+        abbr = book.displayAbbr,
+        selected = book.n == selectedBook,
+        onClick = { onPick(book) },
+      )
+    }
+    item { SectionHeader("Nuovo Testamento", Modifier.padding(horizontal = 24.dp)) }
+    items(books.filter { it.n >= 40 }, key = { it.n }) { book ->
+      BookSheetRow(
+        name = book.name,
+        abbr = book.displayAbbr,
+        selected = book.n == selectedBook,
+        onClick = { onPick(book) },
+      )
+    }
+  }
+}
+
+/** Griglia dei capitoli (contenuto riusato da foglio e pannello, 6d). */
+@Composable
+private fun ChapterPicker(
+  maxChapters: Int,
+  selectedChapter: Int,
+  onPick: (Int) -> Unit,
+  modifier: Modifier = Modifier,
+) {
+  LazyVerticalGrid(
+    columns = GridCells.Adaptive(minSize = 56.dp),
+    modifier = modifier.heightIn(max = 480.dp),
+    verticalArrangement = Arrangement.spacedBy(4.dp),
+    horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
+  ) {
+    items((1..maxChapters).toList()) { chapter ->
+      val selected = chapter == selectedChapter
+      Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        Box(
+          modifier =
+            Modifier
+              .size(44.dp)
+              .clip(CircleShape)
+              .then(
+                if (selected) {
+                  Modifier.background(MaterialTheme.colorScheme.primary)
+                } else {
+                  Modifier
+                }
               )
-            }
-          }
+              .clickable { onPick(chapter) },
+          contentAlignment = Alignment.Center,
+        ) {
+          Text(
+            chapter.toString(),
+            style = MaterialTheme.typography.bodyLarge,
+            color =
+              if (selected) MaterialTheme.colorScheme.onPrimary
+              else MaterialTheme.colorScheme.onSurface,
+          )
         }
       }
     }

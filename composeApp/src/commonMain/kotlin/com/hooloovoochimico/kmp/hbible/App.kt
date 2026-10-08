@@ -588,6 +588,7 @@ private fun HBibleAppShell(
                       }
                     }
                   },
+                  widePickers = useRail,
                   viewModel = readerViewModel,
                   settingsViewModel = settingsViewModel,
                   modifier = Modifier.weight(1f),
