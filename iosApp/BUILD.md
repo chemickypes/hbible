@@ -97,13 +97,14 @@ include **dentro il framework** automaticamente al link: **nessun passo extra in
 (niente copie nel bundle, niente "Copy Bundle Resources"). L'import usa
 `Res.readBytes("files/<nome>.json")` ed è asincrono/lazy (`ensureImported()`).
 
-## iOS x64 (simulatore Intel): warning noto e non bloccante
+## iOS x64 (simulatore Intel): target rimosso
 
-JB navigation `org.jetbrains.androidx.navigation:navigation-compose` **2.10.0-beta01** e
-JB lifecycle **2.11.0** non pubblicano varianti `iosX64`: sui target Intel-simulator
-Gradle stampa "KMP Dependencies Resolution Failure". È un warning pre-esistente e **non
-blocca** simulator arm64 e device arm64. Se serve davvero il simulatore Intel, l'unica
-via è degradare navigation/lifecycle (es. 2.9.x) — non fatto di proposito.
+Il target `iosX64` è stato rimosso da `composeApp/build.gradle.kts` (2026-10-08,
+NEXT_STEPS punto 3a): Compose Multiplatform 1.12 non pubblica più varianti `iosX64`
+e JB navigation/lifecycle nemmeno, quindi il target generava solo gli avvisi
+"KMP Dependencies Resolution Failure" e allungava la build. Su un Mac Intel il
+simulatore iOS richiederebbe di reinserire `iosX64()` (e `kspIosX64`): se mai
+servisse, l'unica via è anche degradare navigation/lifecycle (es. 2.9.x).
 
 ## Icona app
 

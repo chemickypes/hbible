@@ -54,7 +54,9 @@ kotlin {
         }
     }
 
-    listOf(iosX64(), iosArm64(), iosSimulatorArm64()).forEach { iosTarget ->
+    // iosX64 (simulatore Intel) rimosso: CM 1.12 non lo pubblica più e l'utente
+    // usa solo Apple Silicon (NEXT_STEPS punto 3a, 2026-10-08).
+    listOf(iosArm64(), iosSimulatorArm64()).forEach { iosTarget ->
         iosTarget.binaries.framework {
             baseName = "ComposeApp"
             isStatic = true
@@ -169,7 +171,6 @@ android {
 // Room compiler processa commonMain su ogni target.
 dependencies {
     add("kspAndroid", libs.androidx.room.compiler)
-    add("kspIosX64", libs.androidx.room.compiler)
     add("kspIosArm64", libs.androidx.room.compiler)
     add("kspIosSimulatorArm64", libs.androidx.room.compiler)
 }
