@@ -20,6 +20,7 @@ import com.hooloovoochimico.kmp.hbible.data.ai.aiHttpClient
 import com.hooloovoochimico.kmp.hbible.data.local.ALL_MIGRATIONS
 import com.hooloovoochimico.kmp.hbible.data.local.BibleDatabase
 import com.hooloovoochimico.kmp.hbible.platform.bibleDatabaseBuilder
+import com.hooloovoochimico.kmp.hbible.platform.createSecretStore
 import com.hooloovoochimico.kmp.hbible.platform.createSettings
 import io.ktor.client.HttpClient
 import org.koin.core.qualifier.named
@@ -40,6 +41,9 @@ val coreModule = module {
     single(named(SearchHistory.PREFS)) { createSettings(SearchHistory.PREFS) } // "search_history"
     single(named(AiSettingsStore.PREFS)) { createSettings(AiSettingsStore.PREFS) } // "ai_settings"
 
+    // Segreti (chiavi API AI) cifrati: Android Keystore / iOS Keychain.
+    single { createSecretStore("secrets") }
+
     // HTTP client AI condiviso (Ktor, timeout 20s connect / 120s request).
     single<HttpClient> { aiHttpClient() }
 
@@ -47,7 +51,7 @@ val coreModule = module {
     single<BibleRepository> { DefaultBibleRepository(get()) }
     single<NotesRepository> { DefaultNotesRepository(get()) }
     single<ExploreRepository> { DefaultExploreRepository(get(), get(), get(named(SearchHistory.PREFS))) }
-    single<SettingsRepository> { DefaultSettingsRepository(get(), get(named(AiSettingsStore.PREFS))) }
+    single<SettingsRepository> { DefaultSettingsRepository(get(), get(named(AiSettingsStore.PREFS)), get()) }
 
     // Contenuti curati dal CMS (VOTD + feed) già applicati al DB locale.
     single<CmsRepository> { DefaultCmsRepository(get()) }

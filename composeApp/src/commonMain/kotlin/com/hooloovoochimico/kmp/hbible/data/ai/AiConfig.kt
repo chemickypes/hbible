@@ -1,13 +1,15 @@
 package com.hooloovoochimico.kmp.hbible.data.ai
 
+import com.hooloovoochimico.kmp.hbible.platform.SecretStore
 import com.russhwolf.settings.Settings
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 /**
- * Config AI: data class pure + [AiSettingsStore] (persistenza su
- * multiplatform-settings, file "ai_settings" come nel sorgente).
+ * Config AI: data class pure + [AiSettingsStore] (persistenza cifrata: il JSON
+ * in `config_json` vive nel [SecretStore] — Android Keystore / iOS Keychain —,
+ * nel file "ai_settings" restano solo le chiavi legacy in migrazione).
  */
 
 /** User configuration for a single AI provider. */
@@ -104,8 +106,12 @@ data class AiConfig(
 }
 
 /**
- * Loads/saves [AiConfig] from settings storage. Migrates the legacy z.ai-only
- * credentials ("api_key"/"model" keys) on first access.
+ * Loads/saves [AiConfig] from encrypted storage. `config_json` lives in the
+ * [SecretStore]; [settings] ("ai_settings") keeps only the plaintext legacy
+ * keys, migrated on first access:
+ * - `config_json` written in the clear by previous versions → moved to the
+ *   [SecretStore] and removed from [settings];
+ * - z.ai-only credentials (`api_key`/`model`) → folded into the config.
  */
 object AiSettingsStore {
   const val PREFS = "ai_settings"
@@ -115,30 +121,43 @@ object AiSettingsStore {
 
   private val json = Json { ignoreUnknownKeys = true }
 
-  fun load(settings: Settings): AiConfig {
-    val raw = settings.getStringOrNull(KEY_CONFIG)
-    val stored = raw?.let {
-      try {
-        json.decodeFromString<AiConfig>(it)
-      } catch (e: Exception) {
-        null
-      }
-    } ?: AiConfig()
+  fun load(secretStore: SecretStore, settings: Settings): AiConfig {
+    val raw = readRaw(secretStore, settings)
+    val stored = raw?.let { decode(it) } ?: AiConfig()
     val config = migrateLegacy(settings, stored)
-    if (config != stored) save(settings, config)
+    if (config != stored) save(secretStore, config)
     return config.normalize()
   }
 
-  fun save(settings: Settings, config: AiConfig) {
-    settings.putString(KEY_CONFIG, json.encodeToString(config.normalize()))
+  fun save(secretStore: SecretStore, config: AiConfig) {
+    secretStore.put(KEY_CONFIG, json.encodeToString(config.normalize()))
   }
 
   /** True when at least one provider is enabled with a key set. */
-  fun isConfigured(settings: Settings): Boolean = load(settings).enabledChain().isNotEmpty()
+  fun isConfigured(secretStore: SecretStore, settings: Settings): Boolean =
+    load(secretStore, settings).enabledChain().isNotEmpty()
+
+  /** Stored JSON, migrating a plaintext `config_json` into [secretStore] if found. */
+  private fun readRaw(secretStore: SecretStore, settings: Settings): String? {
+    secretStore.get(KEY_CONFIG)?.let { return it }
+    settings.getStringOrNull(KEY_CONFIG)?.let { plaintext ->
+      secretStore.put(KEY_CONFIG, plaintext)
+      settings.remove(KEY_CONFIG)
+      return plaintext
+    }
+    return null
+  }
+
+  private fun decode(raw: String): AiConfig? =
+    try {
+      json.decodeFromString<AiConfig>(raw)
+    } catch (e: Exception) {
+      null
+    }
 
   /** Ensures every company has an entry and appears in the priority order (the
    *  CMS default entry is kept only while it exists — it is managed by the CMS). */
-  private fun AiConfig.normalize(): AiConfig {
+  internal fun AiConfig.normalize(): AiConfig {
     val known =
       AiCompany.entries.map { it.name }.toSet() +
         (if (cms != null || hasCmsEntry()) setOf(CMS_COMPANY) else emptySet())

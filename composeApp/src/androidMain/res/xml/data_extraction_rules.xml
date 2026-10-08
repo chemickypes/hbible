@@ -2,14 +2,18 @@
 <!--
   Backup cloud e trasferimento dispositivo (Android 12+). Note, posizione di
   lettura e impostazioni viaggiano con il backup; le chiavi API dei provider AI
-  (shared_prefs/ai_settings.xml) no: sono segreti dell'utente, non vanno nel
-  cloud. Il DB biblico si rigenera, ma contiene le note: resta incluso.
+  (shared_prefs/ai_settings.xml, legacy in chiaro, e shared_prefs/secrets.xml,
+  ciphertext AES-GCM) no: il testo cifrato non è decifrabile su un altro
+  telefono (la chiave Keystore non viaggia col backup) e sono segreti
+  dell'utente. Il DB biblico si rigenera, ma contiene le note: resta incluso.
 -->
 <data-extraction-rules>
     <cloud-backup>
         <exclude domain="sharedpref" path="ai_settings.xml" />
+        <exclude domain="sharedpref" path="secrets.xml" />
     </cloud-backup>
     <device-transfer>
         <exclude domain="sharedpref" path="ai_settings.xml" />
+        <exclude domain="sharedpref" path="secrets.xml" />
     </device-transfer>
 </data-extraction-rules>

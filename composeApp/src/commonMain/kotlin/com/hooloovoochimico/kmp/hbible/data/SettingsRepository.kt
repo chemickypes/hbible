@@ -2,6 +2,7 @@ package com.hooloovoochimico.kmp.hbible.data
 
 import com.hooloovoochimico.kmp.hbible.data.ai.AiConfig
 import com.hooloovoochimico.kmp.hbible.data.ai.AiSettingsStore
+import com.hooloovoochimico.kmp.hbible.platform.SecretStore
 import com.russhwolf.settings.Settings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -92,11 +93,13 @@ interface SettingsRepository {
 class DefaultSettingsRepository(
   /** File "settings" (tema, lettura, ultima posizione), come nel sorgente. */
   private val settings: Settings,
-  /** File "ai_settings" (config AI), come nel sorgente. */
+  /** File "ai_settings" (chiavi legacy della config AI), come nel sorgente. */
   private val aiSettings: Settings,
+  /** Storage cifrato per il JSON di config AI (Android Keystore / iOS Keychain). */
+  private val secretStore: SecretStore,
 ) : SettingsRepository {
 
-  private val aiConfigState = MutableStateFlow(AiSettingsStore.load(aiSettings))
+  private val aiConfigState = MutableStateFlow(AiSettingsStore.load(secretStore, aiSettings))
   override val aiConfig: StateFlow<AiConfig> = aiConfigState
 
   override fun loadThemeMode(): ThemeMode = ThemePreferences.load(settings)
@@ -142,14 +145,14 @@ class DefaultSettingsRepository(
     ThemePreferences.saveAutoUpdateCheck(settings, enabled)
   }
 
-  override fun loadAiConfig(): AiConfig = AiSettingsStore.load(aiSettings)
+  override fun loadAiConfig(): AiConfig = AiSettingsStore.load(secretStore, aiSettings)
 
   override fun saveAiConfig(config: AiConfig) {
-    AiSettingsStore.save(aiSettings, config)
+    AiSettingsStore.save(secretStore, config)
     aiConfigState.value = loadAiConfig()
   }
 
-  override fun isAiConfigured(): Boolean = AiSettingsStore.isConfigured(aiSettings)
+  override fun isAiConfigured(): Boolean = AiSettingsStore.isConfigured(secretStore, aiSettings)
 }
 
 /** Theme and reader preferences (file "settings", come nel sorgente). */
