@@ -31,6 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -109,6 +110,7 @@ fun VerseDetailScreen(
 ) {
   BackHandler(enabled = true, onBack = onDismiss)
   val scope = rememberCoroutineScope()
+  val aiConfigured by viewModel.aiConfigured.collectAsStateWithLifecycle()
   val scrollState = rememberScrollState()
   LaunchedEffect(index) { scrollState.scrollTo(0) }
   val loadVerse: suspend (VerseRef) -> VerseEntity? = { ref ->
@@ -531,7 +533,7 @@ fun VerseDetailScreen(
       }
 
       SectionHeader("Chiedi all'AI", Modifier.padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 8.dp))
-      if (viewModel.aiConfigured) {
+      if (aiConfigured) {
         HBibleCard(
           onClick = { showChat = true },
           shape = MaterialTheme.shapes.extraLarge,

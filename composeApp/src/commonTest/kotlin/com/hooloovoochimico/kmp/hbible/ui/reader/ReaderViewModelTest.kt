@@ -24,6 +24,7 @@ import kotlin.test.assertEquals
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -137,9 +138,13 @@ private class FakeSettingsRepository : SettingsRepository {
 
   override fun saveAutoUpdateCheck(enabled: Boolean) {}
 
-  override fun loadAiConfig(): AiConfig = AiConfig()
+  override val aiConfig = MutableStateFlow(AiConfig())
 
-  override fun saveAiConfig(config: AiConfig) {}
+  override fun loadAiConfig(): AiConfig = aiConfig.value
+
+  override fun saveAiConfig(config: AiConfig) {
+    aiConfig.value = config
+  }
 
   override fun isAiConfigured(): Boolean = false
 }

@@ -71,6 +71,7 @@ fun BookInfoScreen(
 ) {
   BackHandler(enabled = true, onBack = onDismiss)
   val state by viewModel.state.collectAsStateWithLifecycle()
+  val aiConfigured by viewModel.aiConfigured.collectAsStateWithLifecycle()
   val testament = if (book.n <= 39) "Antico Testamento" else "Nuovo Testamento"
 
   // --- chat state (transient) ---
@@ -192,7 +193,7 @@ fun BookInfoScreen(
     }
 
     HorizontalDivider()
-    if (viewModel.aiConfigured) {
+    if (aiConfigured) {
       HBibleCard(
         onClick = { showChat = true },
         shape = MaterialTheme.shapes.extraLarge,

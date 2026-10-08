@@ -3,13 +3,17 @@ package com.hooloovoochimico.kmp.hbible.ui.reader
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hooloovoochimico.kmp.hbible.data.BibleRepository
+import com.hooloovoochimico.kmp.hbible.data.SettingsRepository
 import com.hooloovoochimico.kmp.hbible.data.ai.AiChatMessage
 import com.hooloovoochimico.kmp.hbible.data.ai.AiGateway
 import com.hooloovoochimico.kmp.hbible.data.local.BookInfoEntity
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlin.time.Clock
 
@@ -29,6 +33,7 @@ data class BookInfoUiState(
 class BookInfoViewModel(
   private val repository: BibleRepository,
   private val aiGateway: AiGateway,
+  settingsRepository: SettingsRepository,
 ) : ViewModel() {
 
   private val stateInternal = MutableStateFlow(BookInfoUiState())
@@ -90,9 +95,19 @@ class BookInfoViewModel(
     }
   }
 
-  /** True when at least one AI provider is configured and usable. */
-  val aiConfigured: Boolean
-    get() = aiGateway.chain.isNotEmpty()
+  /**
+   * True when at least one AI provider is configured and usable. Reattivo:
+   * segue [SettingsRepository.aiConfig], stessa regola di AiGateway.chain
+   * (config.enabledChain()).
+   */
+  val aiConfigured: StateFlow<Boolean> =
+    settingsRepository.aiConfig
+      .map { it.enabledChain().isNotEmpty() }
+      .stateIn(
+        viewModelScope,
+        SharingStarted.Eagerly,
+        settingsRepository.aiConfig.value.enabledChain().isNotEmpty(),
+      )
 
   /** Multi-turn chat with the configured AI about the book. */
   suspend fun chat(system: String, messages: List<AiChatMessage>): String = aiGateway.chat(system, messages)

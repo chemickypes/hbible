@@ -664,6 +664,7 @@ private fun VerseDetailContent(
   val books = ready?.books.orEmpty()
   val translation = ready?.selection?.translation ?: "NR"
   val detail by viewModel.verseDetail.collectAsStateWithLifecycle()
+  val aiConfigured by viewModel.aiConfigured.collectAsStateWithLifecycle()
   // Ripristino dopo process death / cambio di layout (l'insieme è nel guscio):
   // riapre la richiesta se il ViewModel non ne ha una valida.
   LaunchedEffect(current) {
@@ -683,7 +684,7 @@ private fun VerseDetailContent(
     bookName = bookName,
     initialWord = initialWord,
     onSaveAiToNote =
-      if (viewModel.aiConfigured) {
+      if (aiConfigured) {
         { content ->
           onSaveAiToNote("Note su ${bookName(current.book)} ${current.chapter}:${current.verse}", content, current)
         }

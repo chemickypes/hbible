@@ -20,6 +20,7 @@ import kotlin.test.assertEquals
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
@@ -141,10 +142,15 @@ private class FakeSettingsRepository : SettingsRepository {
 
   override fun saveAutoUpdateCheck(enabled: Boolean) {}
 
-  override fun loadAiConfig(): com.hooloovoochimico.kmp.hbible.data.ai.AiConfig =
-    com.hooloovoochimico.kmp.hbible.data.ai.AiConfig()
+  override val aiConfig =
+    MutableStateFlow(com.hooloovoochimico.kmp.hbible.data.ai.AiConfig())
 
-  override fun saveAiConfig(config: com.hooloovoochimico.kmp.hbible.data.ai.AiConfig) {}
+  override fun loadAiConfig(): com.hooloovoochimico.kmp.hbible.data.ai.AiConfig =
+    aiConfig.value
+
+  override fun saveAiConfig(config: com.hooloovoochimico.kmp.hbible.data.ai.AiConfig) {
+    aiConfig.value = config
+  }
 
   override fun isAiConfigured(): Boolean = false
 }

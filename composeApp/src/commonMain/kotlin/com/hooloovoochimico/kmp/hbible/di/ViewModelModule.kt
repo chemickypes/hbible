@@ -20,8 +20,8 @@ import org.koin.dsl.module
  */
 val viewModelModule = module {
     viewModel { ReaderViewModel(get(), get(), get()) }
-    viewModel { VerseDetailViewModel(get(), get()) }
-    viewModel { BookInfoViewModel(get(), get()) }
+    viewModel { VerseDetailViewModel(get(), get(), get()) }
+    viewModel { BookInfoViewModel(get(), get(), get()) }
     viewModel { NotesViewModel(get()) }
     viewModel { ExploreViewModel(get(), get(), get(), get()) }
     viewModel { InterlineareViewModel(get(), get()) }

@@ -3,6 +3,8 @@ package com.hooloovoochimico.kmp.hbible.data
 import com.hooloovoochimico.kmp.hbible.data.ai.AiConfig
 import com.hooloovoochimico.kmp.hbible.data.ai.AiSettingsStore
 import com.russhwolf.settings.Settings
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 enum class ThemeMode {
   SYSTEM,
@@ -73,6 +75,12 @@ interface SettingsRepository {
 
   // --- AI configuration ---
 
+  /**
+   * AI configuration as a reactive stream: emits again after every
+   * [saveAiConfig], so the UI can react while a screen is already open.
+   */
+  val aiConfig: StateFlow<AiConfig>
+
   fun loadAiConfig(): AiConfig
 
   fun saveAiConfig(config: AiConfig)
@@ -87,6 +95,9 @@ class DefaultSettingsRepository(
   /** File "ai_settings" (config AI), come nel sorgente. */
   private val aiSettings: Settings,
 ) : SettingsRepository {
+
+  private val aiConfigState = MutableStateFlow(AiSettingsStore.load(aiSettings))
+  override val aiConfig: StateFlow<AiConfig> = aiConfigState
 
   override fun loadThemeMode(): ThemeMode = ThemePreferences.load(settings)
 
@@ -135,6 +146,7 @@ class DefaultSettingsRepository(
 
   override fun saveAiConfig(config: AiConfig) {
     AiSettingsStore.save(aiSettings, config)
+    aiConfigState.value = loadAiConfig()
   }
 
   override fun isAiConfigured(): Boolean = AiSettingsStore.isConfigured(aiSettings)
