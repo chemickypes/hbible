@@ -22,9 +22,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Menu
+
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -72,6 +70,7 @@ import com.hooloovoochimico.kmp.hbible.ui.common.HBibleCard
 import com.hooloovoochimico.kmp.hbible.ui.common.SectionHeader
 import com.hooloovoochimico.kmp.hbible.ui.common.VerseChipRow
 import com.hooloovoochimico.kmp.hbible.ui.common.VerseRef
+import com.hooloovoochimico.kmp.hbible.ui.common.AppIcons
 
 private const val LEMMA_LIMIT = 40
 
@@ -249,7 +248,7 @@ fun VerseDetailScreen(
       verticalAlignment = Alignment.CenterVertically,
     ) {
       IconButton(onClick = onDismiss) {
-        Icon(Icons.Default.Close, contentDescription = "Chiudi dettaglio")
+        Icon(AppIcons.Close, contentDescription = "Chiudi dettaglio")
       }
       Column(Modifier.padding(start = 4.dp)) {
         Text(reference, style = MaterialTheme.typography.titleMedium)
@@ -262,7 +261,7 @@ fun VerseDetailScreen(
       Spacer(Modifier.weight(1f))
       // Stessa icona della tab Interlineare nella bottom bar.
       IconButton(onClick = onOpenInterlinear) {
-        Icon(Icons.Default.Menu, contentDescription = "Apri nell'interlineare")
+        Icon(AppIcons.Menu, contentDescription = "Apri nell'interlineare")
       }
     }
 
@@ -392,7 +391,7 @@ fun VerseDetailScreen(
                 )
                 IconButton(onClick = { selectedWord = -1 }) {
                   Icon(
-                    Icons.Default.Close,
+                    AppIcons.Close,
                     contentDescription = "Deseleziona parola",
                     modifier = Modifier.size(20.dp),
                   )

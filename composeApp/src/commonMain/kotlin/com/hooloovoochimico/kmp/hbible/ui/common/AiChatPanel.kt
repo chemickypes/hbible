@@ -16,9 +16,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.Refresh
+
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -128,7 +126,7 @@ fun AiChatPanel(
     if (messages.isNotEmpty()) {
       TextButton(onClick = onClear, modifier = Modifier.padding(start = 12.dp)) {
         Icon(
-          Icons.Default.Refresh,
+          AppIcons.Refresh,
           contentDescription = null,
           modifier = Modifier.size(16.dp),
         )
@@ -159,7 +157,7 @@ fun AiChatPanel(
         },
         enabled = draft.isNotBlank() && !busy,
       ) {
-        Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Invia messaggio")
+        Icon(AppIcons.Send, contentDescription = "Invia messaggio")
       }
     }
   }

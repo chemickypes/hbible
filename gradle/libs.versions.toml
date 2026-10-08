@@ -26,9 +26,11 @@ composeMultiplatform = "1.12.1"
 # CM 1.12.1 allinea material3 a 1.12.0-alpha03 (NON esiste material3 1.12.x stable su Central;
 # confermato da maven-metadata e dalla tabella "Components" delle release notes CM 1.12.1).
 composeMaterial3 = "1.12.0-alpha03"
-# material-icons-extended è pinato upstream a 1.7.3 e non riceve più aggiornamenti
-# (deprecazione CM 1.12: migrare a Material Symbols se necessario in F4).
-composeMaterialIcons = "1.7.3"
+# material-icons-extended RIMOSSO (2026-10-08, NEXT_STEPS punto 3c): era pinato
+# upstream a 1.7.3 e non riceveva più aggiornamenti; le 17 icone usate dall'app
+# sono copiate in ui/common/AppIcons.kt dai sorgenti Apache 2.0 di
+# material-icons-core. Se servissero nuove icone: aggiungerle ad AppIcons.kt
+# (path da fonts.google.com/icons o dai sorgenti material-icons-core).
 # material3-adaptive multiplatform (window size class per tablet). NON la 1.3.0 stabile:
 # le sue klib iOS sono compilate con Kotlin 2.4.20 (abi_version 2.4.0), illeggibili dal
 # nostro Kotlin 2.3.20. 1.3.0-rc01 = stessa API, klib con compiler 2.3.20 / ABI 2.3.0
@@ -59,7 +61,6 @@ compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMul
 compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "composeMaterial3" }
 compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatform" }
 compose-material3-adaptive = { module = "org.jetbrains.compose.material3.adaptive:adaptive", version.ref = "composeAdaptive" }
-compose-material-icons-extended = { module = "org.jetbrains.compose.material:material-icons-extended", version.ref = "composeMaterialIcons" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidxActivity" }
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }

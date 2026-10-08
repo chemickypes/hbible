@@ -36,14 +36,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Search
+
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -87,6 +80,7 @@ import com.hooloovoochimico.kmp.hbible.platform.formatDate
 import com.hooloovoochimico.kmp.hbible.ui.common.EmptyMessage
 import com.hooloovoochimico.kmp.hbible.ui.common.HBibleCard
 import com.hooloovoochimico.kmp.hbible.ui.common.ScreenTitle
+import com.hooloovoochimico.kmp.hbible.ui.common.AppIcons
 
 /** Shared duration of the AI-mode transitions (bar morph + filter chips fade). */
 private const val SEARCH_TRANSITION_MS = 500
@@ -182,7 +176,7 @@ fun ExploreScreen(
           viewModel.onQueryChange("")
         },
       ) {
-        Icon(Icons.Default.Close, contentDescription = "Cancella query")
+        Icon(AppIcons.Close, contentDescription = "Cancella query")
       }
     }
   }
@@ -266,7 +260,7 @@ fun ExploreScreen(
           if (aiMode) {
             null
           } else {
-            { Icon(Icons.Default.Search, contentDescription = null) }
+            { Icon(AppIcons.Search, contentDescription = null) }
           },
         trailingIcon = {
           if (aiMode) {
@@ -320,7 +314,7 @@ fun ExploreScreen(
           enabled = query.isNotBlank() && !state.aiSearching,
           modifier = Modifier.align(Alignment.BottomEnd).padding(bottom = 4.dp),
         ) {
-          Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Avvia ricerca AI")
+          Icon(AppIcons.Send, contentDescription = "Avvia ricerca AI")
         }
       }
     }
@@ -350,7 +344,7 @@ fun ExploreScreen(
               if (selected) {
                 {
                   Icon(
-                    Icons.Default.Check,
+                    AppIcons.Check,
                     contentDescription = null,
                     modifier = Modifier.size(FilterChipDefaults.IconSize),
                   )
@@ -422,7 +416,7 @@ fun ExploreScreen(
               verticalAlignment = Alignment.CenterVertically,
             ) {
               Icon(
-                if (entry.aiMode) AiIcon else Icons.Default.Search,
+                if (entry.aiMode) AiIcon else AppIcons.Search,
                 contentDescription = if (entry.aiMode) "Ricerca AI" else "Ricerca testo",
                 tint =
                   if (entry.aiMode) {
@@ -584,7 +578,7 @@ fun ExploreScreen(
             },
             leadingIcon = {
               Icon(
-                Icons.AutoMirrored.Filled.ArrowForward,
+                AppIcons.ArrowForward,
                 contentDescription = null,
                 modifier = Modifier.size(FilterChipDefaults.IconSize),
               )
@@ -738,7 +732,7 @@ private fun ProntoSoccorsoSection(enabled: Boolean, onTheme: (String) -> Unit) {
   HBibleCard(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Icon(
-        Icons.Default.Favorite,
+        AppIcons.Favorite,
         contentDescription = null,
         tint = MaterialTheme.colorScheme.primary,
         modifier = Modifier.size(20.dp),
@@ -777,7 +771,7 @@ private fun FirstAidCard(theme: String, reflection: String, onSaveToNote: (() ->
   ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Icon(
-        Icons.Default.Favorite,
+        AppIcons.Favorite,
         contentDescription = null,
         modifier = Modifier.size(18.dp),
       )
@@ -794,7 +788,7 @@ private fun FirstAidCard(theme: String, reflection: String, onSaveToNote: (() ->
     )
     if (onSaveToNote != null) {
       TextButton(onClick = onSaveToNote) {
-        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+        Icon(AppIcons.Add, contentDescription = null, modifier = Modifier.size(18.dp))
         Text(
           "Crea nota dalla riflessione",
           modifier = Modifier.padding(start = 6.dp),

@@ -16,11 +16,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Search
+
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -45,6 +41,7 @@ import com.hooloovoochimico.kmp.hbible.data.local.BookEntity
 import com.hooloovoochimico.kmp.hbible.data.local.NoteEntity
 import com.hooloovoochimico.kmp.hbible.platform.formatDate
 import com.hooloovoochimico.kmp.hbible.ui.common.EmptyMessage
+import com.hooloovoochimico.kmp.hbible.ui.common.AppIcons
 
 /** Full-screen list of personal notes with live filter. */
 @Composable
@@ -93,11 +90,10 @@ fun NotesScreen(
         )
       }
       TextButton(onClick = onNewNote) {
-        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.padding(end = 4.dp))
+        Icon(AppIcons.Add, contentDescription = null, modifier = Modifier.padding(end = 4.dp))
         Text("Nuova")
       }
     }
-
 
     TextField(
       value = query,
@@ -105,11 +101,11 @@ fun NotesScreen(
       placeholder = { Text("Cerca nelle note…") },
       singleLine = true,
       shape = RoundedCornerShape(28.dp),
-      leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+      leadingIcon = { Icon(AppIcons.Search, contentDescription = null) },
       trailingIcon = {
         if (query.isNotEmpty()) {
           IconButton(onClick = { query = "" }) {
-            Icon(Icons.Default.Close, contentDescription = "Cancella filtro")
+            Icon(AppIcons.Close, contentDescription = "Cancella filtro")
           }
         }
       },
@@ -180,7 +176,6 @@ private fun bookLabel(note: NoteEntity, books: List<BookEntity>): String? {
   return "$name ${note.chapter}" + note.verse.takeIf { it > 0 }?.let { ":$it" }.orEmpty()
 }
 
-
 @Composable
 private fun NoteRow(
   note: NoteEntity,
@@ -219,7 +214,7 @@ private fun NoteRow(
     }
     IconButton(onClick = onDelete) {
       Icon(
-        Icons.Default.Delete,
+        AppIcons.Delete,
         contentDescription = "Elimina nota",
         tint = MaterialTheme.colorScheme.onSurfaceVariant,
       )

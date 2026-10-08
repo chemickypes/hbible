@@ -32,11 +32,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
+
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -92,6 +88,7 @@ import com.hooloovoochimico.kmp.hbible.ui.reader.VerseDetailScreen
 import com.hooloovoochimico.kmp.hbible.ui.settings.AiSettingsScreen
 import com.hooloovoochimico.kmp.hbible.ui.settings.SettingsScreen
 import com.hooloovoochimico.kmp.hbible.ui.settings.SettingsViewModel
+import com.hooloovoochimico.kmp.hbible.ui.common.AppIcons
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import org.koin.compose.viewmodel.koinViewModel
@@ -736,10 +733,10 @@ private val ReaderTab.icon: ImageVector
   get() =
     when (this) {
       ReaderTab.BIBBIA -> BibleIcon
-      ReaderTab.NOTE -> Icons.Default.Edit
-      ReaderTab.RICERCA -> Icons.Default.Search
-      ReaderTab.INTERLINEARE -> Icons.Default.Menu
-      ReaderTab.IMPOSTAZIONI -> Icons.Default.Settings
+      ReaderTab.NOTE -> AppIcons.Edit
+      ReaderTab.RICERCA -> AppIcons.Search
+      ReaderTab.INTERLINEARE -> AppIcons.Menu
+      ReaderTab.IMPOSTAZIONI -> AppIcons.Settings
     }
 
 private fun ReaderTab.isSelected(destination: NavDestination?): Boolean =

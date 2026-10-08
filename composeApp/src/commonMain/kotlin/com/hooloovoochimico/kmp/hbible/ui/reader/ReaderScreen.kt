@@ -33,10 +33,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Share
+
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -92,6 +89,7 @@ import com.hooloovoochimico.kmp.hbible.ui.common.SectionHeader
 import com.hooloovoochimico.kmp.hbible.ui.common.VerseRef
 import com.hooloovoochimico.kmp.hbible.ui.common.displayAbbr
 import com.hooloovoochimico.kmp.hbible.ui.settings.SettingsViewModel
+import com.hooloovoochimico.kmp.hbible.ui.common.AppIcons
 import kotlinx.coroutines.flow.first
 
 /**
@@ -286,7 +284,7 @@ private fun ReaderContent(
           TopAppBar(
             navigationIcon = {
               IconButton(onClick = { highlightedVerses = emptySet() }) {
-                Icon(Icons.Default.Close, contentDescription = "Deseleziona versetti")
+                Icon(AppIcons.Close, contentDescription = "Deseleziona versetti")
               }
             },
             title = {
@@ -300,14 +298,14 @@ private fun ReaderContent(
                 Icon(CopyIcon, contentDescription = "Copia versetti")
               }
               IconButton(onClick = { shareSelected() }) {
-                Icon(Icons.Default.Share, contentDescription = "Condividi")
+                Icon(AppIcons.Share, contentDescription = "Condividi")
               }
               IconButton(
                 onClick = {
                   showDetailFor(verses.filter { it.verse in highlightedVerses }.sortedBy { it.verse })
                 },
               ) {
-                Icon(Icons.Default.Info, contentDescription = "Dettaglio versetti")
+                Icon(AppIcons.Info, contentDescription = "Dettaglio versetti")
               }
             },
           )
@@ -331,7 +329,7 @@ private fun ReaderContent(
                   )
                 }
                 IconButton(onClick = onOpenBookInfo) {
-                  Icon(Icons.Default.Info, contentDescription = "Info sul libro")
+                  Icon(AppIcons.Info, contentDescription = "Info sul libro")
                 }
               }
             },

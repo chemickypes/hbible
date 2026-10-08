@@ -8,8 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
+
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -70,7 +69,7 @@ fun ExpandableVerseChip(
           )
           IconButton(onClick = onClose) {
             Icon(
-              Icons.Default.Close,
+              AppIcons.Close,
               contentDescription = "Chiudi riferimento",
               modifier = Modifier.size(20.dp),
             )

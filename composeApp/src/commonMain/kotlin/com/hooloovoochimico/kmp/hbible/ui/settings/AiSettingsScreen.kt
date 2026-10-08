@@ -16,10 +16,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
+
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,6 +37,7 @@ import com.hooloovoochimico.kmp.hbible.data.ai.AiConfig
 import com.hooloovoochimico.kmp.hbible.data.ai.AiProviderConfig
 import com.hooloovoochimico.kmp.hbible.data.ai.CMS_COMPANY
 import com.hooloovoochimico.kmp.hbible.ui.common.HBibleCard
+import com.hooloovoochimico.kmp.hbible.ui.common.AppIcons
 
 /**
  * Full-screen page for configuring AI providers: API keys, models, enable
@@ -68,7 +66,7 @@ fun AiSettingsScreen(
       verticalAlignment = Alignment.CenterVertically,
     ) {
       IconButton(onClick = onDismiss) {
-        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Torna alle impostazioni")
+        Icon(AppIcons.ArrowBack, contentDescription = "Torna alle impostazioni")
       }
       Text("Servizi AI", style = MaterialTheme.typography.titleLarge)
     }
@@ -177,10 +175,10 @@ private fun AiProviderCard(
           )
         }
         IconButton(onClick = onMoveUp, enabled = priority > 1) {
-          Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Alza priorità ${company.label}")
+          Icon(AppIcons.KeyboardArrowUp, contentDescription = "Alza priorità ${company.label}")
         }
         IconButton(onClick = onMoveDown, enabled = priority < totalProviders) {
-          Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Abbassa priorità ${company.label}")
+          Icon(AppIcons.KeyboardArrowDown, contentDescription = "Abbassa priorità ${company.label}")
         }
         Switch(checked = provider.enabled, onCheckedChange = onEnabledChange)
       }
@@ -269,10 +267,10 @@ private fun AiCmsCard(
         )
       }
       IconButton(onClick = onMoveUp, enabled = priority > 1) {
-        Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Alza priorità Default (CMS)")
+        Icon(AppIcons.KeyboardArrowUp, contentDescription = "Alza priorità Default (CMS)")
       }
       IconButton(onClick = onMoveDown) {
-        Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Abbassa priorità Default (CMS)")
+        Icon(AppIcons.KeyboardArrowDown, contentDescription = "Abbassa priorità Default (CMS)")
       }
       Switch(checked = provider.enabled, onCheckedChange = onEnabledChange)
     }

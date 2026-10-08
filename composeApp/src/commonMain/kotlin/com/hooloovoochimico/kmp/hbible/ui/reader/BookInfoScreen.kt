@@ -15,9 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Refresh
+
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -45,6 +43,7 @@ import com.hooloovoochimico.kmp.hbible.platform.formatDate
 import com.hooloovoochimico.kmp.hbible.theme.ScriptureTypography
 import com.hooloovoochimico.kmp.hbible.ui.common.HBibleCard
 import com.hooloovoochimico.kmp.hbible.ui.common.AiChatPanel
+import com.hooloovoochimico.kmp.hbible.ui.common.AppIcons
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
@@ -117,7 +116,7 @@ fun BookInfoScreen(
       verticalAlignment = Alignment.CenterVertically,
     ) {
       IconButton(onClick = onDismiss) {
-        Icon(Icons.Default.Close, contentDescription = "Chiudi introduzione")
+        Icon(AppIcons.Close, contentDescription = "Chiudi introduzione")
       }
       Column(Modifier.padding(start = 4.dp)) {
         Text(book.name, style = MaterialTheme.typography.titleMedium)
@@ -164,7 +163,7 @@ fun BookInfoScreen(
             )
             IconButton(onClick = { viewModel.generate() }, enabled = !state.busy) {
               Icon(
-                Icons.Default.Refresh,
+                AppIcons.Refresh,
                 contentDescription = "Rigenera introduzione",
                 modifier = Modifier.size(20.dp),
               )

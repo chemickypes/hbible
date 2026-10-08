@@ -16,10 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Share
+
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Icon
@@ -54,6 +51,7 @@ import com.hooloovoochimico.kmp.hbible.platform.shareText
 import com.hooloovoochimico.kmp.hbible.theme.ScriptureTypography
 import com.hooloovoochimico.kmp.hbible.ui.common.VerseChipRow
 import com.hooloovoochimico.kmp.hbible.ui.common.VerseRef
+import com.hooloovoochimico.kmp.hbible.ui.common.AppIcons
 import kotlinx.coroutines.launch
 import kotlin.time.Clock
 
@@ -162,7 +160,7 @@ fun NoteEditorScreen(
       verticalAlignment = Alignment.CenterVertically,
     ) {
       IconButton(onClick = { if (dirty) persistAndClose() else onDismiss() }) {
-        Icon(Icons.Default.Close, contentDescription = "Chiudi nota")
+        Icon(AppIcons.Close, contentDescription = "Chiudi nota")
       }
       Column(Modifier.padding(start = 4.dp).weight(1f)) {
         Text(if (note == null) "Nuova nota" else "Nota", style = MaterialTheme.typography.titleMedium)
@@ -174,11 +172,11 @@ fun NoteEditorScreen(
       }
       TextButton(onClick = { persistAndClose() }, enabled = dirty) { Text("Salva") }
       IconButton(onClick = { shareNote() }, enabled = content.text.isNotBlank()) {
-        Icon(Icons.Default.Share, contentDescription = "Condividi nota")
+        Icon(AppIcons.Share, contentDescription = "Condividi nota")
       }
       if (note != null) {
         IconButton(onClick = { confirmDelete = true }) {
-          Icon(Icons.Default.Delete, contentDescription = "Elimina nota")
+          Icon(AppIcons.Delete, contentDescription = "Elimina nota")
         }
       }
     }
