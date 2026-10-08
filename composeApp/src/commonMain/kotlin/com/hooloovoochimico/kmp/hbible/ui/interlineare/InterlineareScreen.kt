@@ -59,7 +59,7 @@ import com.hooloovoochimico.kmp.hbible.data.InterlinearPosition
 import com.hooloovoochimico.kmp.hbible.data.local.BookEntity
 import com.hooloovoochimico.kmp.hbible.data.local.OriginalVerseEntity
 import com.hooloovoochimico.kmp.hbible.data.local.VerseEntity
-import com.hooloovoochimico.kmp.hbible.data.local.alignedItalianIndices
+import com.hooloovoochimico.kmp.hbible.data.local.alignmentTokens
 import com.hooloovoochimico.kmp.hbible.theme.ScriptureTypography
 import com.hooloovoochimico.kmp.hbible.ui.common.BookSheetRow
 import com.hooloovoochimico.kmp.hbible.ui.common.EmptyMessage
@@ -155,7 +155,7 @@ fun InterlineareScreen(
           WordColumns(
             original = original,
             verse = state.verse,
-            translation = state.translation,
+            alignment = state.alignment,
             lexiconGlosses = state.lexiconGlosses,
             onWordClick = { index ->
               onOpenWord(VerseRef(position.book, position.chapter, position.verse), index)
@@ -201,7 +201,7 @@ fun InterlineareScreen(
 private fun WordColumns(
   original: OriginalVerseEntity,
   verse: VerseEntity?,
-  translation: String,
+  alignment: List<Int>,
   lexiconGlosses: Map<String, String>,
   onWordClick: (Int) -> Unit,
 ) {
@@ -209,8 +209,8 @@ private fun WordColumns(
   val lemmas = original.lemmas.split(" ").filter { it.isNotEmpty() }
   val translitWords = original.transliteration.split(" ").filter { it.isNotEmpty() }
   val glossesIt = original.glossesIt.split("\t")
-  val alignedArray = remember(original, translation) { original.alignedItalianIndices(translation) }
-  val italianTokens = verse?.text?.split(Regex("\\s+")) ?: emptyList()
+  val alignedArray = alignment
+  val italianTokens = verse?.text?.let(::alignmentTokens) ?: emptyList()
 
   val content: @Composable () -> Unit = {
     FlowRow(

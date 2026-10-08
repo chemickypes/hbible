@@ -197,7 +197,7 @@ object ThemePreferences {
 
   fun loadLastPosition(settings: Settings): LastPosition =
     LastPosition(
-      translation = settings.getStringOrNull(LAST_TRANSLATION_KEY) ?: "NR",
+      translation = bundledTranslationOrDefault(settings.getStringOrNull(LAST_TRANSLATION_KEY)),
       book = settings.getInt(LAST_BOOK_KEY, 1).coerceIn(1, 66),
       chapter = settings.getInt(LAST_CHAPTER_KEY, 1).coerceAtLeast(1),
     )

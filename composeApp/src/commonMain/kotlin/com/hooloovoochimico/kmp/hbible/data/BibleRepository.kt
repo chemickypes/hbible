@@ -9,25 +9,32 @@ import com.hooloovoochimico.kmp.hbible.data.local.OriginalVerseEntity
 import com.hooloovoochimico.kmp.hbible.data.local.VerseEntity
 import com.hooloovoochimico.kmp.hbible.data.local.VerseRefRow
 import com.hooloovoochimico.kmp.hbible.data.local.copyFromBundled
+import com.hooloovoochimico.kmp.hbible.data.local.parseAlignment
 import com.hooloovoochimico.kmp.hbible.platform.withBundledDatabaseFile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 /**
- * Display names of the bundled translations, keyed by their database code. Must
- * match TRANSLATION_ASSETS in tools/build_bible_db.py (the bundled database).
+ * Display names of the bundled translations, keyed by their database code, in
+ * display order. Must match TRANSLATION_ASSETS in tools/build_bible_db.py (the
+ * bundled database). Only openly licensed texts: the closed ones are kept in
+ * the CMS "cassetto" and never shipped (see tasks/README.md).
  */
 val TRANSLATION_NAMES = mapOf(
-  "NR" to "Nuova Riveduta",
-  "R2" to "Riveduta 2020",
+  "OTB" to "Bibbia Aperta",
   "R27" to "Riveduta 1927",
   "DIO" to "Diodati",
-  "ND" to "Nuova Diodati",
-  "CEI" to "CEI 1974",
-  "RIC" to "Ricciotti",
   "MAR" to "Martini",
 )
+
+/** Default translation everywhere (reader, interlinear, search, AI): the Bibbia Aperta. */
+const val DEFAULT_TRANSLATION = "OTB"
+
+/** [code] if it is a bundled translation, else [DEFAULT_TRANSLATION] (e.g. a removed one saved in settings). */
+fun bundledTranslationOrDefault(code: String?): String =
+  code?.takeIf { it in TRANSLATION_NAMES } ?: DEFAULT_TRANSLATION
 
 /** Scripture data: books, chapters, verses, original text and cached book info. */
 interface BibleRepository {
@@ -43,6 +50,9 @@ interface BibleRepository {
 
   /** Original-language text (Hebrew/Greek) for a verse, if available. */
   fun originalVerse(book: Int, chapter: Int, verse: Int): Flow<OriginalVerseEntity?>
+
+  /** Word alignments of the original verse, by translation code (0-based token indices, -1 = none). */
+  fun alignments(book: Int, chapter: Int, verse: Int): Flow<Map<String, List<Int>>>
 
   /** Cross-references pointing to other verses. */
   fun crossReferences(book: Int, chapter: Int, verse: Int): Flow<List<CrossReferenceEntity>>
@@ -101,6 +111,11 @@ class DefaultBibleRepository(
   override fun crossReferences(book: Int, chapter: Int, verse: Int): Flow<List<CrossReferenceEntity>> =
     db.bibleDao().crossReferences(book, chapter, verse)
 
+  override fun alignments(book: Int, chapter: Int, verse: Int): Flow<Map<String, List<Int>>> =
+    db.bibleDao().alignments(book, chapter, verse).map { rows ->
+      rows.associate { it.translation to parseAlignment(it.indices) }
+    }
+
   override suspend fun lemmaOccurrences(
     lang: String,
     lemma: String,
@@ -136,6 +151,7 @@ class DefaultBibleRepository(
       buildList {
         if (dao.bookCount() == 0) add("books")
         if (dao.originalVerseCount() == 0) add("original_verses")
+        if (dao.alignmentCount() == 0) add("original_alignments")
         if (dao.crossReferenceCount() == 0) add("cross_references")
         if (dao.lexemeCount() == 0) add("lexemes")
       }

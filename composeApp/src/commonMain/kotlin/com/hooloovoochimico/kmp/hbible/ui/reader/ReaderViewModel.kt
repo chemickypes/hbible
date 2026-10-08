@@ -1,5 +1,6 @@
 package com.hooloovoochimico.kmp.hbible.ui.reader
 
+import com.hooloovoochimico.kmp.hbible.data.DEFAULT_TRANSLATION
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hooloovoochimico.kmp.hbible.appLog
@@ -25,7 +26,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 data class ReaderSelection(
-  val translation: String = "NR",
+  val translation: String = DEFAULT_TRANSLATION,
   val book: Int = 1,
   val chapter: Int = 1,
 )

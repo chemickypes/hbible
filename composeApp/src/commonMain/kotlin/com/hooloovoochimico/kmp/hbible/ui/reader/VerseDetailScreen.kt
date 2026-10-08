@@ -59,7 +59,7 @@ import com.hooloovoochimico.kmp.hbible.data.ai.AiChatMessage
 import com.hooloovoochimico.kmp.hbible.data.ai.AiPrompts
 import com.hooloovoochimico.kmp.hbible.data.local.LexemeEntity
 import com.hooloovoochimico.kmp.hbible.data.local.VerseEntity
-import com.hooloovoochimico.kmp.hbible.data.local.alignedItalianIndices
+import com.hooloovoochimico.kmp.hbible.data.local.alignmentTokens
 import com.hooloovoochimico.kmp.hbible.platform.BackHandler
 import com.hooloovoochimico.kmp.hbible.theme.ScriptureTypography
 import com.hooloovoochimico.kmp.hbible.ui.common.AiChatPanel
@@ -188,8 +188,8 @@ fun VerseDetailScreen(
   var selectedWord by rememberSaveable(original, index) { mutableStateOf(initialWord) }
   // aligned Italian token index for the selected word (per current translation)
   val alignedArray =
-    remember(original, translation) { original.alignedItalianIndices(translation) }
-  val italianVerseTokens = verse?.text?.split(Regex("\\s+")) ?: emptyList()
+    remember(detail?.alignments, translation) { detail?.alignments?.get(translation).orEmpty() }
+  val italianVerseTokens = verse?.text?.let(::alignmentTokens) ?: emptyList()
   val alignedItToken =
     if (selectable && selectedWord in alignedArray.indices) alignedArray[selectedWord] else -1
   val alignedItalianWord =

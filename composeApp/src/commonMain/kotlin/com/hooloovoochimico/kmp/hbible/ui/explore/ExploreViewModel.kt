@@ -1,5 +1,6 @@
 package com.hooloovoochimico.kmp.hbible.ui.explore
 
+import com.hooloovoochimico.kmp.hbible.data.DEFAULT_TRANSLATION
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hooloovoochimico.kmp.hbible.appLog
@@ -91,7 +92,7 @@ class ExploreViewModel(
     bibleRepository.books().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
   /** Translation used to load verse previews; kept in sync with the reader. */
-  private val translation = MutableStateFlow("NR")
+  private val translation = MutableStateFlow(DEFAULT_TRANSLATION)
 
   fun setTranslation(value: String) {
     translation.value = value

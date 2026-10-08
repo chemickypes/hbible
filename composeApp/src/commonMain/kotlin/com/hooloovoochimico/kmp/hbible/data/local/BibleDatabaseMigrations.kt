@@ -4,7 +4,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
 
-// Migrazioni 1→15, comuni a tutte le piattaforme: con BundledSQLiteDriver
+// Migrazioni 1→16, comuni a tutte le piattaforme: con BundledSQLiteDriver
 // (Android e iOS) Room invoca migrate(SQLiteConnection). Lo schema di ogni
 // versione è esportato in composeApp/schemas/ e verificato dai test di migrazione.
 
@@ -12,7 +12,7 @@ import androidx.sqlite.execSQL
 private val MIGRATION_1_2 =
   object : Migration(1, 2) {
     override fun migrate(connection: SQLiteConnection) {
-      connection.execSQL(BibleMigrationSql.CREATE_ORIGINAL_VERSES)
+      connection.execSQL(BibleMigrationSql.CREATE_ORIGINAL_VERSES_V15)
       connection.execSQL(
         "CREATE TABLE IF NOT EXISTS `cross_references` (" +
           "`fromBook` INTEGER NOT NULL, `fromChapter` INTEGER NOT NULL, `fromVerse` INTEGER NOT NULL, " +
@@ -31,7 +31,7 @@ private val MIGRATION_2_3 =
   object : Migration(2, 3) {
     override fun migrate(connection: SQLiteConnection) {
       connection.execSQL("DROP TABLE IF EXISTS `original_verses`")
-      connection.execSQL(BibleMigrationSql.CREATE_ORIGINAL_VERSES)
+      connection.execSQL(BibleMigrationSql.CREATE_ORIGINAL_VERSES_V15)
     }
   }
 
@@ -40,7 +40,7 @@ private val MIGRATION_3_4 =
   object : Migration(3, 4) {
     override fun migrate(connection: SQLiteConnection) {
       connection.execSQL("DROP TABLE IF EXISTS `original_verses`")
-      connection.execSQL(BibleMigrationSql.CREATE_ORIGINAL_VERSES)
+      connection.execSQL(BibleMigrationSql.CREATE_ORIGINAL_VERSES_V15)
     }
   }
 
@@ -56,7 +56,7 @@ private val MIGRATION_5_6 =
   object : Migration(5, 6) {
     override fun migrate(connection: SQLiteConnection) {
       connection.execSQL("DROP TABLE IF EXISTS `original_verses`")
-      connection.execSQL(BibleMigrationSql.CREATE_ORIGINAL_VERSES)
+      connection.execSQL(BibleMigrationSql.CREATE_ORIGINAL_VERSES_V15)
     }
   }
 
@@ -90,7 +90,7 @@ private val MIGRATION_7_8 =
   object : Migration(7, 8) {
     override fun migrate(connection: SQLiteConnection) {
       connection.execSQL("DROP TABLE IF EXISTS `original_verses`")
-      connection.execSQL(BibleMigrationSql.CREATE_ORIGINAL_VERSES)
+      connection.execSQL(BibleMigrationSql.CREATE_ORIGINAL_VERSES_V15)
       connection.execSQL("UPDATE `books` SET `name` = 'Abdia' WHERE `n` = 31 AND `name` = 'Obadia'")
       connection.execSQL("UPDATE `books` SET `name` = '1 Corinzi' WHERE `n` = 46 AND `name` = '1 Corinti'")
       connection.execSQL("UPDATE `books` SET `name` = '2 Corinzi' WHERE `n` = 47 AND `name` = '2 Corinti'")
@@ -105,7 +105,7 @@ private val MIGRATION_8_9 =
   object : Migration(8, 9) {
     override fun migrate(connection: SQLiteConnection) {
       connection.execSQL("DROP TABLE IF EXISTS `original_verses`")
-      connection.execSQL(BibleMigrationSql.CREATE_ORIGINAL_VERSES)
+      connection.execSQL(BibleMigrationSql.CREATE_ORIGINAL_VERSES_V15)
     }
   }
 
@@ -117,7 +117,7 @@ private val MIGRATION_9_10 =
   object : Migration(9, 10) {
     override fun migrate(connection: SQLiteConnection) {
       connection.execSQL("DROP TABLE IF EXISTS `original_verses`")
-      connection.execSQL(BibleMigrationSql.CREATE_ORIGINAL_VERSES)
+      connection.execSQL(BibleMigrationSql.CREATE_ORIGINAL_VERSES_V15)
     }
   }
 
@@ -146,7 +146,7 @@ private val MIGRATION_11_12 =
   object : Migration(11, 12) {
     override fun migrate(connection: SQLiteConnection) {
       connection.execSQL("DROP TABLE IF EXISTS `original_verses`")
-      connection.execSQL(BibleMigrationSql.CREATE_ORIGINAL_VERSES)
+      connection.execSQL(BibleMigrationSql.CREATE_ORIGINAL_VERSES_V15)
       connection.execSQL("DROP TABLE IF EXISTS `lexemes`")
       connection.execSQL(BibleMigrationSql.CREATE_LEXEMES)
     }
@@ -161,7 +161,7 @@ private val MIGRATION_12_13 =
   object : Migration(12, 13) {
     override fun migrate(connection: SQLiteConnection) {
       connection.execSQL("DROP TABLE IF EXISTS `original_verses`")
-      connection.execSQL(BibleMigrationSql.CREATE_ORIGINAL_VERSES)
+      connection.execSQL(BibleMigrationSql.CREATE_ORIGINAL_VERSES_V15)
     }
   }
 
@@ -188,6 +188,42 @@ private val MIGRATION_14_15 =
     }
   }
 
+/** Traduzioni a licenza chiusa tolte dall'app il 2026-10-09 (restano nel cassetto del CMS). */
+internal val REMOVED_TRANSLATIONS = listOf("NR", "R2", "ND", "CEI", "RIC")
+
+/**
+ * Solo testi a licenza aperta + allineamenti generici + paragrafi + crediti:
+ * - via le traduzioni chiuse (versetti, metadati, stato di sync);
+ * - `original_verses` senza le colonne `it_*`, nuova `original_alignments`:
+ *   le due tabelle si ricreano vuote e `ensureImported()` le ricopia dal DB
+ *   incluso (stato di sync degli originali azzerato, così un CMS configurato
+ *   li riscarica nel formato nuovo);
+ * - `books` svuotata: si ricopia dal DB incluso (nomi dalla Bibbia Aperta);
+ * - `verses.paragraph` e i crediti in `translation_meta` (colonne in coda, come
+ *   nello schema creato da Room: `copyFromBundled` usa SELECT *).
+ */
+private val MIGRATION_15_16 =
+  object : Migration(15, 16) {
+    override fun migrate(connection: SQLiteConnection) {
+      val removed = REMOVED_TRANSLATIONS.joinToString(",") { "'$it'" }
+      connection.execSQL("DELETE FROM `verses` WHERE `translation` IN ($removed)")
+      connection.execSQL("DELETE FROM `translation_meta` WHERE `abbr` IN ($removed)")
+      val removedPackages = REMOVED_TRANSLATIONS.joinToString(",") { "'bible/$it.json'" }
+      connection.execSQL(
+        "DELETE FROM `content_state` WHERE `package_id` IN ($removedPackages) OR `package_id` LIKE 'originals/%'",
+      )
+      connection.execSQL("ALTER TABLE `verses` ADD COLUMN `paragraph` INTEGER NOT NULL DEFAULT 0")
+      for (column in listOf("license", "license_url", "source_url", "attribution")) {
+        connection.execSQL("ALTER TABLE `translation_meta` ADD COLUMN `$column` TEXT NOT NULL DEFAULT ''")
+      }
+      connection.execSQL("DROP TABLE IF EXISTS `original_verses`")
+      connection.execSQL(BibleMigrationSql.CREATE_ORIGINAL_VERSES)
+      connection.execSQL(BibleMigrationSql.CREATE_ORIGINAL_ALIGNMENTS)
+      connection.execSQL(BibleMigrationSql.CREATE_ORIGINAL_ALIGNMENTS_INDEX)
+      connection.execSQL("DELETE FROM `books`")
+    }
+  }
+
 val ALL_MIGRATIONS: Array<Migration> =
   arrayOf(
     MIGRATION_1_2,
@@ -204,4 +240,5 @@ val ALL_MIGRATIONS: Array<Migration> =
     MIGRATION_12_13,
     MIGRATION_13_14,
     MIGRATION_14_15,
+    MIGRATION_15_16,
   )

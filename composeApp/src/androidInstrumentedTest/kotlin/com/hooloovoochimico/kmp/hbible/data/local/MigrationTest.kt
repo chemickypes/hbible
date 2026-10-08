@@ -14,7 +14,7 @@ import org.junit.runner.RunWith
 /**
  * Migrazioni Room sullo stesso driver dell'app (BundledSQLiteDriver).
  *
- * Ogni versione committata (8, 9, 11, 12, 13) viene creata dal suo schema
+ * Ogni versione committata (8, 9, 11, 12, 13, 15) viene creata dal suo schema
  * esportato (composeApp/schemas/) e portata all'ultima con [ALL_MIGRATIONS];
  * `runMigrationsAndValidate` confronta il risultato con lo schema corrente.
  * È il controllo che avrebbe intercettato `published_at INTEGER` vs `String`
@@ -57,6 +57,54 @@ class MigrationTest {
 
   @Test fun migrate13ToLatest() = migrateToLatest(13)
 
+  @Test fun migrate15ToLatest() = migrateToLatest(15)
+
+  /**
+   * 15→16: via le traduzioni a licenza chiusa (versetti, metadati, stato di
+   * sync), le aperte restano; original_verses/books svuotate (le ricopia
+   * ensureImported dal DB incluso), stato di sync degli originali azzerato.
+   */
+  @Test
+  fun migration16RemovesClosedTranslations() {
+    helper.createDatabase(15).use { connection ->
+      for (code in listOf("NR", "R2", "ND", "CEI", "RIC", "R27", "DIO")) {
+        connection.execSQL(
+          "INSERT INTO verses (translation, book, chapter, verse, title, text) VALUES ('$code', 1, 1, 1, NULL, 'x')",
+        )
+      }
+      connection.execSQL(
+        "INSERT INTO translation_meta (abbr, name, description, publisher, year, copyright) " +
+          "VALUES ('NR', 'Nuova Riveduta', '', '', '', '')",
+      )
+      for (p in listOf("bible/NR.json", "bible/R27.json", "originals/01.json")) {
+        connection.execSQL("INSERT INTO content_state (package_id, hash, version, synced_at) VALUES ('$p', 'h', 'v', 0)")
+      }
+      connection.execSQL("INSERT INTO books (n, name, abbr, chapters) VALUES (1, 'Genesi', 'Gn', 50)")
+    }
+
+    helper.runMigrationsAndValidate(16, ALL_MIGRATIONS.toList()).use { connection ->
+      connection.prepare("SELECT translation FROM verses ORDER BY translation").use {
+        val left = mutableListOf<String>()
+        while (it.step()) left += it.getText(0)
+        assertEquals(listOf("DIO", "R27"), left)
+      }
+      connection.prepare("SELECT paragraph FROM verses LIMIT 1").use {
+        check(it.step())
+        assertEquals(0L, it.getLong(0))
+      }
+      assertEquals(0L, count(connection, "SELECT COUNT(*) FROM translation_meta"))
+      assertEquals(1L, count(connection, "SELECT COUNT(*) FROM content_state"))
+      assertEquals(0L, count(connection, "SELECT COUNT(*) FROM books"))
+      assertEquals(0L, count(connection, "SELECT COUNT(*) FROM original_alignments"))
+    }
+  }
+
+  private fun count(connection: androidx.sqlite.SQLiteConnection, sql: String): Long =
+    connection.prepare(sql).use {
+      check(it.step())
+      it.getLong(0)
+    }
+
   /** Le note dell'utente devono sopravvivere all'intera catena di migrazioni. */
   @Test
   fun notesSurviveAllMigrations() {
@@ -96,6 +144,6 @@ class MigrationTest {
   private companion object {
     const val TEST_DB = "migration-test.db"
     const val OLDEST_VERSION = 8
-    const val LATEST_VERSION = 15
+    const val LATEST_VERSION = 16
   }
 }

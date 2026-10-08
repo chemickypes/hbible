@@ -26,6 +26,8 @@ data class VerseEntity(
   @ColumnInfo(name = "verse") val verse: Int,
   val title: String?,
   val text: String,
+  /** true = the verse opens a paragraph (package field `p`). Last column: see migration 15→16. */
+  @ColumnInfo(name = "paragraph", defaultValue = "0") val paragraph: Boolean = false,
 )
 
 /** Verse in its original language ("he" = Hebrew OT, "el" = Greek NT). */
@@ -39,22 +41,6 @@ data class OriginalVerseEntity(
   val transliteration: String,
   /** Space-padded Strong's numbers per word, aligned with `text` tokens. */
   @ColumnInfo(name = "lemmas") val lemmas: String = "",
-  /** Comma-separated Italian token indices (Nuova Riveduta), -1 = unaligned. */
-  @ColumnInfo(name = "it_nr") val italianNr: String = "",
-  /** Comma-separated Italian token indices (Riveduta 2020). */
-  @ColumnInfo(name = "it_r2") val italianR2: String = "",
-  /** Comma-separated Italian token indices (Riveduta 1927). */
-  @ColumnInfo(name = "it_r27") val italianR27: String = "",
-  /** Comma-separated Italian token indices (Diodati). */
-  @ColumnInfo(name = "it_dio") val italianDio: String = "",
-  /** Comma-separated Italian token indices (Nuova Diodati). */
-  @ColumnInfo(name = "it_nd") val italianNd: String = "",
-  /** Comma-separated Italian token indices (CEI 1974). */
-  @ColumnInfo(name = "it_cei") val italianCei: String = "",
-  /** Comma-separated Italian token indices (Ricciotti). */
-  @ColumnInfo(name = "it_ric") val italianRic: String = "",
-  /** Comma-separated Italian token indices (Martini). */
-  @ColumnInfo(name = "it_mar") val italianMar: String = "",
   /** Tab-separated contextual interlinear gloss (English) per word, "" = none. */
   @ColumnInfo(name = "glosses") val glosses: String = "",
   /** Tab-separated contextual interlinear gloss (Italian) per word, "" = none. */
@@ -62,21 +48,31 @@ data class OriginalVerseEntity(
 )
 
 /**
- * Italian token indices of the verse (translation-dependent alignment channel
- * `ar_<version>`), -1 = unaligned. Shared by the verse detail page and the
- * interlinear tab so both resolve Italian words the same way.
+ * Word alignment of an original verse against one translation: for each
+ * original word (same order as [OriginalVerseEntity.text]) the 0-based index
+ * of the translation token (verse text split on whitespace), -1 = unaligned.
+ * One row per (verse, translation): a translation without alignment has no row.
  */
-fun OriginalVerseEntity?.alignedItalianIndices(translation: String): List<Int> =
-  when (translation) {
-    "R2" -> this?.italianR2
-    "R27" -> this?.italianR27
-    "DIO" -> this?.italianDio
-    "ND" -> this?.italianNd
-    "CEI" -> this?.italianCei
-    "RIC" -> this?.italianRic
-    "MAR" -> this?.italianMar
-    else -> this?.italianNr
-  }?.split(",")?.map { it.toIntOrNull() ?: -1 } ?: emptyList()
+@Entity(
+  tableName = "original_alignments",
+  primaryKeys = ["book", "chapter", "verse", "translation"],
+  indices = [Index(value = ["translation", "book", "chapter"])],
+)
+data class OriginalAlignmentEntity(
+  val book: Int,
+  val chapter: Int,
+  val verse: Int,
+  val translation: String,
+  /** Comma-separated token indices, e.g. "1,3,-1,5". */
+  val indices: String,
+)
+
+/** Parses the comma-separated indices of an alignment row. */
+fun parseAlignment(indices: String): List<Int> =
+  if (indices.isBlank()) emptyList() else indices.split(",").map { it.trim().toIntOrNull() ?: -1 }
+
+/** Tokens of a translation verse as indexed by alignments (whitespace split, newlines included). */
+fun alignmentTokens(text: String): List<String> = text.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
 
 /** A cross-reference link between two verses. */
 @Entity(
@@ -169,6 +165,12 @@ data class TranslationMetaEntity(
   val publisher: String = "",
   val year: String = "",
   val copyright: String = "",
+  /** Short license, e.g. "CC BY-SA 4.0" (CMS `meta.license`). */
+  @ColumnInfo(defaultValue = "''") val license: String = "",
+  @ColumnInfo(name = "license_url", defaultValue = "''") val licenseUrl: String = "",
+  @ColumnInfo(name = "source_url", defaultValue = "''") val sourceUrl: String = "",
+  /** Credits text ready to show (CMS `meta.attribution`). */
+  @ColumnInfo(defaultValue = "''") val attribution: String = "",
 )
 
 /** Verse of the day from the CMS: date=null → rotation pool, date set → calendar override. */

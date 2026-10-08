@@ -26,6 +26,8 @@ import kotlinx.coroutines.flow.stateIn
 data class VerseDetail(
   val ref: VerseRef,
   val original: OriginalVerseEntity?,
+  /** Word alignments of the original verse by translation code (0-based token indices). */
+  val alignments: Map<String, List<Int>> = emptyMap(),
   val references: List<VerseRef>,
   /** Number of verses in the opened set and current index (0-based). */
   val count: Int,
@@ -58,10 +60,12 @@ class VerseDetailViewModel(
         combine(
           repository.originalVerse(ref.book, ref.chapter, ref.verse),
           repository.crossReferences(ref.book, ref.chapter, ref.verse),
-        ) { original, refs ->
+          repository.alignments(ref.book, ref.chapter, ref.verse),
+        ) { original, refs, alignments ->
           VerseDetail(
             ref = ref,
             original = original,
+            alignments = alignments,
             references = refs.map { VerseRef(it.toBook, it.toChapter, it.toVerse) },
             count = verses.size,
             index = index,

@@ -20,6 +20,7 @@ expect object BibleDatabaseConstructor : RoomDatabaseConstructor<BibleDatabase> 
     BookEntity::class,
     VerseEntity::class,
     OriginalVerseEntity::class,
+    OriginalAlignmentEntity::class,
     CrossReferenceEntity::class,
     LexemeEntity::class,
     NoteEntity::class,
@@ -29,7 +30,7 @@ expect object BibleDatabaseConstructor : RoomDatabaseConstructor<BibleDatabase> 
     VotdEntity::class,
     PostEntity::class,
   ],
-  version = 15,
+  version = 16,
   exportSchema = true,
 )
 abstract class BibleDatabase : RoomDatabase() {
@@ -44,7 +45,8 @@ abstract class BibleDatabase : RoomDatabase() {
 
 /** SQL di creazione tabelle condiviso dalle migrazioni (identico al sorgente). */
 internal object BibleMigrationSql {
-  const val CREATE_ORIGINAL_VERSES =
+  /** original_verses fino alla v15 (una colonna `it_*` per traduzione): solo migrazioni 1→15. */
+  const val CREATE_ORIGINAL_VERSES_V15 =
     "CREATE TABLE IF NOT EXISTS `original_verses` (" +
       "`book` INTEGER NOT NULL, `chapter` INTEGER NOT NULL, `verse` INTEGER NOT NULL, " +
       "`lang` TEXT NOT NULL, `text` TEXT NOT NULL, `transliteration` TEXT NOT NULL, " +
@@ -53,6 +55,25 @@ internal object BibleMigrationSql {
       "`it_ric` TEXT NOT NULL, `it_mar` TEXT NOT NULL, " +
       "`glosses` TEXT NOT NULL, `glosses_it` TEXT NOT NULL, " +
       "PRIMARY KEY(`book`, `chapter`, `verse`))"
+
+  /** original_verses dalla v16: gli allineamenti sono in `original_alignments`. */
+  const val CREATE_ORIGINAL_VERSES =
+    "CREATE TABLE IF NOT EXISTS `original_verses` (" +
+      "`book` INTEGER NOT NULL, `chapter` INTEGER NOT NULL, `verse` INTEGER NOT NULL, " +
+      "`lang` TEXT NOT NULL, `text` TEXT NOT NULL, `transliteration` TEXT NOT NULL, " +
+      "`lemmas` TEXT NOT NULL, `glosses` TEXT NOT NULL, `glosses_it` TEXT NOT NULL, " +
+      "PRIMARY KEY(`book`, `chapter`, `verse`))"
+
+  /** Allineamenti generici parola originale → token della traduzione — migrazione 15→16. */
+  const val CREATE_ORIGINAL_ALIGNMENTS =
+    "CREATE TABLE IF NOT EXISTS `original_alignments` (" +
+      "`book` INTEGER NOT NULL, `chapter` INTEGER NOT NULL, `verse` INTEGER NOT NULL, " +
+      "`translation` TEXT NOT NULL, `indices` TEXT NOT NULL, " +
+      "PRIMARY KEY(`book`, `chapter`, `verse`, `translation`))"
+
+  const val CREATE_ORIGINAL_ALIGNMENTS_INDEX =
+    "CREATE INDEX IF NOT EXISTS `index_original_alignments_translation_book_chapter` " +
+      "ON `original_alignments` (`translation`, `book`, `chapter`)"
 
   /** Lexemes table (identica alla Fase 2): rigenerata dalle migrazioni 10→11 e 11→12. */
   const val CREATE_LEXEMES =

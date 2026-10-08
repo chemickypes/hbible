@@ -29,7 +29,7 @@ internal class FakeBibleRepository(
   books: List<BookEntity> = listOf(BookEntity(1, "Genesi", "Gen", 50)),
   verses: List<VerseEntity> =
     listOf(
-      VerseEntity("NR", 1, 1, 1, null, "Nel principio Dio creò i cieli e la terra."),
+      VerseEntity("OTB", 1, 1, 1, null, "Nel principio Dio creò i cieli e la terra."),
     ),
   originals: List<OriginalVerseEntity> = emptyList(),
   crossRefs: List<CrossReferenceEntity> = emptyList(),
@@ -65,6 +65,12 @@ internal class FakeBibleRepository(
 
   override fun originalVerse(book: Int, chapter: Int, verse: Int): Flow<OriginalVerseEntity?> =
     flowOf(originalsData.firstOrNull { it.book == book && it.chapter == chapter && it.verse == verse })
+
+  /** Alignments by "book:chapter:verse" → translation → indices. */
+  var alignmentsData: Map<String, Map<String, List<Int>>> = emptyMap()
+
+  override fun alignments(book: Int, chapter: Int, verse: Int): Flow<Map<String, List<Int>>> =
+    flowOf(alignmentsData["$book:$chapter:$verse"].orEmpty())
 
   override fun crossReferences(book: Int, chapter: Int, verse: Int): Flow<List<CrossReferenceEntity>> =
     flowOf(
@@ -110,7 +116,7 @@ internal class FakeSettingsRepository : SettingsRepository {
 
   override fun saveFontSize(size: ReaderFontSize) {}
 
-  override fun loadLastPosition(): LastPosition = LastPosition("NR", 1, 1)
+  override fun loadLastPosition(): LastPosition = LastPosition("OTB", 1, 1)
 
   override fun saveLastPosition(position: LastPosition) {}
 

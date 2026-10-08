@@ -1,5 +1,6 @@
 package com.hooloovoochimico.kmp.hbible
 
+import com.hooloovoochimico.kmp.hbible.data.DEFAULT_TRANSLATION
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.VerticalDivider
@@ -771,8 +772,8 @@ private fun HBibleAppShell(
                   Box(Modifier.weight(1f)) {
                     ContentWidth {
                       ExploreScreen(
-                        translation = selection?.translation ?: "NR",
-                        translationName = TRANSLATION_NAMES[selection?.translation ?: "NR"] ?: "",
+                        translation = selection?.translation ?: DEFAULT_TRANSLATION,
+                        translationName = TRANSLATION_NAMES[selection?.translation ?: DEFAULT_TRANSLATION] ?: "",
                         onDismiss = { goToTab(ReaderRoute) },
                         onGoToVerse = openDetailFromExplore,
                         onOpenNote = openNote,
@@ -796,8 +797,8 @@ private fun HBibleAppShell(
               } else {
                 ContentWidth {
                   ExploreScreen(
-                    translation = selection?.translation ?: "NR",
-                    translationName = TRANSLATION_NAMES[selection?.translation ?: "NR"] ?: "",
+                    translation = selection?.translation ?: DEFAULT_TRANSLATION,
+                    translationName = TRANSLATION_NAMES[selection?.translation ?: DEFAULT_TRANSLATION] ?: "",
                     onDismiss = { goToTab(ReaderRoute) },
                     onGoToVerse = goToVerse,
                     onOpenNote = openNote,
@@ -818,10 +819,10 @@ private fun HBibleAppShell(
               // La traduzione corrente del lettore decide il canale di allineamento
               // ar_<versione> e il versetto italiano mostrato dalla glossa.
               LaunchedEffect(selection?.translation) {
-                interlineareViewModel.setTranslation(selection?.translation ?: "NR")
+                interlineareViewModel.setTranslation(selection?.translation ?: DEFAULT_TRANSLATION)
               }
               InterlineareScreen(
-                translationName = TRANSLATION_NAMES[selection?.translation ?: "NR"] ?: "",
+                translationName = TRANSLATION_NAMES[selection?.translation ?: DEFAULT_TRANSLATION] ?: "",
                 onOpenWord = openInterlinearWord,
                 viewModel = interlineareViewModel,
               )
@@ -831,7 +832,7 @@ private fun HBibleAppShell(
               val selection = (readerState as? ReaderUiState.Ready)?.selection
               ContentWidth {
                 SettingsScreen(
-                  selectionTranslation = selection?.translation ?: "NR",
+                  selectionTranslation = selection?.translation ?: DEFAULT_TRANSLATION,
                   onSelectTranslation = readerViewModel::selectTranslation,
                   onOpenAiSettings = { navController.navigate(AiSettingsRoute) },
                   onDismiss = { goToTab(ReaderRoute) },
@@ -956,7 +957,7 @@ private fun VerseDetailContent(
   val readerState by readerViewModel.uiState.collectAsStateWithLifecycle()
   val ready = readerState as? ReaderUiState.Ready
   val books = ready?.books.orEmpty()
-  val translation = ready?.selection?.translation ?: "NR"
+  val translation = ready?.selection?.translation ?: DEFAULT_TRANSLATION
   val detail by viewModel.verseDetail.collectAsStateWithLifecycle()
   val aiConfigured by viewModel.aiConfigured.collectAsStateWithLifecycle()
   // Ripristino dopo process death / cambio di layout (l'insieme è nel guscio):

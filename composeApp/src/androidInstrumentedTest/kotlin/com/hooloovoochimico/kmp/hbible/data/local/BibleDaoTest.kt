@@ -44,13 +44,13 @@ class BibleDaoTest {
     val dao = db.bibleDao()
     val verses =
       listOf(
-        VerseEntity("NR", 1, 1, 3, null, "c"),
-        VerseEntity("NR", 1, 1, 1, null, "a"),
-        VerseEntity("NR", 1, 1, 2, null, "b"),
+        VerseEntity("OTB", 1, 1, 3, null, "c"),
+        VerseEntity("OTB", 1, 1, 1, null, "a"),
+        VerseEntity("OTB", 1, 1, 2, null, "b"),
       )
     dao.insertVerses(verses)
 
-    val chapter = dao.chapter("NR", 1, 1).first()
+    val chapter = dao.chapter("OTB", 1, 1).first()
 
     assertEquals(listOf(1, 2, 3), chapter.map { it.verse })
     db.close()
@@ -62,13 +62,13 @@ class BibleDaoTest {
     val dao = db.bibleDao()
     dao.insertVerses(
       listOf(
-        VerseEntity("NR", 1, 1, 1, null, "a"),
-        VerseEntity("NR", 1, 1, 2, null, "b"),
+        VerseEntity("OTB", 1, 1, 1, null, "a"),
+        VerseEntity("OTB", 1, 1, 2, null, "b"),
         VerseEntity("R2", 1, 1, 1, null, "c"),
       ),
     )
 
-    assertEquals(2, dao.translationVerseCount("NR"))
+    assertEquals(2, dao.translationVerseCount("OTB"))
     assertEquals(1, dao.translationVerseCount("R2"))
     db.close()
   }

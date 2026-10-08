@@ -1,5 +1,6 @@
 package com.hooloovoochimico.kmp.hbible.ui.interlineare
 
+import com.hooloovoochimico.kmp.hbible.data.DEFAULT_TRANSLATION
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hooloovoochimico.kmp.hbible.data.BibleRepository
@@ -25,8 +26,10 @@ import kotlinx.coroutines.launch
 data class InterlineareUiState(
   val books: List<BookEntity> = emptyList(),
   val position: InterlinearPosition = InterlinearPosition(1, 1, 1),
-  val translation: String = "NR",
+  val translation: String = DEFAULT_TRANSLATION,
   val original: OriginalVerseEntity? = null,
+  /** Alignment of [original] against [translation] (0-based token indices, -1 = none). */
+  val alignment: List<Int> = emptyList(),
   val verse: VerseEntity? = null,
   /** The same verse in every bundled translation, in TRANSLATION_META order. */
   val versions: List<VerseEntity> = emptyList(),
@@ -46,7 +49,7 @@ class InterlineareViewModel(
 
   private val position =
     MutableStateFlow(settingsRepository.loadInterlinearPosition())
-  private val translation = MutableStateFlow("NR")
+  private val translation = MutableStateFlow(DEFAULT_TRANSLATION)
   private val books =
     repository.books().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -70,7 +73,8 @@ class InterlineareViewModel(
           repository.chapter(tr, pos.book, pos.chapter),
           flow { emit(repository.verse(tr, pos.book, pos.chapter, pos.verse)) },
           flow { emit(verseInAllTranslations(pos.book, pos.chapter, pos.verse)) },
-        ) { original, chapterVerses, verse, versions ->
+          repository.alignments(pos.book, pos.chapter, pos.verse),
+        ) { original, chapterVerses, verse, versions, alignments ->
           val book = b.firstOrNull { it.n == pos.book }
           val chapterMax = chapterVerses.maxOfOrNull { it.verse } ?: 0
           InterlineareUiState(
@@ -78,6 +82,7 @@ class InterlineareViewModel(
             position = pos,
             translation = tr,
             original = original,
+            alignment = alignments[tr].orEmpty(),
             verse = verse,
             versions = versions,
             lexiconGlosses = lexiconGlosses(original),

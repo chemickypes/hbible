@@ -17,6 +17,12 @@ data class BibleMeta(
   val publisher: String = "",
   val year: String = "",
   val copyright: String = "",
+  /** Short license, e.g. "CC BY-SA 4.0". */
+  val license: String = "",
+  val license_url: String = "",
+  val source_url: String = "",
+  /** Credits text ready to show in the app. */
+  val attribution: String = "",
 )
 
 @Serializable
@@ -35,6 +41,8 @@ data class VerseDto(
   val v: Int,
   val t: String? = null,
   val x: String,
+  /** 1 = the verse opens a paragraph. */
+  val p: Int = 0,
 )
 
 /** Bundle of original-language verses (Hebrew OT / Greek NT). */
@@ -52,19 +60,12 @@ data class OriginalVerseDto(
   val text: String,
   val tr: String,
   val lm: String = "",
-  val anr: List<Int> = emptyList(),
-  val ar2: List<Int> = emptyList(),
-  val ar27: List<Int> = emptyList(),
-  /** Contextual word alignment against the Diodati translation. */
-  val ar_dio: List<Int> = emptyList(),
-  /** Contextual word alignment against Nuova Diodati. */
-  val ar_nd: List<Int> = emptyList(),
-  /** Contextual word alignment against CEI 1974. */
-  val ar_cei: List<Int> = emptyList(),
-  /** Contextual word alignment against Ricciotti. */
-  val ar_ric: List<Int> = emptyList(),
-  /** Contextual word alignment against Martini. */
-  val ar_mar: List<Int> = emptyList(),
+  /**
+   * Word alignment per translation (format 2 of the CMS packages): abbr → for
+   * each original word the 0-based token index in that translation's verse,
+   * -1 = unaligned. A translation without alignment is simply absent.
+   */
+  val al: Map<String, List<Int>> = emptyMap(),
   /** Contextual interlinear gloss (English) per word, "" = none. */
   val ge: List<String> = emptyList(),
   /** Contextual interlinear gloss (Italian, where curated) per word, "" = none. */

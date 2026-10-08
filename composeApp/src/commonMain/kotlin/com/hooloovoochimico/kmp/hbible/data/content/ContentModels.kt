@@ -8,7 +8,14 @@ data class ContentManifest(
   val version: String = "",
   val generatedAt: String = "",
   val packages: Map<String, PackageInfo> = emptyMap(),
+  /** Package format versions (originals 2 = alignments in the generic `al` field). */
+  val formats: Map<String, Int> = emptyMap(),
+  /** Packages no longer published (e.g. translations moved to the CMS "cassetto"). */
+  val removed: List<String> = emptyList(),
 )
+
+/** Format of `originals/{nn}.json` this app understands (see [ContentManifest.formats]). */
+const val ORIGINALS_FORMAT = 2
 
 /** One package entry in the manifest: SHA-256 of the file content. */
 @Serializable

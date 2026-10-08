@@ -30,10 +30,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.hooloovoochimico.kmp.hbible.data.CREDITS
 import com.hooloovoochimico.kmp.hbible.data.TRANSLATION_META
 import com.hooloovoochimico.kmp.hbible.data.TRANSLATION_NAMES
 import com.hooloovoochimico.kmp.hbible.data.TranslationMeta
@@ -46,12 +48,6 @@ import com.hooloovoochimico.kmp.hbible.platform.openUrl
 import com.hooloovoochimico.kmp.hbible.ui.common.BookSheetRow
 import com.hooloovoochimico.kmp.hbible.ui.common.SectionHeader
 import com.hooloovoochimico.kmp.hbible.ui.common.ScreenTitle
-
-private val SOURCES = listOf(
-  "Testo ebraico: Open Scriptures Hebrew Bible (WLC)" to "https://github.com/openscriptures/morphhb",
-  "Testo greco: Nestle 1904 (pubblico dominio)" to "https://github.com/biblicalhumanities/Nestle1904",
-  "Riferimenti incrociati: OpenBible.info (CC BY 4.0)" to "https://www.openbible.info/labs/cross-references/",
-)
 
 /** Info block of one bundled translation (Settings → "Versioni della Bibbia"). */
 @Composable
@@ -66,18 +62,17 @@ private fun TranslationMetaRow(meta: TranslationMeta) {
       style = MaterialTheme.typography.labelMedium,
       color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
-    if (meta.personalUse) {
-      Surface(
-        shape = MaterialTheme.shapes.extraLarge,
-        color = MaterialTheme.colorScheme.primaryContainer,
-        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-      ) {
-        Text(
-          "Uso personale",
-          style = MaterialTheme.typography.labelSmall,
-          modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-        )
-      }
+    Surface(
+      shape = MaterialTheme.shapes.extraLarge,
+      color = MaterialTheme.colorScheme.secondaryContainer,
+      contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+      modifier = if (meta.licenseUrl.isNotBlank()) Modifier.clickable { openUrl(meta.licenseUrl) } else Modifier,
+    ) {
+      Text(
+        meta.license,
+        style = MaterialTheme.typography.labelSmall,
+        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+      )
     }
   }
   if (meta.fullName != meta.name) {
@@ -87,11 +82,6 @@ private fun TranslationMetaRow(meta: TranslationMeta) {
       color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
   }
-  Text(
-    meta.license,
-    style = MaterialTheme.typography.bodySmall,
-    color = MaterialTheme.colorScheme.onSurfaceVariant,
-  )
   if (meta.source.isNotBlank()) {
     val isLink = meta.source.startsWith("http")
     Text(
@@ -108,6 +98,14 @@ private fun TranslationMetaRow(meta: TranslationMeta) {
     Text(
       meta.note,
       style = MaterialTheme.typography.bodySmall,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+  }
+  if (meta.attribution.isNotBlank()) {
+    Text(
+      meta.attribution,
+      style = MaterialTheme.typography.bodySmall,
+      fontStyle = FontStyle.Italic,
       color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
   }
@@ -315,11 +313,13 @@ fun SettingsScreen(
         )
       }
 
-      SectionHeader("Fonti", Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
+      SectionHeader("Crediti e licenze", Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
       Column(Modifier.padding(horizontal = 24.dp)) {
-        SOURCES.forEach { (label, url) ->
+        CREDITS.forEach { credit ->
+          val url = credit.url
+          Text(credit.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
           Text(
-            label,
+            "${credit.scope} · ${credit.license}",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
           )
@@ -354,12 +354,13 @@ fun SettingsScreen(
       }
       SectionHeader("Versioni della Bibbia", Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
       Column(Modifier.padding(horizontal = 24.dp)) {
-        TRANSLATION_META.forEach { meta -> TranslationMetaRow(meta) }
         Text(
-          "Le versioni contrassegnate «Uso personale» sono testi protetti inclusi solo per uso personale (repository privata, nessuna distribuzione).",
+          "HBible include solo testi con licenza aperta o di pubblico dominio.",
           style = MaterialTheme.typography.bodySmall,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
+          modifier = Modifier.padding(bottom = 12.dp),
         )
+        TRANSLATION_META.forEach { meta -> TranslationMetaRow(meta) }
       }
     }
   }

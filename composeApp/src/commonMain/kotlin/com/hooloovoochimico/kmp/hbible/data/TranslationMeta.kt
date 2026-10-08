@@ -2,7 +2,8 @@ package com.hooloovoochimico.kmp.hbible.data
 
 /**
  * Metadata of a bundled Italian translation, shown in Settings → "Versioni
- * della Bibbia" (name, year, license, source, note).
+ * della Bibbia" and in the credits (name, year, license, source, note).
+ * Only openly licensed texts are bundled.
  */
 data class TranslationMeta(
   val abbr: String,
@@ -12,40 +13,42 @@ data class TranslationMeta(
   val license: String,
   val source: String,
   val note: String,
-  /** true = protected text included for personal use only (private repo, no distribution). */
-  val personalUse: Boolean = false,
+  /** License deed URL, when the license has one (CC). */
+  val licenseUrl: String = "",
+  /** Credits line required or suggested by the license. */
+  val attribution: String = "",
 )
 
-/** Metadata of the bundled translations, in the app's display order. */
+const val OTB_FORK_URL = "https://github.com/chemickypes/open-bible"
+const val OTB_CHANGES_URL = "https://github.com/chemickypes/open-bible/tree/hbible-correzioni"
+const val CC_BY_SA_4_URL = "https://creativecommons.org/licenses/by-sa/4.0/deed.it"
+
+/** Metadata of the bundled translations, in the app's display order (same as TRANSLATION_NAMES). */
 val TRANSLATION_META: List<TranslationMeta> =
   listOf(
     TranslationMeta(
-      abbr = "NR",
-      name = "Nuova Riveduta",
-      fullName = "Nuova Riveduta",
-      year = "2006",
-      license = "© Società Biblica di Ginevra",
-      source = "http://www.laparola.net",
-      note = "",
-      personalUse = true,
-    ),
-    TranslationMeta(
-      abbr = "R2",
-      name = "Riveduta 2020",
-      fullName = "Riveduta 2020",
-      year = "2020",
-      license = "© ADI-Media",
-      source = "http://www.laparola.net",
-      note = "",
-      personalUse = true,
+      abbr = "OTB",
+      name = "Bibbia Aperta",
+      fullName = "Open Translation Bible — edizione italiana",
+      year = "2026",
+      license = "CC BY-SA 4.0",
+      source = "https://openbible.uk",
+      licenseUrl = CC_BY_SA_4_URL,
+      note =
+        "La prima Bibbia open source: si può copiare, adattare e ridistribuire con la stessa licenza. " +
+          "Numerazione dei versetti ricondotta a quella delle altre versioni dell'app; " +
+          "testo adattato (correzioni pubblicate nel fork $OTB_FORK_URL).",
+      attribution =
+        "Bibbia Aperta © Open Translation Bible (openbible.uk), CC BY-SA 4.0. " +
+          "Testo adattato da HBible: modifiche in $OTB_CHANGES_URL",
     ),
     TranslationMeta(
       abbr = "R27",
       name = "Riveduta 1927",
-      fullName = "Riveduta 1927",
+      fullName = "Riveduta 1927 (Giovanni Luzzi)",
       year = "1927",
       license = "Pubblico dominio",
-      source = "progetto bibbia-interlineare (github)",
+      source = "Società Biblica Britannica e Forestiera",
       note = "",
     ),
     TranslationMeta(
@@ -58,42 +61,12 @@ val TRANSLATION_META: List<TranslationMeta> =
       note = "Testo integrale, versificazione standard.",
     ),
     TranslationMeta(
-      abbr = "ND",
-      name = "Nuova Diodati",
-      fullName = "Nuova Diodati",
-      year = "1991",
-      license = "© La Buona Novella Inc.",
-      source = "",
-      note = "Revisione moderna del testo di Diodati.",
-      personalUse = true,
-    ),
-    TranslationMeta(
-      abbr = "CEI",
-      name = "CEI 1974",
-      fullName = "La Bibbia della CEI",
-      year = "1974",
-      license = "© CEI",
-      source = "",
-      note = "Versione ufficiale della Conferenza Episcopale Italiana; libri deuterocanonici non inclusi.",
-      personalUse = true,
-    ),
-    TranslationMeta(
-      abbr = "RIC",
-      name = "Ricciotti",
-      fullName = "Gioacchino Ricciotti e 7 traduttori",
-      year = "1940",
-      license = "© eredi Ricciotti (PD solo dal 2035)",
-      source = "",
-      note = "Libri deuterocanonici non inclusi.",
-      personalUse = true,
-    ),
-    TranslationMeta(
       abbr = "MAR",
       name = "Martini",
       fullName = "Antonio Martini 1781",
       year = "1781",
       license = "Pubblico dominio",
-      source = "",
+      source = "http://www.laparola.net",
       note =
         "Prima traduzione cattolica completa dall'originale; segue la versificazione della Vulgata: " +
           "i versetti sono RINUMERATI per allinearsi alla numerazione standard delle altre versioni " +

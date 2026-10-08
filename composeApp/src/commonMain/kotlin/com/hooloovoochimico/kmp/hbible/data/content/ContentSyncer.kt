@@ -7,6 +7,7 @@ import com.hooloovoochimico.kmp.hbible.data.CrossRefDoc
 import com.hooloovoochimico.kmp.hbible.data.LexiconDoc
 import com.hooloovoochimico.kmp.hbible.data.OriginalDoc
 import com.hooloovoochimico.kmp.hbible.data.SettingsRepository
+import com.hooloovoochimico.kmp.hbible.data.TRANSLATION_NAMES
 import com.hooloovoochimico.kmp.hbible.data.ai.CmsAiSettings
 import com.hooloovoochimico.kmp.hbible.data.local.BibleDao
 import com.hooloovoochimico.kmp.hbible.data.local.BibleDatabase
@@ -14,6 +15,7 @@ import com.hooloovoochimico.kmp.hbible.data.local.BookEntity
 import com.hooloovoochimico.kmp.hbible.data.local.ContentStateEntity
 import com.hooloovoochimico.kmp.hbible.data.local.CrossReferenceEntity
 import com.hooloovoochimico.kmp.hbible.data.local.LexemeEntity
+import com.hooloovoochimico.kmp.hbible.data.local.OriginalAlignmentEntity
 import com.hooloovoochimico.kmp.hbible.data.local.OriginalVerseEntity
 import com.hooloovoochimico.kmp.hbible.data.local.PostEntity
 import com.hooloovoochimico.kmp.hbible.data.local.TranslationMetaEntity
@@ -182,11 +184,21 @@ class ContentSyncer(
       val local = dao.contentState().associate { it.packageId to it.hash }
       val todo =
         (changed ?: manifest.packages.entries.filter { (path, info) -> local[path] != info.hash }.map { it.key })
-          .filter { isSupported(it) }
+          .filter { isSupported(it, manifest) }
           .sortedWith(compareBy({ importRank(it) }, { it }))
 
       val applied = mutableListOf<String>()
       val failed = mutableMapOf<String, String>()
+      for (path in manifest.removed) {
+        try {
+          if (removePackage(path)) applied += path
+        } catch (e: CancellationException) {
+          throw e
+        } catch (t: Throwable) {
+          appLog.e(t) { "Rimozione pacchetto CMS fallita: $path" }
+          failed[path] = t.message ?: "errore sconosciuto"
+        }
+      }
       todo.forEachIndexed { index, path ->
         onProgress("[${index + 1}/${todo.size}] $path")
         try {
@@ -204,10 +216,28 @@ class ContentSyncer(
       SyncResult(manifest.version, applied, failed)
     }
 
+  /**
+   * Applies a package removed from the CMS. Only translations are removable:
+   * their verses, metadata and sync state are deleted. Returns false when
+   * there was nothing to remove.
+   */
+  private suspend fun removePackage(path: String): Boolean {
+    if (!path.startsWith("bible/")) return false
+    val abbr = path.removePrefix("bible/").removeSuffix(".json")
+    if (abbr in TRANSLATION_NAMES) return false // bundled: never removed by a sync
+    if (dao.translationVerseCount(abbr) == 0 && dao.contentStateFor(path) == null) return false
+    db.withTransaction {
+      dao.deleteVersesForTranslation(abbr)
+      dao.deleteTranslationMeta(abbr)
+      dao.deleteContentState(path)
+    }
+    return true
+  }
+
   /** Packages with an app-side consumer; unknown entries are reported but skipped. */
-  private fun isSupported(path: String): Boolean =
+  private fun isSupported(path: String, manifest: ContentManifest): Boolean =
     path.startsWith("bible/") ||
-      path.startsWith("originals/") ||
+      (path.startsWith("originals/") && manifest.formats["originals"] == ORIGINALS_FORMAT) ||
       path == "lexicon.json" ||
       path == "crossrefs.json" ||
       path == "votd.json" ||
@@ -243,7 +273,7 @@ class ContentSyncer(
       dao.deleteVersesForTranslation(abbr)
       doc.verses.chunked(2000).forEach { chunk ->
         dao.insertVerses(
-          chunk.map { VerseEntity(abbr, it.b, it.c, it.v, it.t, it.x) },
+          chunk.map { VerseEntity(abbr, it.b, it.c, it.v, it.t, it.x, paragraph = it.p == 1) },
         )
       }
     }
@@ -255,6 +285,10 @@ class ContentSyncer(
         publisher = doc.meta.publisher,
         year = doc.meta.year,
         copyright = doc.meta.copyright,
+        license = doc.meta.license,
+        licenseUrl = doc.meta.license_url,
+        sourceUrl = doc.meta.source_url,
+        attribution = doc.meta.attribution,
       ),
     )
     dao.upsertContentState(ContentStateEntity("bible/$abbr.json", Sha256.hexOf(bytes), version, epochMillis()))
@@ -266,6 +300,12 @@ class ContentSyncer(
     val doc = json.decodeFromString<OriginalDoc>(bytes.decodeToString())
     db.withTransaction {
       dao.deleteOriginalVersesForBook(book)
+      dao.deleteAlignmentsForBook(book)
+      dao.insertAlignments(
+        doc.verses.flatMap { v ->
+          v.al.map { (abbr, indices) -> OriginalAlignmentEntity(v.b, v.c, v.v, abbr, indices.joinToString(",")) }
+        },
+      )
       doc.verses.chunked(2000).forEach { chunk ->
         dao.insertOriginalVerses(
           chunk.map {
@@ -277,14 +317,6 @@ class ContentSyncer(
               text = it.text,
               transliteration = it.tr,
               lemmas = it.lm,
-              italianNr = it.anr.joinToString(","),
-              italianR2 = it.ar2.joinToString(","),
-              italianR27 = it.ar27.joinToString(","),
-              italianDio = it.ar_dio.joinToString(","),
-              italianNd = it.ar_nd.joinToString(","),
-              italianCei = it.ar_cei.joinToString(","),
-              italianRic = it.ar_ric.joinToString(","),
-              italianMar = it.ar_mar.joinToString(","),
               glosses = it.ge.joinToString("\t"),
               glossesIt = it.gi.joinToString("\t"),
             )

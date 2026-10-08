@@ -31,14 +31,13 @@ SCHEMA_DIR = ROOT / "composeApp/schemas/com.hooloovoochimico.kmp.hbible.data.loc
 # Traduzioni incluse, nello stesso ordine dell'import storico dell'app (i libri
 # si prendono dalla prima). Deve coincidere con TRANSLATION_NAMES in
 # BibleRepository.kt.
+# Solo testi a licenza aperta (dal 2026-10-09): le traduzioni chiuse stanno nel
+# cassetto del CMS e non devono mai finire qui. La prima è la predefinita e da
+# lei si prendono i libri.
 TRANSLATION_ASSETS = [
-    ("nuova_riveduta.json", "NR"),
-    ("riveduta_2020.json", "R2"),
+    ("bibbia_aperta.json", "OTB"),
     ("riveduta_1927.json", "R27"),
     ("diodati.json", "DIO"),
-    ("nuova_diodati.json", "ND"),
-    ("cei.json", "CEI"),
-    ("ricciotti.json", "RIC"),
     ("martini.json", "MAR"),
 ]
 ORIGINALS_ASSET = "originals.json"
@@ -95,25 +94,34 @@ def import_translations(conn: sqlite3.Connection) -> None:
             insert(conn, "books", ["n", "name", "abbr", "chapters"],
                    ((b["n"], b["name"], b["abbr"], b["chapters"]) for b in doc["books"]))
             books_done = True
-        n = insert(conn, "verses", ["translation", "book", "chapter", "verse", "title", "text"],
-                   ((code, v["b"], v["c"], v["v"], v.get("t"), v["x"]) for v in doc["verses"]))
+        n = insert(conn, "verses", ["translation", "book", "chapter", "verse", "title", "text", "paragraph"],
+                   ((code, v["b"], v["c"], v["v"], v.get("t"), v["x"], 1 if v.get("p") else 0)
+                    for v in doc["verses"]))
         print(f"  {code}: {n} versetti")
 
 
 def import_originals(conn: sqlite3.Connection) -> None:
     doc = load(ORIGINALS_ASSET)
     columns = ["book", "chapter", "verse", "lang", "text", "transliteration", "lemmas",
-               "it_nr", "it_r2", "it_r27", "it_dio", "it_nd", "it_cei", "it_ric", "it_mar",
                "glosses", "glosses_it"]
     rows = (
         (v["b"], v["c"], v["v"], v["lang"], v["text"], v["tr"], v.get("lm", ""),
-         joined(v.get("anr", [])), joined(v.get("ar2", [])), joined(v.get("ar27", [])),
-         joined(v.get("ar_dio", [])), joined(v.get("ar_nd", [])), joined(v.get("ar_cei", [])),
-         joined(v.get("ar_ric", [])), joined(v.get("ar_mar", [])),
          joined(v.get("ge", []), "\t"), joined(v.get("gi", []), "\t"))
         for v in doc["verses"]
     )
     print(f"  originali: {insert(conn, 'original_verses', columns, rows)}")
+    # Allineamenti generici (formato 2 dei pacchetti: campo `al`, sigla -> indici).
+    # Solo le traduzioni incluse: un canale di una traduzione assente non serve.
+    included = {abbr for _, abbr in TRANSLATION_ASSETS}
+    unknown = sorted({a for v in doc["verses"] for a in v.get("al", {})} - included)
+    if unknown:
+        sys.exit(f"{ORIGINALS_ASSET}: allineamenti di traduzioni non incluse: {unknown}")
+    arows = (
+        (v["b"], v["c"], v["v"], abbr, joined(indices))
+        for v in doc["verses"] for abbr, indices in v.get("al", {}).items()
+    )
+    n = insert(conn, "original_alignments", ["book", "chapter", "verse", "translation", "indices"], arows)
+    print(f"  allineamenti: {n}")
 
 
 def import_crossrefs(conn: sqlite3.Connection) -> None:

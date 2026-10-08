@@ -54,6 +54,27 @@ interface BibleDao {
   @Query("SELECT COUNT(*) FROM original_verses")
   suspend fun originalVerseCount(): Int
 
+  /** Alignments of one original verse against every translation that has one. */
+  @Query(
+    "SELECT * FROM original_alignments WHERE book = :book AND chapter = :chapter AND verse = :verse",
+  )
+  fun alignments(book: Int, chapter: Int, verse: Int): Flow<List<OriginalAlignmentEntity>>
+
+  @Query("SELECT COUNT(*) FROM original_alignments")
+  suspend fun alignmentCount(): Int
+
+  @Insert(onConflict = OnConflictStrategy.REPLACE)
+  suspend fun insertAlignments(rows: List<OriginalAlignmentEntity>)
+
+  @Query("DELETE FROM original_alignments WHERE book = :book")
+  suspend fun deleteAlignmentsForBook(book: Int)
+
+  @Query("DELETE FROM translation_meta WHERE abbr = :abbr")
+  suspend fun deleteTranslationMeta(abbr: String)
+
+  @Query("DELETE FROM content_state WHERE package_id = :packageId")
+  suspend fun deleteContentState(packageId: String)
+
   @Query("SELECT COUNT(*) FROM cross_references")
   suspend fun crossReferenceCount(): Int
 
