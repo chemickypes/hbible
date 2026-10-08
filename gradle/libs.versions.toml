@@ -35,11 +35,10 @@ composeMaterial3 = "1.12.0-alpha03"
 # sono copiate in ui/common/AppIcons.kt dai sorgenti Apache 2.0 di
 # material-icons-core. Se servissero nuove icone: aggiungerle ad AppIcons.kt
 # (path da fonts.google.com/icons o dai sorgenti material-icons-core).
-# material3-adaptive multiplatform (window size class per tablet). NON la 1.3.0 stabile:
-# le sue klib iOS sono compilate con Kotlin 2.4.20 (abi_version 2.4.0), illeggibili dal
-# nostro Kotlin 2.3.20. 1.3.0-rc01 = stessa API, klib con compiler 2.3.20 / ABI 2.3.0
-# (verificato nei manifest klib su Maven Central, 2026-10-07). Passare a 1.3.0 con Kotlin 2.4.
-composeAdaptive = "1.3.0-rc01"
+# material3-adaptive multiplatform (window size class per tablet). 1.3.0 stabile: klib iOS compilate con
+# Kotlin 2.4.20 (abi_version 2.4.0, verificato nel manifest klib su Maven Central, 2026-10-08), leggibili
+# dal nostro Kotlin 2.4.21. (Con Kotlin 2.3.20 si usava 1.3.0-rc01, abi 2.3.0.)
+composeAdaptive = "1.3.0"
 ksp = "2.3.12"
 room = "2.8.5"
 sqlite = "2.6.2"
