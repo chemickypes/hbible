@@ -35,7 +35,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hooloovoochimico.kmp.hbible.data.ai.AiCompany
 import com.hooloovoochimico.kmp.hbible.data.ai.AiConfig
 import com.hooloovoochimico.kmp.hbible.data.ai.AiProviderConfig
-import com.hooloovoochimico.kmp.hbible.data.ai.CMS_COMPANY
 import com.hooloovoochimico.kmp.hbible.ui.common.HBibleCard
 import com.hooloovoochimico.kmp.hbible.ui.common.AppIcons
 
@@ -68,7 +67,7 @@ fun AiSettingsScreen(
       IconButton(onClick = onDismiss) {
         Icon(AppIcons.ArrowBack, contentDescription = "Torna alle impostazioni")
       }
-      Text("Servizi AI", style = MaterialTheme.typography.titleLarge)
+      Text("Assistente AI", style = MaterialTheme.typography.titleLarge)
     }
 
     Column(
@@ -102,7 +101,7 @@ fun AiSettingsScreen(
         )
       }
       Text(
-        "Se il primo servizio fallisce si prova il successivo. Le chiavi personali restano solo su questo dispositivo.",
+        "Se il primo servizio fallisce si prova il successivo. Le chiavi restano solo su questo dispositivo, cifrate, e le richieste vanno direttamente al servizio scelto.",
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
@@ -110,39 +109,25 @@ fun AiSettingsScreen(
 
       val ordered = config.ordered()
       ordered.forEach { provider ->
-        if (provider.company == CMS_COMPANY) {
-          val priority = ordered.indexOfFirst { it.company == provider.company } + 1
-          AiCmsCard(
-            config = config,
-            provider = provider,
-            priority = priority,
-            onEnabledChange = { enabled ->
-              viewModel.updateAiProviderNamed(CMS_COMPANY) { it.copy(enabled = enabled) }
-            },
-            onMoveUp = { viewModel.moveAiProviderNamed(CMS_COMPANY, -1) },
-            onMoveDown = { viewModel.moveAiProviderNamed(CMS_COMPANY, +1) },
-          )
-        } else {
-          val company = AiCompany.valueOf(provider.company)
-          val priority = ordered.indexOfFirst { it.company == provider.company } + 1
-          AiProviderCard(
-            company = company,
-            provider = provider,
-            priority = priority,
-            totalProviders = ordered.size,
-            onEnabledChange = { enabled ->
-              viewModel.updateAiProvider(company) { it.copy(enabled = enabled) }
-            },
-            onApiKeyChange = { key ->
-              viewModel.updateAiProvider(company) { it.copy(apiKey = key) }
-            },
-            onModelChange = { model ->
-              viewModel.updateAiProvider(company) { it.copy(model = model) }
-            },
-            onMoveUp = { viewModel.moveAiProvider(company, -1) },
-            onMoveDown = { viewModel.moveAiProvider(company, +1) },
-          )
-        }
+        val company = AiCompany.valueOf(provider.company)
+        val priority = ordered.indexOfFirst { it.company == provider.company } + 1
+        AiProviderCard(
+          company = company,
+          provider = provider,
+          priority = priority,
+          totalProviders = ordered.size,
+          onEnabledChange = { enabled ->
+            viewModel.updateAiProvider(company) { it.copy(enabled = enabled) }
+          },
+          onApiKeyChange = { key ->
+            viewModel.updateAiProvider(company) { it.copy(apiKey = key) }
+          },
+          onModelChange = { model ->
+            viewModel.updateAiProvider(company) { it.copy(model = model) }
+          },
+          onMoveUp = { viewModel.moveAiProvider(company, -1) },
+          onMoveDown = { viewModel.moveAiProvider(company, +1) },
+        )
       }
     }
   }
@@ -229,74 +214,6 @@ private fun AiProviderCard(
     }
   }
 
-/** Display name of a chain entry, resolving the CMS pseudo provider. */
-private fun providerLabel(provider: AiProviderConfig): String =
-  if (provider.company == CMS_COMPANY) "Default (CMS)"
-  else AiCompany.valueOf(provider.company).label
+/** Display name of a chain entry. */
+private fun providerLabel(provider: AiProviderConfig): String = AiCompany.valueOf(provider.company).label
 
-/**
- * Card for the CMS-provided default service: no key or model fields — they
- * are managed on the CMS portal and refreshed automatically. The user only
- * chooses whether to use it and where in the priority order.
- */
-@Composable
-private fun AiCmsCard(
-  config: AiConfig,
-  provider: AiProviderConfig,
-  priority: Int,
-  onEnabledChange: (Boolean) -> Unit,
-  onMoveUp: () -> Unit,
-  onMoveDown: () -> Unit,
-) {
-  val cms = config.cms
-  HBibleCard(
-    shape = MaterialTheme.shapes.extraLarge,
-    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-  ) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-      Column(Modifier.weight(1f)) {
-        Text("Default (CMS)", style = MaterialTheme.typography.titleMedium)
-        Text(
-          when {
-            cms == null -> "Non disponibile"
-            provider.enabled -> "Priorità $priority"
-            else -> "Disattivato"
-          },
-          style = MaterialTheme.typography.labelSmall,
-          color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-      }
-      IconButton(onClick = onMoveUp, enabled = priority > 1) {
-        Icon(AppIcons.KeyboardArrowUp, contentDescription = "Alza priorità Default (CMS)")
-      }
-      IconButton(onClick = onMoveDown) {
-        Icon(AppIcons.KeyboardArrowDown, contentDescription = "Abbassa priorità Default (CMS)")
-      }
-      Switch(checked = provider.enabled, onCheckedChange = onEnabledChange)
-    }
-    if (cms != null) {
-      val company: AiCompany? = runCatching { AiCompany.valueOf(cms.provider) }.getOrNull()
-      Text(
-        buildString {
-          append(company?.label ?: cms.provider)
-          append(" · ")
-          append(cms.model.ifBlank { company?.defaultModel ?: "modello predefinito" })
-        },
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurface,
-      )
-      Text(
-        "Chiave e modello sono gestiti dal CMS. Se imposti una chiave personale, il suo servizio ha la precedenza in base all'ordine scelto.",
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(top = 4.dp),
-      )
-    } else {
-      Text(
-        "Il CMS non pubblica alcun servizio AI predefinito.",
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-      )
-    }
-  }
-}

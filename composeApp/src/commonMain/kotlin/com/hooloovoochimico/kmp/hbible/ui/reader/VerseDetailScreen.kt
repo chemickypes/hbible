@@ -467,7 +467,7 @@ fun VerseDetailScreen(
                       }
                       if (translateFailed && !translating) {
                         Text(
-                          "Traduzione non riuscita: configura un servizio AI nelle Impostazioni → Ricerca AI.",
+                          "Traduzione non riuscita: configura un servizio AI in Impostazioni → Assistente AI.",
                           style = MaterialTheme.typography.labelSmall,
                           color = MaterialTheme.colorScheme.error,
                         )
@@ -552,7 +552,7 @@ fun VerseDetailScreen(
         }
       } else {
         EmptyMessage(
-          "Per chattare configura un servizio AI in Impostazioni → Ricerca AI.",
+          "Per chattare configura un servizio AI in Impostazioni → Assistente AI.",
           Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
           MaterialTheme.typography.bodySmall,
         )

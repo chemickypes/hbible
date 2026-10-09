@@ -98,7 +98,7 @@ class AiGateway(
   private fun requireChain(): List<AiChatClient> {
     if (chain.isEmpty()) {
       throw IllegalStateException(
-        "Nessun servizio AI configurato: aggiungi una chiave in Impostazioni → Ricerca AI",
+        "Nessun servizio AI configurato: aggiungi una chiave in Impostazioni → Assistente AI",
       )
     }
     return chain

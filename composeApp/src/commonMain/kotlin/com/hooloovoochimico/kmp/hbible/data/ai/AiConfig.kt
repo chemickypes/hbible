@@ -6,6 +6,7 @@ import com.russhwolf.settings.Settings
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 
 /**
  * Config AI: data class pure + [AiSettingsStore] (persistenza cifrata: il JSON
@@ -16,7 +17,7 @@ import kotlinx.serialization.json.Json
 /** User configuration for a single AI provider. */
 @Serializable
 data class AiProviderConfig(
-  /** [AiCompany.name], or [CMS_COMPANY] for the CMS-provided default. */
+  /** [AiCompany.name]. */
   val company: String,
   val apiKey: String = "",
   /** Blank means "use the provider default model". */
@@ -25,37 +26,16 @@ data class AiProviderConfig(
 )
 
 /**
- * Pseudo provider name for the default AI service pushed by the CMS
- * ("casa madre" + token + modello configurati sul portale). The real
- * provider/model live in [AiConfig.cms]; the matching entry in [AiConfig.providers]
- * only carries the user's enable flag and position in the priority order.
+ * Full AI configuration: per-provider credentials (the user's own keys only) plus the
+ * user-chosen priority order. Up to the 2026-10 test builds the CMS also pushed a default
+ * service with its key ("CMS" entry + `cms` field): [AiSettingsStore] drops it on load.
  */
-const val CMS_COMPANY = "CMS"
-
-/** Default AI service published by the CMS (see GET /api/ai/settings). */
-@Serializable
-data class CmsAiSettings(
-  /** [AiCompany.name] of the underlying provider. */
-  val provider: String,
-  val apiKey: String = "",
-  /** Blank means "use the provider default model". */
-  val model: String = "",
-)
-
-/** Full AI configuration: per-provider credentials plus the user-chosen priority order. */
 @Serializable
 data class AiConfig(
   val providers: List<AiProviderConfig> = emptyList(),
-  /** [AiCompany.name]s (plus [CMS_COMPANY]) ordered by priority (first = used first). */
+  /** [AiCompany.name]s ordered by priority (first = used first). */
   val order: List<String> = emptyList(),
-  /** Default service offered by the CMS, null when the CMS offers none. */
-  val cms: CmsAiSettings? = null,
 ) {
-  /** True when a CMS default entry exists among the providers. */
-  fun hasCmsEntry(): Boolean = providers.any { it.company == CMS_COMPANY }
-
-  /** The CMS default entry as configured by the user (enable flag), if present. */
-  fun cmsEntry(): AiProviderConfig? = providers.firstOrNull { it.company == CMS_COMPANY }
   /** Providers enabled and holding a key, sorted by priority. */
   fun enabledChain(): List<AiProviderConfig> =
     ordered().filter { it.enabled && it.apiKey.isNotBlank() }
@@ -64,9 +44,8 @@ data class AiConfig(
   fun ordered(): List<AiProviderConfig> {
     val byName = providers.associateBy { it.company }
     val names = buildList {
-      addAll(order.filter { it != CMS_COMPANY || byName.containsKey(CMS_COMPANY) })
+      addAll(order.filter { name -> AiCompany.entries.any { it.name == name } })
       addAll(AiCompany.entries.map { it.name }.filterNot { it in this })
-      if (byName.containsKey(CMS_COMPANY) && CMS_COMPANY !in this) add(CMS_COMPANY)
     }
     return names.map { name -> byName[name] ?: AiProviderConfig(company = name) }
   }
@@ -85,17 +64,9 @@ data class AiConfig(
   }
 
   /** Returns a copy with the priority order updated so that [company] moves by [delta]. */
-  fun move(company: AiCompany, delta: Int): AiConfig = moveNamed(company.name, delta)
-
-  /** [move] for any provider name, including [CMS_COMPANY]. */
-  fun moveNamed(name: String, delta: Int): AiConfig {
-    val pool =
-      buildList {
-        addAll(order)
-        addAll(AiCompany.entries.map { it.name })
-        if (hasCmsEntry()) add(CMS_COMPANY)
-      }.distinct()
-    val names = pool.toMutableList()
+  fun move(company: AiCompany, delta: Int): AiConfig {
+    val name = company.name
+    val names = ordered().map { it.company }.toMutableList()
     val index = names.indexOf(name)
     if (index < 0) return this
     val target = (index + delta).coerceIn(0, names.lastIndex)
@@ -126,8 +97,19 @@ object AiSettingsStore {
     val raw = readRaw(secretStore, settings)
     val stored = raw?.let { decode(it) } ?: AiConfig()
     val config = migrateLegacy(settings, stored)
-    if (config != stored) save(secretStore, config)
+    if (config != stored || (raw != null && hasObsoleteEntries(raw, stored))) save(secretStore, config)
     return config.normalize()
+  }
+
+  /** True when [raw] still holds the CMS default of old test builds (its key included). */
+  private fun hasObsoleteEntries(raw: String, stored: AiConfig): Boolean {
+    val known = AiCompany.entries.map { it.name }
+    if (stored.providers.any { it.company !in known } || stored.order.any { it !in known }) return true
+    return try {
+      "cms" in json.parseToJsonElement(raw).jsonObject
+    } catch (e: Exception) {
+      false
+    }
   }
 
   fun save(secretStore: SecretStore, config: AiConfig) {
@@ -157,14 +139,12 @@ object AiSettingsStore {
       null
     }
 
-  /** Ensures every company has an entry and appears in the priority order (the
-   *  CMS default entry is kept only while it exists — it is managed by the CMS). */
+  /** Ensures every company has an entry and appears in the priority order; drops unknown
+   *  entries (the "CMS" default of old test builds, with the key it carried). */
   internal fun AiConfig.normalize(): AiConfig {
-    val known =
-      AiCompany.entries.map { it.name }.toSet() +
-        (if (cms != null || hasCmsEntry()) setOf(CMS_COMPANY) else emptySet())
+    val known = AiCompany.entries.map { it.name }
     val providers = known.map { name -> this.providers.firstOrNull { it.company == name } ?: AiProviderConfig(company = name) }
-    val order = (order + known).distinct()
+    val order = (order.filter { it in known } + known).distinct()
     return copy(providers = providers, order = order)
   }
 

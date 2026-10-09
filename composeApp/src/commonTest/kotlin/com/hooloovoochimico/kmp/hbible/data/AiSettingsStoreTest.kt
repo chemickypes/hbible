@@ -140,6 +140,23 @@ class AiSettingsStoreTest {
   }
 
   @Test
+  fun `cms default of old test builds is dropped with its key`() {
+    val store = FakeSecretStore()
+    val settings = FakeSettings()
+    store.map["config_json"] =
+      """{"providers":[{"company":"Z_AI","apiKey":"mine","enabled":true},""" +
+        """{"company":"CMS","apiKey":"cms-secret","enabled":true}],""" +
+        """"order":["CMS","Z_AI"],"cms":{"provider":"GEMINI","apiKey":"cms-secret"}}"""
+
+    val loaded = AiSettingsStore.load(store, settings)
+
+    assertTrue(loaded.providers.none { it.company == "CMS" })
+    assertFalse("CMS" in loaded.order)
+    assertEquals(listOf(AiCompany.Z_AI.name), loaded.enabledChain().map { it.company })
+    assertFalse(store.map.getValue("config_json").contains("cms-secret"))
+  }
+
+  @Test
   fun `empty storage loads default config`() {
     val store = FakeSecretStore()
     val settings = FakeSettings()

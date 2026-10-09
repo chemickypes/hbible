@@ -212,7 +212,7 @@ fun BookInfoScreen(
       }
     } else {
       Text(
-        "Per chattare configura un servizio AI in Impostazioni → Ricerca AI.",
+        "Per chattare configura un servizio AI in Impostazioni → Assistente AI.",
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(16.dp),
