@@ -122,7 +122,9 @@ internal suspend fun BibleDatabase.refreshFromBundledIfChanged(
             "OR package_id IN ('lexicon.json', 'crossrefs.json')",
         )
         execSQL(
-          "INSERT OR REPLACE INTO main.content_state SELECT * FROM bundled.content_state WHERE package_id = '$BUNDLED_STATE_ID'",
+          // Impronta + hash dei pacchetti da cui vengono i contenuti inclusi (R04): il sync
+          // successivo scarica solo quelli cambiati dopo l'export.
+          "INSERT OR REPLACE INTO main.content_state SELECT * FROM bundled.content_state",
         )
       }
       true

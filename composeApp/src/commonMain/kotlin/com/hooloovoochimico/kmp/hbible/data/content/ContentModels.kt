@@ -12,6 +12,8 @@ data class ContentManifest(
   val formats: Map<String, Int> = emptyMap(),
   /** Packages no longer published (e.g. translations moved to the CMS "cassetto"). */
   val removed: List<String> = emptyList(),
+  /** Lowest app versionCode that can read these packages (older apps skip the update). */
+  val minApp: Int = 0,
 )
 
 /** Format of `originals/{nn}.json` this app understands (see [ContentManifest.formats]). */
@@ -32,6 +34,8 @@ data class UpdateCheck(
   val changed: List<String>,
   /** Non-null when the check could not complete. */
   val error: String?,
+  /** The published packages need a newer app version: nothing is downloaded. */
+  val appUpdateRequired: Boolean = false,
 )
 
 /** Result of a full sync run. */
@@ -39,4 +43,5 @@ data class SyncResult(
   val version: String,
   val applied: List<String>,
   val failed: Map<String, String>,
+  val appUpdateRequired: Boolean = false,
 )

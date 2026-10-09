@@ -22,8 +22,6 @@ import com.hooloovoochimico.kmp.hbible.data.local.VerseEntity
 import com.hooloovoochimico.kmp.hbible.data.local.VotdEntity
 import com.hooloovoochimico.kmp.hbible.data.local.withTransaction
 import io.ktor.client.HttpClient
-import io.ktor.client.call.body
-import io.ktor.client.request.get
 import io.ktor.util.date.GMTDate
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -84,40 +82,40 @@ class ContentSyncer(
   private val db: BibleDatabase,
   private val dao: BibleDao,
   private val settings: SettingsRepository,
-  private val client: HttpClient,
+  client: HttpClient,
+  /** versionCode of this app, compared with the manifest's `minApp`. */
+  private val appVersionCode: Int,
+  /** Debug builds only: the content URL saved in Settings → Avanzate replaces the default. */
+  private val allowUrlOverride: Boolean,
+  private val downloader: ContentDownloader = ContentDownloader(client),
 ) {
   private val json = Json { ignoreUnknownKeys = true }
 
-  /** CMS base URL from settings, without trailing slash. Empty = sync disabled. */
-  fun baseUrl(): String = settings.loadCmsBaseUrl().trim().trimEnd('/')
+  /** Content site base URL (without trailing slash): [DEFAULT_CONTENT_URL] or the debug override. */
+  fun baseUrl(): String {
+    val saved = if (allowUrlOverride) settings.loadCmsBaseUrl().trim().trimEnd('/') else ""
+    return saved.ifBlank { DEFAULT_CONTENT_URL }
+  }
 
   fun isConfigured(): Boolean = baseUrl().isNotBlank()
 
   /** Fetches the manifest and diffs it against the locally applied packages. */
   suspend fun checkForUpdates(): UpdateCheck {
     val base = baseUrl()
-    if (base.isBlank()) return UpdateCheck(null, emptyList(), "URL del CMS non configurato")
+    if (base.isBlank()) return UpdateCheck(null, emptyList(), "URL dei contenuti non configurato")
     return try {
-      val manifest = fetchManifest(base)
+      val manifest = downloader.manifest(base)
+      if (manifest.requiresNewerApp(appVersionCode)) {
+        return UpdateCheck(manifest.version, emptyList(), null, appUpdateRequired = true)
+      }
       val local = dao.contentState().associate { it.packageId to it.hash }
-      val changed =
-        manifest.packages.entries
-          .filter { (path, info) -> local[path] != info.hash }
-          .map { it.key }
-          .sorted()
-      UpdateCheck(manifest.version, changed, null)
+      UpdateCheck(manifest.version, manifest.packagesToApply(local), null)
     } catch (e: CancellationException) {
       throw e
     } catch (t: Throwable) {
       appLog.w(t) { "Controllo aggiornamenti CMS fallito" }
       UpdateCheck(null, emptyList(), t.message ?: "Errore di rete")
     }
-  }
-
-  /** Plain-text fetch + manual parse: no ContentNegotiation needed on the client. */
-  private suspend fun fetchManifest(base: String): ContentManifest {
-    val text: String = client.get("$base/content/manifest.json").body()
-    return json.decodeFromString<ContentManifest>(text)
   }
 
   /**
@@ -130,14 +128,15 @@ class ContentSyncer(
   ): SyncResult =
     withContext(Dispatchers.Default) {
       val base = baseUrl()
-      require(base.isNotBlank()) { "URL del CMS non configurato" }
+      require(base.isNotBlank()) { "URL dei contenuti non configurato" }
 
-      val manifest = fetchManifest(base)
+      val manifest = downloader.manifest(base)
+      if (manifest.requiresNewerApp(appVersionCode)) {
+        return@withContext SyncResult(manifest.version, emptyList(), emptyMap(), appUpdateRequired = true)
+      }
       val local = dao.contentState().associate { it.packageId to it.hash }
-      val todo =
-        (changed ?: manifest.packages.entries.filter { (path, info) -> local[path] != info.hash }.map { it.key })
-          .filter { isSupported(it, manifest) }
-          .sortedWith(compareBy({ importRank(it) }, { it }))
+      // State is saved package by package: an interrupted run resumes from what is left.
+      val todo = manifest.packagesToApply(local, changed)
 
       val applied = mutableListOf<String>()
       val failed = mutableMapOf<String, String>()
@@ -154,8 +153,7 @@ class ContentSyncer(
       todo.forEachIndexed { index, path ->
         onProgress("[${index + 1}/${todo.size}] $path")
         try {
-          val bytes: ByteArray = client.get("$base/content/$path").body()
-          verifyHash(bytes, manifest.packages[path]?.hash)
+          val bytes = downloader.pkg(base, path, manifest.packages[path]?.hash)
           importPackage(path, bytes, manifest.version)
           applied += path
         } catch (e: CancellationException) {
@@ -185,22 +183,6 @@ class ContentSyncer(
     }
     return true
   }
-
-  /** Packages with an app-side consumer; unknown entries are reported but skipped. */
-  private fun isSupported(path: String, manifest: ContentManifest): Boolean =
-    path.startsWith("bible/") ||
-      (path.startsWith("originals/") && manifest.formats["originals"] == ORIGINALS_FORMAT) ||
-      path == "lexicon.json" ||
-      path == "crossrefs.json" ||
-      path == "votd.json" ||
-      path == "posts.json"
-
-  private fun importRank(path: String): Int =
-    when {
-      path.startsWith("bible/") -> 0
-      path.startsWith("originals/") -> 1
-      else -> 2
-    }
 
   private suspend fun importPackage(path: String, bytes: ByteArray, version: String) {
     when {
@@ -350,11 +332,5 @@ class ContentSyncer(
   }
 
   /** Verifies the downloaded bytes against the manifest hash when provided. */
-  private fun verifyHash(bytes: ByteArray, expected: String?) {
-    if (expected != null && Sha256.hexOf(bytes) != expected) {
-      throw IllegalStateException("Hash del pacchetto non corrisponde: contenuto corrotto?")
-    }
-  }
-
   private fun epochMillis(): Long = GMTDate().timestamp
 }

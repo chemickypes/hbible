@@ -10,6 +10,9 @@ actual fun appVersion(): String {
     return "$name ($build)"
 }
 
+actual fun appVersionCode(): Int =
+    (NSBundle.mainBundle.infoDictionary?.get("CFBundleVersion") as? String)?.toIntOrNull() ?: 0
+
 @OptIn(ExperimentalNativeApi::class)
 actual fun isDebugBuild(): Boolean = Platform.isDebugBinary
 

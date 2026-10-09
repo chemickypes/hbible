@@ -19,9 +19,11 @@ import com.hooloovoochimico.kmp.hbible.data.ai.AiSettingsStore
 import com.hooloovoochimico.kmp.hbible.data.ai.aiHttpClient
 import com.hooloovoochimico.kmp.hbible.data.local.ALL_MIGRATIONS
 import com.hooloovoochimico.kmp.hbible.data.local.BibleDatabase
+import com.hooloovoochimico.kmp.hbible.platform.appVersionCode
 import com.hooloovoochimico.kmp.hbible.platform.bibleDatabaseBuilder
 import com.hooloovoochimico.kmp.hbible.platform.createSecretStore
 import com.hooloovoochimico.kmp.hbible.platform.createSettings
+import com.hooloovoochimico.kmp.hbible.platform.isDebugBuild
 import io.ktor.client.HttpClient
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
@@ -57,7 +59,9 @@ val coreModule = module {
     single<CmsRepository> { DefaultCmsRepository(get()) }
 
     // Sync dei contenuti dal CMS (manifest + pacchetti /content/*).
-    single { ContentSyncer(get(), get(), get(), get()) }
+    single {
+      ContentSyncer(get(), get(), get(), get(), appVersionCode = appVersionCode(), allowUrlOverride = isDebugBuild())
+    }
 
     /**
      * Single [AiGateway] per tutta l'app. La configurazione viene riletta a

@@ -11,7 +11,7 @@ import kotlin.test.assertTrue
 
 class SettingsStatusTest {
   private val time: (Long) -> String = { "T$it" }
-  private val configured = ContentSyncUiState(baseUrl = "https://example.org")
+  private val configured = ContentSyncUiState(serverUrl = "https://example.org")
 
   @Test
   fun noServer_saysContentIsBundled() {
@@ -54,6 +54,12 @@ class SettingsStatusTest {
   @Test
   fun upToDate_showsTime() {
     assertEquals("Ultimo controllo: T5", configured.copy(lastCheckAt = 5).status(time).detail)
+  }
+
+  @Test
+  fun appUpdateRequired_asksToUpdateTheApp() {
+    val check = UpdateCheck("v2", emptyList(), null, appUpdateRequired = true)
+    assertEquals("Aggiorna l'app", configured.copy(lastCheckAt = 5, lastCheck = check).status(time).title)
   }
 
   @Test

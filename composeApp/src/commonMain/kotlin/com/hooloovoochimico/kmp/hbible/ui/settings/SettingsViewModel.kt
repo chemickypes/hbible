@@ -10,6 +10,7 @@ import com.hooloovoochimico.kmp.hbible.data.ai.AiConfig
 import com.hooloovoochimico.kmp.hbible.data.ai.AiProviderConfig
 import com.hooloovoochimico.kmp.hbible.data.content.ContentSyncer
 import com.hooloovoochimico.kmp.hbible.data.content.UpdateCheck
+import com.hooloovoochimico.kmp.hbible.data.content.shouldAutoCheck
 import com.hooloovoochimico.kmp.hbible.platform.formatDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,8 +21,10 @@ import kotlin.time.Clock
 
 /** State of the content-sync section (Settings → "Contenuti"). */
 data class ContentSyncUiState(
-  /** Content server base URL (developer setting, Settings → Avanzate in debug builds). */
+  /** Content URL typed in Settings → Avanzate (debug builds only; empty = default site). */
   val baseUrl: String = "",
+  /** Content site actually used (default site or the debug override). */
+  val serverUrl: String = "",
   val autoUpdateCheck: Boolean = true,
   val busy: Boolean = false,
   /** Progress message during a sync run. */
@@ -47,8 +50,10 @@ fun ContentSyncUiState.status(
 ): ContentStatus {
   val checkedAt = if (lastCheckAt > 0) "Ultimo controllo: ${formatTime(lastCheckAt)}" else ""
   return when {
-    baseUrl.isBlank() -> ContentStatus("Contenuti inclusi nell'app", "Aggiornamenti online non disponibili")
+    serverUrl.isBlank() -> ContentStatus("Contenuti inclusi nell'app", "Aggiornamenti online non disponibili")
     busy -> ContentStatus("Aggiornamento in corso…", progress.ifBlank { "Controllo dei contenuti" })
+    lastCheck?.appUpdateRequired == true ->
+      ContentStatus("Aggiorna l'app", "I nuovi contenuti richiedono una versione più recente di HBible")
     lastCheck?.error != null ->
       ContentStatus("Controllo non riuscito", "Server dei contenuti non raggiungibile. Riprova più tardi.", error = true)
     lastFailed > 0 ->
@@ -86,6 +91,7 @@ class SettingsViewModel(
         aiConfig = settingsRepository.loadAiConfig(),
         contentSync = ContentSyncUiState(
           baseUrl = settingsRepository.loadCmsBaseUrl(),
+          serverUrl = contentSyncer.baseUrl(),
           autoUpdateCheck = settingsRepository.loadAutoUpdateCheck(),
           lastCheckAt = settingsRepository.loadLastContentCheck(),
         ),
@@ -128,7 +134,7 @@ class SettingsViewModel(
 
   fun setCmsBaseUrl(url: String) {
     settingsRepository.saveCmsBaseUrl(url)
-    _uiState.update { it.copy(contentSync = it.contentSync.copy(baseUrl = url)) }
+    _uiState.update { it.copy(contentSync = it.contentSync.copy(baseUrl = url, serverUrl = contentSyncer.baseUrl())) }
   }
 
   fun setAutoUpdateCheck(enabled: Boolean) {
@@ -171,6 +177,19 @@ class SettingsViewModel(
         }
         return@launch
       }
+      if (check.appUpdateRequired) {
+        _uiState.update {
+          it.copy(
+            contentSync = it.contentSync.copy(
+              busy = false,
+              lastCheck = check,
+              lastSyncMessage = "Contenuti per una versione più recente dell'app",
+              lastCheckAt = checkedAt,
+            ),
+          )
+        }
+        return@launch
+      }
       if (check.changed.isEmpty()) {
         _uiState.update {
           it.copy(
@@ -186,9 +205,12 @@ class SettingsViewModel(
         }
         return@launch
       }
+      val previousCheckAt = _uiState.value.contentSync.lastCheckAt
       val result = contentSyncer.sync(check.changed) { progress ->
         _uiState.update { it.copy(contentSync = it.contentSync.copy(progress = progress)) }
       }
+      // Packages left to apply: the next app open retries instead of waiting 24 hours.
+      if (result.failed.isNotEmpty()) settingsRepository.saveLastContentCheck(previousCheckAt)
       val message =
         buildString {
           append("Applicati ${result.applied.size} pacchetti")
@@ -223,9 +245,9 @@ class SettingsViewModel(
 
   /** Silent check at app open; starts the download automatically when enabled. */
   fun autoCheckOnOpen() {
-    if (!contentSyncer.isConfigured()) return
-    if (!settingsRepository.loadAutoUpdateCheck()) return
-    if (_uiState.value.contentSync.busy) return
+    if (!contentSyncer.isConfigured() || _uiState.value.contentSync.busy) return
+    val now = Clock.System.now().toEpochMilliseconds()
+    if (!shouldAutoCheck(settingsRepository.loadAutoUpdateCheck(), now, settingsRepository.loadLastContentCheck())) return
     downloadUpdates()
   }
 }

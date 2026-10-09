@@ -66,6 +66,7 @@ import com.hooloovoochimico.kmp.hbible.data.TRANSLATION_META
 import com.hooloovoochimico.kmp.hbible.data.TRANSLATION_NAMES
 import com.hooloovoochimico.kmp.hbible.data.ThemeMode
 import com.hooloovoochimico.kmp.hbible.data.TranslationMeta
+import com.hooloovoochimico.kmp.hbible.data.content.DEFAULT_CONTENT_URL
 import com.hooloovoochimico.kmp.hbible.data.label
 import com.hooloovoochimico.kmp.hbible.platform.BackHandler
 import com.hooloovoochimico.kmp.hbible.platform.appVersion
@@ -285,7 +286,7 @@ private fun SettingsList(
               "Aggiornamenti automatici",
               checked = sync.autoUpdateCheck,
               onCheckedChange = viewModel::setAutoUpdateCheck,
-              subtitle = "Scarica le correzioni di testo e interlineare all'apertura dell'app",
+              subtitle = "Scarica le correzioni di testo e interlineare, al massimo una volta al giorno",
             )
           },
           {
@@ -299,7 +300,7 @@ private fun SettingsList(
             ) {
               when {
                 sync.busy -> CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 3.dp)
-                sync.baseUrl.isNotBlank() ->
+                sync.serverUrl.isNotBlank() ->
                   FilledTonalButton(onClick = viewModel::downloadUpdates) { Text("Controlla ora") }
               }
             }
@@ -559,15 +560,16 @@ private fun AdvancedPage(sync: ContentSyncUiState, viewModel: SettingsViewModel)
     value = sync.baseUrl,
     onValueChange = viewModel::setCmsBaseUrl,
     label = { Text("Indirizzo del server dei contenuti") },
-    placeholder = { Text("http://192.168.1.10:3001") },
+    placeholder = { Text(DEFAULT_CONTENT_URL) },
+    supportingText = { Text("Vuoto = sito pubblico. In uso: ${sync.serverUrl}") },
     singleLine = true,
     modifier = Modifier.fillMaxWidth(),
   )
   Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-    OutlinedButton(onClick = viewModel::checkForUpdates, enabled = !sync.busy && sync.baseUrl.isNotBlank()) {
+    OutlinedButton(onClick = viewModel::checkForUpdates, enabled = !sync.busy) {
       Text("Verifica")
     }
-    Button(onClick = viewModel::downloadUpdates, enabled = !sync.busy && sync.baseUrl.isNotBlank()) {
+    Button(onClick = viewModel::downloadUpdates, enabled = !sync.busy) {
       Text(if (sync.busy) "Aggiornamento…" else "Scarica aggiornamenti")
     }
   }

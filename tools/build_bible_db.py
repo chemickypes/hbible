@@ -44,6 +44,7 @@ TRANSLATION_ASSETS = [
 ORIGINALS_ASSET = "originals.json"
 CROSSREFS_ASSET = "crossrefs.json"
 LEXICON_ASSET = "lexicon.json"
+CONTENT_STATE_ASSET = "content-state.json"
 
 
 def latest_schema(schema_dir: Path) -> dict:
@@ -149,10 +150,23 @@ def content_fingerprint(schema: dict) -> str:
     nuovi), ricopia le tabelle dei contenuti dal DB incluso."""
     h = hashlib.sha256(f"schema:{schema['version']}".encode())
     names = [a for a, _ in TRANSLATION_ASSETS] + [ORIGINALS_ASSET, CROSSREFS_ASSET, LEXICON_ASSET]
+    if (FILES_DIR / CONTENT_STATE_ASSET).exists():
+        names.append(CONTENT_STATE_ASSET)
     for name in names:
         h.update(name.encode())
         h.update((FILES_DIR / name).read_bytes())
     return h.hexdigest()
+
+
+def package_states() -> list[tuple]:
+    """Righe di content_state per i pacchetti del CMS da cui vengono i JSON inclusi
+    (content-state.json, scritto da `npm run export:hbible`): il sync dell'app scarica
+    poi solo i pacchetti cambiati dopo l'export (R04). Senza il file: nessuna riga."""
+    path = FILES_DIR / CONTENT_STATE_ASSET
+    if not path.exists():
+        return []
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    return [(pkg, h, doc["version"], 0) for pkg, h in sorted(doc["packages"].items())]
 
 
 def main() -> None:
@@ -178,9 +192,10 @@ def main() -> None:
             import_crossrefs(conn)
             import_lexicon(conn)
             fingerprint = content_fingerprint(schema)
+            states = package_states()
             insert(conn, "content_state", ["package_id", "hash", "version", "synced_at"],
-                   [("bundled", fingerprint, f"schema-{schema['version']}", 0)])
-            print(f"  impronta contenuti: {fingerprint[:12]}")
+                   [("bundled", fingerprint, f"schema-{schema['version']}", 0)] + states)
+            print(f"  impronta contenuti: {fingerprint[:12]}, stati dei pacchetti: {len(states)}")
         conn.execute("ANALYZE")
         conn.execute("VACUUM")
     finally:
