@@ -29,7 +29,7 @@ internal class FakeBibleRepository(
   books: List<BookEntity> = listOf(BookEntity(1, "Genesi", "Gen", 50)),
   verses: List<VerseEntity> =
     listOf(
-      VerseEntity("OTB", 1, 1, 1, null, "Nel principio Dio creò i cieli e la terra."),
+      VerseEntity("OTB", 1, 1, 1, null, "In principio Dio creò i cieli e la terra."),
     ),
   originals: List<OriginalVerseEntity> = emptyList(),
   crossRefs: List<CrossReferenceEntity> = emptyList(),
