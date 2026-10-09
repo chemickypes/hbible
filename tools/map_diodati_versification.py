@@ -30,6 +30,7 @@ Usage:
 
 import argparse
 import json
+import os
 import re
 import sys
 import xml.etree.ElementTree as ET
@@ -38,9 +39,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from r27_common import FILES_DIR, normalize, tokens_of
 
-DEFAULT_XML = Path(
-    "/home/hooloovoo/Projects/Dev/android-projects/LaParola/Testi/Bibbia/italiano/Diodati.xml"
-)
+# Sorgente OSIS di laparola.net (non versionata): LAPAROLA_DIR punta alla cartella "Testi".
+DEFAULT_XML = Path(os.environ.get("LAPAROLA_DIR", "LaParola/Testi")) / "Bibbia/italiano/Diodati.xml"
 DEFAULT_NR = FILES_DIR / "nuova_riveduta.json"
 DEFAULT_OUT = Path(__file__).resolve().parent / "dio_verse_map.json"
 DEFAULT_REVIEW = Path(__file__).resolve().parent / "dio_verse_map_review.txt"

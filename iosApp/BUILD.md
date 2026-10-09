@@ -24,7 +24,7 @@
    anche se si compila solo il framework iOS. Nessuna dipendenza extra serve a runtime:
    - la via più semplice è installare **Android Studio** (che porta l'SDK), oppure
    - solo cmdline-tools: `sdkmanager "platform-tools" "platforms;android-37" "build-tools;<ultima>"`.
-4. **`local.properties`**: sul repo Linux contiene `sdk.dir=/home/hooloovoo/android-sdk`,
+4. **`local.properties`**: sul PC Linux contiene `sdk.dir=/home/<utente>/android-sdk`,
    non valido sul Mac. Il file non è versionato: su una nuova copia va creato con
    `sdk.dir=/Users/<utente>/Library/Android/sdk` (o impostare `ANDROID_HOME`).
 
