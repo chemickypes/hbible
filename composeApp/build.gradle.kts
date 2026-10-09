@@ -115,11 +115,15 @@ android {
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.hooloovoochimico.kmp.hbible"
+        // Id definitivo sul Play Store (DR1): non si può più cambiare dopo il primo caricamento.
+        // Il namespace e il package Kotlin restano com.hooloovoochimico.kmp.hbible.
+        applicationId = "com.hooloovoochimico.hbible"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        // Dal workflow di rilascio (R09): -PversionCode=10203 -PversionName=1.2.3 (tag v1.2.3).
+        versionCode = (findProperty("versionCode") as String?)?.toInt() ?: 1
+        versionName = (findProperty("versionName") as String?) ?: "1.0.0"
+        manifestPlaceholders["appLabel"] = "HBible"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -129,26 +133,46 @@ android {
         }
     }
 
-    // Firma di release da keystore.properties (root, gitignored) con chiavi
-    // storeFile/storePassword/keyAlias/keyPassword. Senza file la release è
-    // firmata con la chiave di debug: installabile per provarla in locale,
-    // NON pubblicabile (il Play Store rifiuta APK/AAB firmati in debug).
+    // Firma di release con la chiave di caricamento (upload key, Play App Signing):
+    // - in locale da keystore.properties (root, gitignored: storeFile/storePassword/keyAlias/keyPassword);
+    // - in CI da variabili d'ambiente (HBIBLE_UPLOAD_KEYSTORE = percorso del .jks,
+    //   HBIBLE_UPLOAD_KEYSTORE_PASSWORD, HBIBLE_UPLOAD_KEY_ALIAS, HBIBLE_UPLOAD_KEY_PASSWORD).
+    // Senza nessuna delle due la release è firmata con la chiave di debug: installabile per
+    // provarla in locale, NON pubblicabile. Con -PrequireReleaseSigning=true (workflow di
+    // rilascio) il build si ferma invece di firmare in debug.
     val keystoreFile = rootProject.file("keystore.properties")
+    val envKeystore = System.getenv("HBIBLE_UPLOAD_KEYSTORE")?.takeIf { it.isNotBlank() }
     val releaseSigning =
-        if (keystoreFile.exists()) {
-            val props = Properties().apply { keystoreFile.inputStream().use { load(it) } }
-            signingConfigs.create("release") {
-                storeFile = rootProject.file(props.getProperty("storeFile"))
-                storePassword = props.getProperty("storePassword")
-                keyAlias = props.getProperty("keyAlias")
-                keyPassword = props.getProperty("keyPassword")
+        when {
+            keystoreFile.exists() -> {
+                val props = Properties().apply { keystoreFile.inputStream().use { load(it) } }
+                signingConfigs.create("release") {
+                    storeFile = rootProject.file(props.getProperty("storeFile"))
+                    storePassword = props.getProperty("storePassword")
+                    keyAlias = props.getProperty("keyAlias")
+                    keyPassword = props.getProperty("keyPassword")
+                }
             }
-        } else {
-            signingConfigs.getByName("debug")
+            envKeystore != null ->
+                signingConfigs.create("release") {
+                    storeFile = file(envKeystore)
+                    storePassword = System.getenv("HBIBLE_UPLOAD_KEYSTORE_PASSWORD")
+                    keyAlias = System.getenv("HBIBLE_UPLOAD_KEY_ALIAS")
+                    keyPassword = System.getenv("HBIBLE_UPLOAD_KEY_PASSWORD")
+                }
+            findProperty("requireReleaseSigning") == "true" ->
+                throw GradleException(
+                    "Firma di release mancante: serve keystore.properties o HBIBLE_UPLOAD_KEYSTORE (vedi R06).",
+                )
+            else -> signingConfigs.getByName("debug")
         }
 
     buildTypes {
         getByName("debug") {
+            // Id diverso: la build di sviluppo si installa accanto a quella del Play Store.
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+            manifestPlaceholders["appLabel"] = "HBible debug"
             // HTTP in chiaro solo in debug: CMS di sviluppo su LAN/emulatore (10.0.2.2).
             manifestPlaceholders["usesCleartextTraffic"] = "true"
         }

@@ -10,7 +10,7 @@
         android:fullBackupContent="@xml/backup_rules"
         android:usesCleartextTraffic="${usesCleartextTraffic}"
         android:icon="@mipmap/ic_launcher"
-        android:label="HBible"
+        android:label="${appLabel}"
         android:supportsRtl="true"
         android:theme="@style/Theme.HBible">
         <activity

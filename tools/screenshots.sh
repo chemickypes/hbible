@@ -12,8 +12,8 @@
 set -u
 
 SERIAL="${1:-${ANDROID_SERIAL:-emulator-5554}}"
-PKG="com.hooloovoochimico.kmp.hbible"
-ACTIVITY="$PKG/.MainActivity"
+PKG="com.hooloovoochimico.hbible.debug"
+ACTIVITY="$PKG/com.hooloovoochimico.kmp.hbible.MainActivity"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="$ROOT/composeApp/build/screenshots/$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$OUT"
