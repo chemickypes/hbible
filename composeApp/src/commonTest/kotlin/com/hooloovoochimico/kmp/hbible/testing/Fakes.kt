@@ -132,6 +132,14 @@ internal class FakeSettingsRepository : SettingsRepository {
 
   override fun saveAutoUpdateCheck(enabled: Boolean) {}
 
+  var lastContentCheck = 0L
+
+  override fun loadLastContentCheck(): Long = lastContentCheck
+
+  override fun saveLastContentCheck(epochMillis: Long) {
+    lastContentCheck = epochMillis
+  }
+
   override fun loadAiConfig(): AiConfig = aiConfig.value
 
   override fun saveAiConfig(config: AiConfig) {

@@ -11,15 +11,17 @@ import com.hooloovoochimico.kmp.hbible.data.ai.AiProviderConfig
 import com.hooloovoochimico.kmp.hbible.data.ai.CMS_COMPANY
 import com.hooloovoochimico.kmp.hbible.data.content.ContentSyncer
 import com.hooloovoochimico.kmp.hbible.data.content.UpdateCheck
+import com.hooloovoochimico.kmp.hbible.platform.formatDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.time.Clock
 
-/** State of the content-sync section (Settings → "Aggiornamenti contenuti"). */
+/** State of the content-sync section (Settings → "Contenuti"). */
 data class ContentSyncUiState(
-  /** CMS base URL as typed by the user. */
+  /** Content server base URL (developer setting, Settings → Avanzate in debug builds). */
   val baseUrl: String = "",
   val autoUpdateCheck: Boolean = true,
   val busy: Boolean = false,
@@ -31,7 +33,37 @@ data class ContentSyncUiState(
   val lastSyncMessage: String = "",
   /** Manifest version currently applied locally ("" = never synced). */
   val localVersion: String = "",
+  /** Time of the last successful check (epoch millis, 0 = never). */
+  val lastCheckAt: Long = 0L,
+  /** Packages applied / failed by the last sync. */
+  val lastApplied: Int = 0,
+  val lastFailed: Int = 0,
 )
+
+/** One-line summary of the content state shown in Settings (title + detail). */
+data class ContentStatus(val title: String, val detail: String, val error: Boolean = false)
+
+fun ContentSyncUiState.status(
+  formatTime: (Long) -> String = { formatDate(it, "d MMM yyyy, HH:mm") },
+): ContentStatus {
+  val checkedAt = if (lastCheckAt > 0) "Ultimo controllo: ${formatTime(lastCheckAt)}" else ""
+  return when {
+    baseUrl.isBlank() -> ContentStatus("Contenuti inclusi nell'app", "Aggiornamenti online non disponibili")
+    busy -> ContentStatus("Aggiornamento in corso…", progress.ifBlank { "Controllo dei contenuti" })
+    lastCheck?.error != null ->
+      ContentStatus("Controllo non riuscito", "Server dei contenuti non raggiungibile. Riprova più tardi.", error = true)
+    lastFailed > 0 ->
+      ContentStatus("Aggiornamento incompleto", "$lastFailed pacchetti non applicati. Riprova più tardi.", error = true)
+    lastCheckAt == 0L -> ContentStatus("Contenuti inclusi nell'app", "Non ancora controllati online")
+    lastApplied > 0 ->
+      ContentStatus("Contenuti aggiornati", listOf("$lastApplied pacchetti nuovi", checkedAt).joinToString(" · "))
+    else -> ContentStatus("Contenuti aggiornati", checkedAt)
+  }
+}
+
+/** Names of the AI providers with a key set ("" when the assistant is not configured). */
+fun AiConfig.configuredSummary(): String =
+  AiCompany.entries.filter { configFor(it).apiKey.isNotBlank() }.joinToString(" · ") { it.label }
 
 data class SettingsUiState(
   val themeMode: ThemeMode = ThemeMode.SYSTEM,
@@ -56,6 +88,7 @@ class SettingsViewModel(
         contentSync = ContentSyncUiState(
           baseUrl = settingsRepository.loadCmsBaseUrl(),
           autoUpdateCheck = settingsRepository.loadAutoUpdateCheck(),
+          lastCheckAt = settingsRepository.loadLastContentCheck(),
         ),
       ),
     )
@@ -158,8 +191,9 @@ class SettingsViewModel(
     }
     viewModelScope.launch {
       val check = contentSyncer.checkForUpdates()
+      val checkedAt = recordCheck(check)
       _uiState.update {
-        it.copy(contentSync = it.contentSync.copy(busy = false, lastCheck = check))
+        it.copy(contentSync = it.contentSync.copy(busy = false, lastCheck = check, lastCheckAt = checkedAt))
       }
     }
   }
@@ -172,6 +206,7 @@ class SettingsViewModel(
     }
     viewModelScope.launch {
       val check = contentSyncer.checkForUpdates()
+      val checkedAt = recordCheck(check)
       if (check.error != null) {
         _uiState.update {
           it.copy(
@@ -191,6 +226,9 @@ class SettingsViewModel(
               busy = false,
               lastCheck = check,
               lastSyncMessage = "Contenuti già aggiornati",
+              lastCheckAt = checkedAt,
+              lastApplied = 0,
+              lastFailed = 0,
             ),
           )
         }
@@ -214,10 +252,21 @@ class SettingsViewModel(
             lastCheck = check,
             lastSyncMessage = message,
             localVersion = result.version,
+            lastCheckAt = checkedAt,
+            lastApplied = result.applied.size,
+            lastFailed = result.failed.size,
           ),
         )
       }
     }
+  }
+
+  /** Saves the time of a successful [check]; returns the last successful check time. */
+  private fun recordCheck(check: UpdateCheck): Long {
+    if (check.error != null) return _uiState.value.contentSync.lastCheckAt
+    val now = Clock.System.now().toEpochMilliseconds()
+    settingsRepository.saveLastContentCheck(now)
+    return now
   }
 
   /** Silent check at app open; starts the download automatically when enabled. */

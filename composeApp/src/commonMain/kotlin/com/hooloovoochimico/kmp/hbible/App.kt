@@ -830,15 +830,14 @@ private fun HBibleAppShell(
             composable<SettingsRoute> {
               val readerState by readerViewModel.uiState.collectAsStateWithLifecycle()
               val selection = (readerState as? ReaderUiState.Ready)?.selection
-              ContentWidth {
-                SettingsScreen(
-                  selectionTranslation = selection?.translation ?: DEFAULT_TRANSLATION,
-                  onSelectTranslation = readerViewModel::selectTranslation,
-                  onOpenAiSettings = { navController.navigate(AiSettingsRoute) },
-                  onDismiss = { goToTab(ReaderRoute) },
-                  viewModel = settingsViewModel,
-                )
-              }
+              // Niente ContentWidth: su finestre larghe la schermata usa elenco + pannello.
+              SettingsScreen(
+                selectionTranslation = selection?.translation ?: DEFAULT_TRANSLATION,
+                onSelectTranslation = readerViewModel::selectTranslation,
+                onOpenAiSettings = { navController.navigate(AiSettingsRoute) },
+                onDismiss = { goToTab(ReaderRoute) },
+                viewModel = settingsViewModel,
+              )
             }
             composable<VerseDetailRoute> { entry ->
               val route = entry.toRoute<VerseDetailRoute>()

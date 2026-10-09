@@ -74,6 +74,11 @@ interface SettingsRepository {
 
   fun saveAutoUpdateCheck(enabled: Boolean)
 
+  /** Time of the last successful content check (epoch millis, 0 = never). */
+  fun loadLastContentCheck(): Long
+
+  fun saveLastContentCheck(epochMillis: Long)
+
   // --- AI configuration ---
 
   /**
@@ -145,6 +150,12 @@ class DefaultSettingsRepository(
     ThemePreferences.saveAutoUpdateCheck(settings, enabled)
   }
 
+  override fun loadLastContentCheck(): Long = ThemePreferences.loadLastContentCheck(settings)
+
+  override fun saveLastContentCheck(epochMillis: Long) {
+    ThemePreferences.saveLastContentCheck(settings, epochMillis)
+  }
+
   override fun loadAiConfig(): AiConfig = AiSettingsStore.load(secretStore, aiSettings)
 
   override fun saveAiConfig(config: AiConfig) {
@@ -169,6 +180,7 @@ object ThemePreferences {
   private const val LAST_INTERLINEAR_VERSE_KEY = "last_interlinear_verse"
   private const val CMS_BASE_URL_KEY = "cms_base_url"
   private const val AUTO_UPDATE_CHECK_KEY = "auto_update_check"
+  private const val LAST_CONTENT_CHECK_KEY = "last_content_check"
 
   fun load(settings: Settings): ThemeMode {
     val name = settings.getStringOrNull(KEY)
@@ -232,5 +244,11 @@ object ThemePreferences {
 
   fun saveAutoUpdateCheck(settings: Settings, enabled: Boolean) {
     settings.putBoolean(AUTO_UPDATE_CHECK_KEY, enabled)
+  }
+
+  fun loadLastContentCheck(settings: Settings): Long = settings.getLong(LAST_CONTENT_CHECK_KEY, 0L)
+
+  fun saveLastContentCheck(settings: Settings, epochMillis: Long) {
+    settings.putLong(LAST_CONTENT_CHECK_KEY, epochMillis)
   }
 }
