@@ -46,6 +46,8 @@ import com.hooloovoochimico.kmp.hbible.ui.common.AppIcons
 import com.hooloovoochimico.kmp.hbible.ui.common.HBibleCard
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+import com.hooloovoochimico.kmp.hbible.data.aiReportUrl
+import com.hooloovoochimico.kmp.hbible.platform.openUrl
 
 private val BOOK_CHAT_SUGGESTIONS =
   listOf(
@@ -162,6 +164,12 @@ fun BookInfoScreen(
               color = MaterialTheme.colorScheme.onSurfaceVariant,
               modifier = Modifier.weight(1f),
             )
+            TextButton(
+              onClick = {
+                val text = listOf(info.contextText, info.protagonists, info.christocentric).joinToString("\n\n")
+                openUrl(aiReportUrl(text, "introduzione a ${book.name}"))
+              },
+            ) { Text("Segnala", style = MaterialTheme.typography.labelMedium) }
             IconButton(onClick = { viewModel.generate() }, enabled = !state.busy) {
               Icon(
                 AppIcons.Refresh,

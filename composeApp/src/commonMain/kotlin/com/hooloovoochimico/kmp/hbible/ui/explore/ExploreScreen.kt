@@ -81,6 +81,8 @@ import com.hooloovoochimico.kmp.hbible.ui.common.EmptyMessage
 import com.hooloovoochimico.kmp.hbible.ui.common.HBibleCard
 import com.hooloovoochimico.kmp.hbible.ui.common.ScreenTitle
 import com.hooloovoochimico.kmp.hbible.ui.common.AppIcons
+import com.hooloovoochimico.kmp.hbible.data.aiReportUrl
+import com.hooloovoochimico.kmp.hbible.platform.openUrl
 
 /** Shared duration of the AI-mode transitions (bar morph + filter chips fade). */
 private const val SEARCH_TRANSITION_MS = 500
@@ -793,13 +795,18 @@ private fun FirstAidCard(theme: String, reflection: String, onSaveToNote: (() ->
       style = MaterialTheme.typography.bodyMedium,
       modifier = Modifier.padding(top = 8.dp),
     )
-    if (onSaveToNote != null) {
-      TextButton(onClick = onSaveToNote) {
-        Icon(AppIcons.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-        Text(
-          "Crea nota dalla riflessione",
-          modifier = Modifier.padding(start = 6.dp),
-        )
+    Row {
+      if (onSaveToNote != null) {
+        TextButton(onClick = onSaveToNote) {
+          Icon(AppIcons.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+          Text(
+            "Crea nota dalla riflessione",
+            modifier = Modifier.padding(start = 6.dp),
+          )
+        }
+      }
+      TextButton(onClick = { openUrl(aiReportUrl(reflection, "pronto soccorso: $theme")) }) {
+        Text("Segnala")
       }
     }
   }

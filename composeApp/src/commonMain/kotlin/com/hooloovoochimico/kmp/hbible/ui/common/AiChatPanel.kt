@@ -37,6 +37,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.hooloovoochimico.kmp.hbible.data.ai.AiChatMessage
+import com.hooloovoochimico.kmp.hbible.data.aiReportUrl
+import com.hooloovoochimico.kmp.hbible.platform.openUrl
 
 /**
  * Multi-turn AI chat: message bubbles, suggestions when empty, optional
@@ -194,9 +196,16 @@ private fun ChatBubble(
         modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
       )
     }
-    if (!isUser && onSaveToNote != null) {
-      TextButton(onClick = { onSaveToNote(message) }) {
-        Text("Salva in nota", style = MaterialTheme.typography.labelMedium)
+    if (!isUser) {
+      Row {
+        if (onSaveToNote != null) {
+          TextButton(onClick = { onSaveToNote(message) }) {
+            Text("Salva in nota", style = MaterialTheme.typography.labelMedium)
+          }
+        }
+        TextButton(onClick = { openUrl(aiReportUrl(message.content, "chat")) }) {
+          Text("Segnala", style = MaterialTheme.typography.labelMedium)
+        }
       }
     }
   }
