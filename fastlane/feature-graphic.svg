@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1024" height="500" viewBox="0 0 1024 500">
+  <!-- Grafica in evidenza del Play Store (R07). Esporta (dalla cartella fastlane/): rsvg-convert feature-graphic.svg -o
+       metadata/android/it-IT/images/featureGraphic.png, poi magick … -alpha off PNG24:… (font: Noto Serif, Noto Serif Hebrew, Roboto). -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#3f7f8c"/>
+      <stop offset="0.45" stop-color="#5a5aa6"/>
+      <stop offset="1" stop-color="#9a5a9e"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.78" cy="0.45" r="0.5">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="iconClip"><rect x="88" y="150" width="120" height="120" rx="30"/></clipPath>
+  </defs>
+  <rect width="1024" height="500" fill="url(#bg)"/>
+  <rect width="1024" height="500" fill="url(#glow)"/>
+  <image clip-path="url(#iconClip)" x="88" y="150" width="120" height="120" xlink:href="metadata/android/it-IT/images/icon.png"/>
+  <text x="88" y="350" font-family="Noto Serif" font-weight="700" font-size="64" fill="#ffffff">HBible</text>
+  <text x="90" y="392" font-family="Roboto, Noto Sans" font-size="26" fill="#ffffff" fill-opacity="0.9">Bibbia e interlineare ebraico e greco</text>
+  <g text-anchor="middle">
+    <text x="720" y="232" font-family="Noto Serif Hebrew" font-size="62" fill="#ffffff" direction="rtl">בְּרֵאשִׁית בָּרָא אֱלֹהִים</text>
+    <line x1="560" y1="268" x2="880" y2="268" stroke="#ffffff" stroke-opacity="0.35" stroke-width="2"/>
+    <text x="720" y="318" font-family="Noto Serif" font-style="italic" font-size="34" fill="#ffffff">In principio Dio creò</text>
+    <text x="720" y="356" font-family="Roboto, Noto Sans" font-size="20" fill="#ffffff" fill-opacity="0.75" letter-spacing="1.5">GENESI 1:1 · BIBBIA APERTA</text>
+  </g>
+</svg>

@@ -1,0 +1,1 @@
+Prima versione di prova: lettore con quattro traduzioni libere (Bibbia Aperta predefinita), interlineare ebraico e greco, lessico, riferimenti, ricerca, note, assistente AI con la tua chiave, aggiornamento automatico dei contenuti.

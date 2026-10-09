@@ -67,9 +67,9 @@ val TRANSLATION_META: List<TranslationMeta> =
       year = "1781",
       license = "Pubblico dominio",
       source = "http://www.laparola.net",
+      // Rinumerazione dalla Vulgata: tools/mar_verse_map.json, verifica in tools/mar_review.txt.
       note =
-        "Prima traduzione cattolica completa dall'originale; segue la versificazione della Vulgata: " +
-          "i versetti sono RINUMERATI per allinearsi alla numerazione standard delle altre versioni " +
-          "dell'app (mappa verificata in tools/mar_verse_map.json, audit in tools/mar_review.txt).",
+        "Traduzione cattolica dalla Vulgata latina. La numerazione dei versetti, che segue la " +
+          "Vulgata, è ricondotta a quella delle altre versioni dell'app.",
     ),
   )

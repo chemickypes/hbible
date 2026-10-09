@@ -36,6 +36,10 @@ jobs:
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" "build-tools;36.0.0" > /dev/null
 
+      # Limiti della scheda Play Store (testi, icona, grafica, screenshot): R07.
+      - name: Store metadata
+        run: python3 tools/check_store_metadata.py
+
       # assembleRelease senza keystore.properties è firmato in debug (solo build check).
       # Il task buildBundledDatabase (bible.db) usa python3, presente su ubuntu-latest.
       - name: Build, test, iOS compile

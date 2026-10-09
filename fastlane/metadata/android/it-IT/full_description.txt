@@ -1,0 +1,40 @@
+HBible è una Bibbia da leggere e studiare, in italiano, con il testo originale ebraico e greco sempre a portata di mano. Funziona offline, senza account e senza pubblicità.
+
+<b>Quattro traduzioni libere</b>
+• Bibbia Aperta (Open Translation Bible), traduzione moderna con licenza aperta, predefinita
+• Riveduta 1927 (Luzzi)
+• Diodati (revisione 1877)
+• Martini (dalla Vulgata)
+Tutti i testi sono di pubblico dominio o con licenza aperta.
+
+<b>Interlineare ebraico e greco</b>
+Ogni versetto parola per parola: testo originale, traslitterazione, numero di Strong e traduzione italiana di ogni parola. Sotto, lo stesso versetto in tutte le versioni per confrontarle.
+
+<b>Lessico</b>
+Tocca una parola ebraica o greca per vederne il significato (in italiano e in inglese) e gli altri versetti in cui ricorre.
+
+<b>Per lo studio</b>
+• Riferimenti incrociati per ogni versetto
+• Ricerca di parole e frasi, con filtri (Antico e Nuovo Testamento, Vangeli, Lettere…) o per riferimento (es. "Gv 3:16")
+• Note personali collegate ai versetti
+• Copia e condivisione dei versetti
+
+<b>Assistente AI (facoltativo)</b>
+Ricerca per argomento, spiegazioni e domande su versetti e libri. Funziona con una tua chiave di un servizio AI (Gemini, OpenAI, Anthropic o z.ai), che resta cifrata sul dispositivo. Senza chiave tutto il resto dell'app funziona normalmente.
+
+<b>Comoda da leggere</b>
+Tema chiaro e scuro, colori dinamici, tre dimensioni del testo, layout per tablet.
+
+<b>Sempre aggiornata</b>
+Le correzioni al testo e all'interlineare arrivano in automatico, senza aggiornare l'app.
+
+<b>Codice aperto</b>
+HBible è software libero (GPL-3.0): github.com/chemickypes/hbible
+
+<b>Crediti e licenze</b>
+• Bibbia Aperta © Open Translation Bible (openbible.uk), CC BY-SA 4.0. Testo adattato da HBible.
+• Riveduta 1927, Diodati e Martini: pubblico dominio.
+• Testo ebraico: Open Scriptures Hebrew Bible (Westminster Leningrad Codex), morfologia e lemmi CC BY 4.0.
+• Testo greco: Nestle 1904, morfologia CC0.
+• Lessico: dizionario di Strong, pubblico dominio. Gloss inglesi: Berean Standard Bible, pubblico dominio.
+• Riferimenti incrociati: OpenBible.info, CC BY 4.0.
