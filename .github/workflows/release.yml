@@ -1,0 +1,163 @@
+name: Release
+
+# Rilascio sul Play Store (task R09). Gira solo nel repo pubblico chemickypes/hbible, dove ci sono i
+# secret (firma e account di servizio).
+# - tag vX.Y.Z o vX.Y.Z-test1 → AAB firmato sulla traccia internal + GitHub Release con AAB e mapping;
+# - avvio manuale → traccia scelta, oppure solo la scheda dello store (metadata_only), oppure solo
+#   l'AAB come artefatto senza caricarlo (upload=false: serve per il primo caricamento a mano, R10).
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      track:
+        description: Traccia del Play Store
+        type: choice
+        options: [internal, alpha, beta, production]
+        default: internal
+      metadata_only:
+        description: Aggiorna solo testi e immagini della scheda (nessuna build)
+        type: boolean
+        default: false
+      upload:
+        description: Carica l'AAB sul Play Store (false = solo artefatto da scaricare)
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  PACKAGE_NAME: com.hooloovoochimico.hbible
+  FASTLANE_VERSION: 2.240.1
+  TRACK: ${{ inputs.track || 'internal' }}
+
+jobs:
+  metadata:
+    name: Scheda dello store
+    if: github.repository == 'chemickypes/hbible' && inputs.metadata_only
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Controllo dei metadati
+        run: python3 tools/check_store_metadata.py
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+      - name: fastlane
+        run: gem install fastlane -v "$FASTLANE_VERSION" --no-document
+      - name: Carica la scheda
+        env:
+          SUPPLY_JSON_KEY_DATA: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          fastlane supply --package_name "$PACKAGE_NAME" --metadata_path fastlane/metadata/android \
+            --skip_upload_aab true --skip_upload_apk true --skip_upload_changelogs true
+
+  release:
+    name: Build firmata e caricamento
+    if: github.repository == 'chemickypes/hbible' && !inputs.metadata_only
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Versione dal tag
+        id: version
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ]; then TAG="$GITHUB_REF_NAME"
+          else TAG="$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)"; fi
+          [ -n "$TAG" ] || { echo "::error::Nessun tag v*: crea prima un tag (es. v1.0.0-test1)"; exit 1; }
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          python3 tools/release_version.py "$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Setup JDK 21 (temurin)
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Android SDK
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" "build-tools;36.0.0" > /dev/null
+
+      - name: Chiave di caricamento
+        env:
+          UPLOAD_KEYSTORE_BASE64: ${{ secrets.UPLOAD_KEYSTORE_BASE64 }}
+        run: |
+          [ -n "$UPLOAD_KEYSTORE_BASE64" ] || { echo "::error::Secret UPLOAD_KEYSTORE_BASE64 mancante"; exit 1; }
+          printf '%s' "$UPLOAD_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+
+      - name: Test e AAB firmato
+        env:
+          HBIBLE_UPLOAD_KEYSTORE: ${{ runner.temp }}/upload.jks
+          HBIBLE_UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.UPLOAD_KEYSTORE_PASSWORD }}
+          HBIBLE_UPLOAD_KEY_ALIAS: ${{ secrets.UPLOAD_KEY_ALIAS }}
+          HBIBLE_UPLOAD_KEY_PASSWORD: ${{ secrets.UPLOAD_KEY_PASSWORD }}
+        run: |
+          ./gradlew :composeApp:testDebugUnitTest :composeApp:bundleRelease \
+            -PrequireReleaseSigning=true \
+            -PversionName="${{ steps.version.outputs.version_name }}" \
+            -PversionCode="${{ steps.version.outputs.version_code }}" --stacktrace
+          rm -f "$RUNNER_TEMP/upload.jks"
+          mkdir -p dist
+          cp composeApp/build/outputs/bundle/release/composeApp-release.aab "dist/hbible-${{ steps.version.outputs.version_name }}.aab"
+          cp composeApp/build/outputs/mapping/release/mapping.txt "dist/mapping-${{ steps.version.outputs.version_name }}.txt"
+
+      # Note di versione: changelogs/<versionCode>.txt se esiste, altrimenti i titoli dei commit dal
+      # tag precedente (max 500 caratteri), altrimenti changelogs/default.txt.
+      - name: Note di versione
+        id: notes
+        run: |
+          dir=fastlane/metadata/android/it-IT/changelogs
+          file="$dir/${{ steps.version.outputs.version_code }}.txt"
+          if [ ! -f "$file" ]; then
+            prev="$(git describe --tags --abbrev=0 --match 'v*' "${{ steps.version.outputs.tag }}^" 2>/dev/null || true)"
+            if [ -n "$prev" ]; then
+              git log --no-merges --format='• %s' "$prev..${{ steps.version.outputs.tag }}" | cut -c1-120 | head -c 490 > "$file"
+            fi
+            [ -s "$file" ] || cp "$dir/default.txt" "$file"
+          fi
+          echo "file=$file" >> "$GITHUB_OUTPUT"
+          cat "$file"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: hbible-${{ steps.version.outputs.version_name }}
+          path: dist/
+          retention-days: 30
+
+      - uses: ruby/setup-ruby@v1
+        if: github.event_name == 'push' || inputs.upload
+        with:
+          ruby-version: "3.3"
+      - name: Caricamento sul Play Store
+        if: github.event_name == 'push' || inputs.upload
+        env:
+          SUPPLY_JSON_KEY_DATA: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          gem install fastlane -v "$FASTLANE_VERSION" --no-document
+          # In produzione resta in bozza: si pubblica dalla Console (rilascio graduale).
+          status=completed; [ "$TRACK" = production ] && status=draft
+          fastlane supply --package_name "$PACKAGE_NAME" --track "$TRACK" --release_status "$status" \
+            --aab "dist/hbible-${{ steps.version.outputs.version_name }}.aab" \
+            --mapping "dist/mapping-${{ steps.version.outputs.version_name }}.txt" \
+            --metadata_path fastlane/metadata/android
+
+      - name: GitHub Release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          prerelease=""; case "${{ steps.version.outputs.tag }}" in *-*) prerelease="--prerelease";; esac
+          gh release create "${{ steps.version.outputs.tag }}" dist/* $prerelease \
+            --title "HBible ${{ steps.version.outputs.version_name }}" \
+            --notes-file "${{ steps.notes.outputs.file }}"

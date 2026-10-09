@@ -43,8 +43,8 @@ def check_locale(locale: Path) -> None:
         if n == 0 or n > limit:
             errors.append(f"{name}/{file}: {n} caratteri (limite {limit})")
     for path in sorted((locale / "changelogs").glob("*.txt")):
-        if not path.stem.isdigit():
-            errors.append(f"{name}/changelogs/{path.name}: il nome deve essere il versionCode")
+        if not (path.stem.isdigit() or path.stem == "default"):
+            errors.append(f"{name}/changelogs/{path.name}: il nome deve essere il versionCode o default")
         n = len(path.read_text(encoding="utf-8").strip())
         if n > CHANGELOG_LIMIT:
             errors.append(f"{name}/changelogs/{path.name}: {n} caratteri (limite {CHANGELOG_LIMIT})")
