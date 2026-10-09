@@ -47,6 +47,18 @@ val CREDITS: List<CreditEntry> =
     ),
   )
 
+/** Main open source libraries of the app (all Apache License 2.0). */
+val SOFTWARE_CREDITS: List<CreditEntry> =
+  listOf(
+    "Kotlin Multiplatform" to "https://kotlinlang.org",
+    "Compose Multiplatform" to "https://github.com/JetBrains/compose-multiplatform",
+    "Room (AndroidX)" to "https://developer.android.com/jetpack/androidx/releases/room",
+    "Koin" to "https://insert-koin.io",
+    "Ktor" to "https://ktor.io",
+    "Kermit" to "https://github.com/touchlab/Kermit",
+    "Multiplatform Settings" to "https://github.com/russhwolf/multiplatform-settings",
+  ).map { (name, url) -> CreditEntry(title = name, license = "Apache License 2.0", url = url, scope = "Software") }
+
 /** Credits suffix appended to shared/copied verses of [translation] (empty when not required). */
 fun shareAttribution(translation: String): String =
   when (translation) {

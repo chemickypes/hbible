@@ -36,6 +36,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hooloovoochimico.kmp.hbible.data.CREDITS
+import com.hooloovoochimico.kmp.hbible.data.SOFTWARE_CREDITS
 import com.hooloovoochimico.kmp.hbible.data.TRANSLATION_META
 import com.hooloovoochimico.kmp.hbible.data.TRANSLATION_NAMES
 import com.hooloovoochimico.kmp.hbible.data.TranslationMeta
@@ -315,7 +316,7 @@ fun SettingsScreen(
 
       SectionHeader("Crediti e licenze", Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
       Column(Modifier.padding(horizontal = 24.dp)) {
-        CREDITS.forEach { credit ->
+        (CREDITS + SOFTWARE_CREDITS).forEach { credit ->
           val url = credit.url
           Text(credit.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
           Text(
