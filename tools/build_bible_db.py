@@ -18,6 +18,7 @@ Solo libreria standard.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import sqlite3
@@ -142,6 +143,18 @@ def import_lexicon(conn: sqlite3.Connection) -> None:
     print(f"  lessico: {total}")
 
 
+def content_fingerprint(schema: dict) -> str:
+    """Impronta dei contenuti inclusi: JSON sorgente + versione dello schema.
+    L'app la confronta con quella già applicata e, se cambia (APK con contenuti
+    nuovi), ricopia le tabelle dei contenuti dal DB incluso."""
+    h = hashlib.sha256(f"schema:{schema['version']}".encode())
+    names = [a for a, _ in TRANSLATION_ASSETS] + [ORIGINALS_ASSET, CROSSREFS_ASSET, LEXICON_ASSET]
+    for name in names:
+        h.update(name.encode())
+        h.update((FILES_DIR / name).read_bytes())
+    return h.hexdigest()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--out", required=True, type=Path, help="percorso del bible.db da generare")
@@ -164,6 +177,10 @@ def main() -> None:
             import_originals(conn)
             import_crossrefs(conn)
             import_lexicon(conn)
+            fingerprint = content_fingerprint(schema)
+            insert(conn, "content_state", ["package_id", "hash", "version", "synced_at"],
+                   [("bundled", fingerprint, f"schema-{schema['version']}", 0)])
+            print(f"  impronta contenuti: {fingerprint[:12]}")
         conn.execute("ANALYZE")
         conn.execute("VACUUM")
     finally:

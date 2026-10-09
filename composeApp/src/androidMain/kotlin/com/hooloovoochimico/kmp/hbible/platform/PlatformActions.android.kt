@@ -16,10 +16,11 @@ actual fun shareText(text: String) {
         Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
             putExtra(Intent.EXTRA_TEXT, text)
-            // Il context è l'Application (non un'Activity): serve il flag NEW_TASK.
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-    context.startActivity(Intent.createChooser(intent, "Condividi"))
+    // Il context è l'Application (non un'Activity): il flag NEW_TASK va sull'intent
+    // effettivamente avviato, cioè il chooser (createChooser non copia i flag).
+    val chooser = Intent.createChooser(intent, "Condividi").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    context.startActivity(chooser)
 }
 
 actual fun copyToClipboard(text: String) {

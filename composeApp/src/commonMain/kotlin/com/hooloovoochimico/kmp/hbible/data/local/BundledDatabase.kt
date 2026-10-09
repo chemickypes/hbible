@@ -68,3 +68,65 @@ internal suspend fun BibleDatabase.copyFromBundled(
     }
   }
 }
+
+/** Riga di `content_state` con l'impronta dei contenuti del DB incluso (tools/build_bible_db.py). */
+internal const val BUNDLED_STATE_ID = "bundled"
+
+/** Tabelle dei contenuti che vengono dal DB incluso (le note, il VOTD, i post e le info libro no). */
+private val BUNDLED_CONTENT_TABLES =
+  listOf("books", "original_verses", "original_alignments", "lexemes", "cross_references")
+
+/**
+ * Se il DB incluso nell'APK ha contenuti diversi da quelli già applicati
+ * (impronta in `content_state`, riga [BUNDLED_STATE_ID]), ricopia dal DB incluso
+ * libri, traduzioni incluse [translations], originali, allineamenti, lessico e
+ * rimandi. Serve perché un aggiornamento dell'app porti i contenuti corretti nel
+ * CMS anche a chi l'aveva già installata. Note, versetto del giorno, post e info
+ * libro non si toccano. Lo stato di sync dei pacchetti ricopiati si azzera, così
+ * un CMS configurato li ricontrolla. Ritorna true se ha ricopiato.
+ */
+internal suspend fun BibleDatabase.refreshFromBundledIfChanged(
+  bundledPath: String,
+  translations: List<String>,
+): Boolean =
+  useWriterConnection { connection ->
+    connection.usePrepared("ATTACH DATABASE ? AS bundled") { statement ->
+      statement.bindText(1, bundledPath)
+      statement.step()
+    }
+    try {
+      suspend fun query(schema: String): String? =
+        connection.usePrepared("SELECT hash FROM $schema.content_state WHERE package_id = ?") {
+          it.bindText(1, BUNDLED_STATE_ID)
+          if (it.step()) it.getText(0) else null
+        }
+      val bundledHash = query("bundled") ?: return@useWriterConnection false
+      if (bundledHash == query("main")) return@useWriterConnection false
+      connection.withTransaction(SQLiteTransactionType.IMMEDIATE) {
+        for (table in BUNDLED_CONTENT_TABLES) {
+          execSQL("DELETE FROM main.$table")
+          execSQL("INSERT INTO main.$table SELECT * FROM bundled.$table")
+        }
+        for (code in translations) {
+          usePrepared("DELETE FROM main.verses WHERE translation = ?") {
+            it.bindText(1, code)
+            it.step()
+          }
+          usePrepared("INSERT INTO main.verses SELECT * FROM bundled.verses WHERE translation = ?") {
+            it.bindText(1, code)
+            it.step()
+          }
+        }
+        execSQL(
+          "DELETE FROM main.content_state WHERE package_id LIKE 'bible/%' OR package_id LIKE 'originals/%' " +
+            "OR package_id IN ('lexicon.json', 'crossrefs.json')",
+        )
+        execSQL(
+          "INSERT OR REPLACE INTO main.content_state SELECT * FROM bundled.content_state WHERE package_id = '$BUNDLED_STATE_ID'",
+        )
+      }
+      true
+    } finally {
+      connection.execSQL("DETACH DATABASE bundled")
+    }
+  }

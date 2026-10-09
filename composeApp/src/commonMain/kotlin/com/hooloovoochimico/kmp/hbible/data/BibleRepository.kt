@@ -10,6 +10,7 @@ import com.hooloovoochimico.kmp.hbible.data.local.VerseEntity
 import com.hooloovoochimico.kmp.hbible.data.local.VerseRefRow
 import com.hooloovoochimico.kmp.hbible.data.local.copyFromBundled
 import com.hooloovoochimico.kmp.hbible.data.local.parseAlignment
+import com.hooloovoochimico.kmp.hbible.data.local.refreshFromBundledIfChanged
 import com.hooloovoochimico.kmp.hbible.platform.withBundledDatabaseFile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -146,6 +147,10 @@ class DefaultBibleRepository(
     // esistente le righe mancanti — una traduzione nuova arrivata con un
     // aggiornamento, una tabella svuotata da una migrazione — si ricopiano dal
     // DB incluso con ATTACH, senza più leggere JSON.
+    // APK con contenuti nuovi (impronta diversa): ricopia tutti i contenuti inclusi.
+    if (withBundledDatabaseFile { path -> db.refreshFromBundledIfChanged(path, TRANSLATION_NAMES.keys.toList()) }) {
+      return@withContext
+    }
     val translations = TRANSLATION_NAMES.keys.filter { dao.translationVerseCount(it) == 0 }
     val tables =
       buildList {
