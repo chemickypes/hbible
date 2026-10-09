@@ -1,5 +1,11 @@
 package com.hooloovoochimico.kmp.hbible.ui.reader
 
+import com.hooloovoochimico.kmp.hbible.data.TRANSLATION_META
+import com.hooloovoochimico.kmp.hbible.data.shareAttribution
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.foundation.layout.BoxWithConstraints
 import com.hooloovoochimico.kmp.hbible.ui.common.LocalBottomBarClearance
 import com.hooloovoochimico.kmp.hbible.ui.common.centeringPadding
@@ -246,7 +252,8 @@ private fun ReaderContent(
     val selected = verses.filter { it.verse in highlightedVerses }.sortedBy { it.verse }
     if (selected.isEmpty()) return null
     val body = selected.joinToString("\n\n") { "${it.verse}  ${it.text}" }
-    val reference = "$bookName ${selection.chapter} · ${TRANSLATION_NAMES[selection.translation] ?: ""}"
+    // shareAttribution: per la Bibbia Aperta la CC BY-SA chiede di citare opera e licenza.
+    val reference = "$bookName ${selection.chapter} · ${shareAttribution(selection.translation)}"
     return "$body\n\n— $reference".trimEnd()
   }
 
@@ -502,6 +509,18 @@ private fun ReaderContent(
             onLongClick = { showDetailFor(listOf(verse)) },
           )
         }
+          // Crediti della traduzione in fondo al capitolo (obbligatori per la CC BY-SA).
+          val credit = TRANSLATION_META.firstOrNull { it.abbr == selection.translation }?.attribution.orEmpty()
+          if (credit.isNotBlank() && verses.isNotEmpty()) {
+            item(key = "credits") {
+              Text(
+                credit,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 24.dp),
+              )
+            }
+          }
       }
       }
         }
@@ -667,7 +686,9 @@ private fun VerseRow(
         modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
       )
     }
-    Row(Modifier.padding(top = if (verse.title == null) 6.dp else 0.dp)) {
+    // Un versetto che apre un paragrafo (campo `p`, Bibbia Aperta) prende più aria sopra.
+    val topPadding = if (verse.title != null) 0.dp else if (verse.paragraph) 18.dp else 6.dp
+    Row(Modifier.padding(top = topPadding)) {
       Text(
         verse.verse.toString(),
         style = MaterialTheme.typography.labelSmall,
@@ -707,8 +728,23 @@ private fun VerseRow(
           }
         },
       ) {
+        val dimColor = MaterialTheme.colorScheme.onSurfaceVariant
+        val annotated =
+          remember(verse.text, dimColor) {
+            buildAnnotatedString {
+              for (segment in scriptureSegments(verse.text)) {
+                when (segment.kind) {
+                  ScriptureSegment.Kind.NORMAL -> append(segment.text)
+                  ScriptureSegment.Kind.SELAH ->
+                    withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = dimColor)) { append(segment.text) }
+                  ScriptureSegment.Kind.VARIANT ->
+                    withStyle(SpanStyle(color = dimColor)) { append(segment.text) }
+                }
+              }
+            }
+          }
         Text(
-          verse.text,
+          annotated,
           style = ScriptureTypography.reader(fontSize),
           onTextLayout = { textLayout = it },
         )
