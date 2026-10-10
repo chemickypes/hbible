@@ -1,5 +1,8 @@
 package com.hooloovoochimico.kmp.hbible.ui.interlineare
 
+import androidx.compose.foundation.layout.fillMaxHeight
+import com.hooloovoochimico.kmp.hbible.ui.reader.VerseStep
+import com.hooloovoochimico.kmp.hbible.ui.reader.BookChapterPicker
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.foundation.layout.height
@@ -70,7 +73,6 @@ import com.hooloovoochimico.kmp.hbible.data.local.OriginalVerseEntity
 import com.hooloovoochimico.kmp.hbible.data.local.VerseEntity
 import com.hooloovoochimico.kmp.hbible.data.local.alignmentTokens
 import com.hooloovoochimico.kmp.hbible.theme.ScriptureTypography
-import com.hooloovoochimico.kmp.hbible.ui.common.BookSheetRow
 import com.hooloovoochimico.kmp.hbible.ui.common.EmptyMessage
 import com.hooloovoochimico.kmp.hbible.ui.common.ScreenTitle
 import com.hooloovoochimico.kmp.hbible.ui.common.SectionHeader
@@ -85,7 +87,7 @@ import kotlinx.coroutines.launch
  */
 /** Punteggiatura che il token italiano allineato porta attaccato e che il gloss di fallback ignora. */
 private const val EDGE_PUNCT = ".,;:!?·«»\"'’‘()[]{}…—–"
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun InterlineareScreen(
   translationName: String,
@@ -210,17 +212,39 @@ fun InterlineareScreen(
   }
 
   if (showPicker) {
-    ReferencePickerSheet(
-      books = state.books,
-      position = position,
-      versesOf = viewModel::versesOf,
-      onPick = { book, chapter, verse ->
-        viewModel.moveTo(book, chapter, verse)
-        showPicker = false
-      },
-      onDismiss = { showPicker = false },
-    )
+    ModalBottomSheet(
+      onDismissRequest = { showPicker = false },
+      sheetState =
+        rememberBottomSheetState(
+          initialValue = SheetValue.Hidden,
+          // Tutto espanso: parzialmente espanso escluso (come skipPartiallyExpanded = true).
+          enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
+        ),
+    ) {
+      // Stesso foglio del Lettore, con il passo in più per il versetto.
+      BookChapterPicker(
+        books = state.books,
+        currentBook = position.book,
+        currentChapter = position.chapter,
+        recents = emptyList(),
+        onPick = { book, chapter ->
+          viewModel.moveTo(book, chapter, 1)
+          showPicker = false
+        },
+        verseStep =
+          VerseStep(
+            currentVerse = position.verse,
+            versesOf = viewModel::versesOf,
+            onPick = { book, chapter, verse ->
+              viewModel.moveTo(book, chapter, verse)
+              showPicker = false
+            },
+          ),
+        modifier = Modifier.fillMaxWidth().fillMaxHeight(0.92f),
+      )
+    }
   }
+
 }
 
 /** FlowRow of compact word columns, right-to-left for Hebrew. */
@@ -391,198 +415,5 @@ private fun VersionRow(
         modifier = Modifier.padding(top = 8.dp),
       )
     }
-  }
-}
-
-/** Sheet libro → capitolo → versetto, riutilizza il pattern dei sheet del Reader. */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ReferencePickerSheet(
-  books: List<BookEntity>,
-  position: InterlinearPosition,
-  versesOf: suspend (Int, Int) -> List<VerseEntity>,
-  onPick: (Int, Int, Int) -> Unit,
-  onDismiss: () -> Unit,
-) {
-  var step by rememberSaveable { mutableIntStateOf(0) }
-  var pickedBook by rememberSaveable { mutableIntStateOf(position.book) }
-  var pickedChapter by rememberSaveable { mutableIntStateOf(position.chapter) }
-  var verses by remember { mutableStateOf<List<VerseEntity>>(emptyList()) }
-  var loadingVerses by remember { mutableStateOf(false) }
-  val scope = rememberCoroutineScope()
-  val bookName = books.firstOrNull { it.n == pickedBook }?.name.orEmpty()
-
-  ModalBottomSheet(
-    onDismissRequest = onDismiss,
-    sheetState =
-      rememberBottomSheetState(
-        initialValue = SheetValue.Hidden,
-        // Tutto espanso: parzialmente espanso escluso (come skipPartiallyExpanded = true).
-        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
-      ),
-  ) {
-    when (step) {
-      0 -> {
-        Text(
-          "Scegli un libro",
-          style = MaterialTheme.typography.titleMedium,
-          modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-        )
-        LazyColumn(Modifier.fillMaxWidth().heightIn(max = 520.dp).padding(bottom = 24.dp)) {
-          item { SectionHeader("Antico Testamento", Modifier.padding(horizontal = 24.dp)) }
-          items(books.filter { it.n <= 39 }, key = { it.n }) { book ->
-            BookSheetRow(
-              name = book.name,
-              abbr = book.displayAbbr,
-              selected = book.n == position.book,
-              showReadingBadge = false,
-              onClick = {
-                pickedBook = book.n
-                pickedChapter = 1
-                step = 1
-              },
-            )
-          }
-          item { SectionHeader("Nuovo Testamento", Modifier.padding(horizontal = 24.dp)) }
-          items(books.filter { it.n >= 40 }, key = { it.n }) { book ->
-            BookSheetRow(
-              name = book.name,
-              abbr = book.displayAbbr,
-              selected = book.n == position.book,
-              showReadingBadge = false,
-              onClick = {
-                pickedBook = book.n
-                pickedChapter = 1
-                step = 1
-              },
-            )
-          }
-        }
-      }
-      1 -> {
-        Text(
-          "$bookName — capitolo",
-          style = MaterialTheme.typography.titleMedium,
-          modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-        )
-        val maxChapters = books.firstOrNull { it.n == pickedBook }?.chapters ?: 1
-        LazyVerticalGrid(
-          columns = GridCells.Adaptive(minSize = 56.dp),
-          modifier =
-            Modifier
-              .fillMaxWidth()
-              .heightIn(max = 480.dp)
-              .padding(horizontal = 16.dp)
-              .padding(bottom = 24.dp),
-          verticalArrangement = Arrangement.spacedBy(4.dp),
-          horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
-        ) {
-          items((1..maxChapters).toList()) { chapter ->
-            ChapterCell(
-              number = chapter,
-              selected = pickedBook == position.book && chapter == position.chapter,
-              onClick = {
-                pickedChapter = chapter
-                loadingVerses = true
-                verses = emptyList()
-                step = 2
-                scope.launch {
-                  verses = versesOf(pickedBook, chapter)
-                  loadingVerses = false
-                }
-              },
-            )
-          }
-        }
-      }
-      else -> {
-        Text(
-          "$bookName $pickedChapter — versetto",
-          style = MaterialTheme.typography.titleMedium,
-          modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-        )
-        if (loadingVerses) {
-          Box(
-            Modifier.fillMaxWidth().heightIn(min = 120.dp).padding(bottom = 24.dp),
-            contentAlignment = Alignment.Center,
-          ) {
-            CircularProgressIndicator()
-          }
-        } else {
-          LazyColumn(
-            Modifier.fillMaxWidth().heightIn(max = 480.dp).padding(bottom = 24.dp),
-          ) {
-            items(verses, key = { "${it.book}-${it.chapter}-${it.verse}" }) { verse ->
-              VersePickerRow(
-                verse = verse,
-                onClick = {
-                  onPick(pickedBook, pickedChapter, verse.verse)
-                  onDismiss()
-                },
-              )
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-@Composable
-private fun ChapterCell(
-  number: Int,
-  selected: Boolean,
-  onClick: () -> Unit,
-) {
-  Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-    Box(
-      modifier =
-        Modifier
-          .size(44.dp)
-          .clip(CircleShape)
-          .then(
-            if (selected) {
-              Modifier.background(MaterialTheme.colorScheme.primary)
-            } else {
-              Modifier
-            }
-          )
-          .clickable(onClick = onClick),
-      contentAlignment = Alignment.Center,
-    ) {
-      Text(
-        number.toString(),
-        style = MaterialTheme.typography.bodyLarge,
-        color =
-          if (selected) MaterialTheme.colorScheme.onPrimary
-          else MaterialTheme.colorScheme.onSurface,
-      )
-    }
-  }
-}
-
-@Composable
-private fun VersePickerRow(
-  verse: VerseEntity,
-  onClick: () -> Unit,
-) {
-  Row(
-    Modifier
-      .fillMaxWidth()
-      .clickable(onClick = onClick)
-      .padding(horizontal = 24.dp, vertical = 8.dp),
-  ) {
-    Text(
-      verse.verse.toString(),
-      style = MaterialTheme.typography.labelSmall,
-      color = MaterialTheme.colorScheme.primary,
-      modifier = Modifier.width(28.dp).padding(top = 2.dp),
-    )
-    Text(
-      verse.text,
-      style = MaterialTheme.typography.bodyMedium,
-      maxLines = 2,
-      overflow = TextOverflow.Ellipsis,
-    )
   }
 }

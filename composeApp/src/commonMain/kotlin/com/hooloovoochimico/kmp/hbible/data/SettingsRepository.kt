@@ -37,6 +37,23 @@ fun ReaderFontSize.label(): String =
 /** Last reading position persisted between sessions. */
 data class LastPosition(val translation: String, val book: Int, val chapter: Int)
 
+/** Libro letto di recente con l'ultimo capitolo aperto (foglio "Scegli un libro"). */
+data class RecentBook(val book: Int, val chapter: Int)
+
+/** Libri recenti tenuti in memoria (il foglio ne mostra i primi, escluso quello in lettura). */
+const val RECENT_BOOKS_MAX = 6
+
+/**
+ * Porta [book] in testa ai recenti con il capitolo [chapter]; un libro compare una volta
+ * sola e la lista non supera [max] voci.
+ */
+fun updateRecentBooks(
+  recents: List<RecentBook>,
+  book: Int,
+  chapter: Int,
+  max: Int = RECENT_BOOKS_MAX,
+): List<RecentBook> = (listOf(RecentBook(book, chapter)) + recents.filterNot { it.book == book }).take(max)
+
 /** Last position of the interlinear tab (with verse), persisted between sessions. */
 data class InterlinearPosition(val book: Int, val chapter: Int, val verse: Int)
 
@@ -57,6 +74,10 @@ interface SettingsRepository {
   fun loadLastPosition(): LastPosition
 
   fun saveLastPosition(position: LastPosition)
+
+  fun loadRecentBooks(): List<RecentBook>
+
+  fun saveRecentBooks(recents: List<RecentBook>)
 
   fun loadInterlinearPosition(): InterlinearPosition
 
@@ -131,6 +152,12 @@ class DefaultSettingsRepository(
     ThemePreferences.saveLastPosition(settings, position)
   }
 
+  override fun loadRecentBooks(): List<RecentBook> = ThemePreferences.loadRecentBooks(settings)
+
+  override fun saveRecentBooks(recents: List<RecentBook>) {
+    ThemePreferences.saveRecentBooks(settings, recents)
+  }
+
   override fun loadInterlinearPosition(): InterlinearPosition =
     ThemePreferences.loadInterlinearPosition(settings)
 
@@ -177,6 +204,7 @@ object ThemePreferences {
   private const val LAST_TRANSLATION_KEY = "last_translation"
   private const val LAST_BOOK_KEY = "last_book"
   private const val LAST_CHAPTER_KEY = "last_chapter"
+  private const val RECENT_BOOKS_KEY = "recent_books"
   private const val LAST_INTERLINEAR_BOOK_KEY = "last_interlinear_book"
   private const val LAST_INTERLINEAR_CHAPTER_KEY = "last_interlinear_chapter"
   private const val LAST_INTERLINEAR_VERSE_KEY = "last_interlinear_verse"
@@ -220,6 +248,23 @@ object ThemePreferences {
     settings.putString(LAST_TRANSLATION_KEY, position.translation)
     settings.putInt(LAST_BOOK_KEY, position.book)
     settings.putInt(LAST_CHAPTER_KEY, position.chapter)
+  }
+
+  /** Formato "libro:capitolo" separati da virgola ("43:3,19:23"); voci illeggibili scartate. */
+  fun loadRecentBooks(settings: Settings): List<RecentBook> =
+    settings.getStringOrNull(RECENT_BOOKS_KEY).orEmpty()
+      .split(',')
+      .mapNotNull { entry ->
+        val parts = entry.split(':')
+        val book = parts.getOrNull(0)?.toIntOrNull()?.takeIf { it in 1..66 }
+        val chapter = parts.getOrNull(1)?.toIntOrNull()?.takeIf { it >= 1 }
+        if (book != null && chapter != null) RecentBook(book, chapter) else null
+      }
+      .distinctBy { it.book }
+      .take(RECENT_BOOKS_MAX)
+
+  fun saveRecentBooks(settings: Settings, recents: List<RecentBook>) {
+    settings.putString(RECENT_BOOKS_KEY, recents.joinToString(",") { "${it.book}:${it.chapter}" })
   }
 
   fun loadInterlinearPosition(settings: Settings): InterlinearPosition =

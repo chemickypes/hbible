@@ -7,6 +7,8 @@ import com.hooloovoochimico.kmp.hbible.appLog
 import com.hooloovoochimico.kmp.hbible.data.BibleRepository
 import com.hooloovoochimico.kmp.hbible.data.CmsRepository
 import com.hooloovoochimico.kmp.hbible.data.LastPosition
+import com.hooloovoochimico.kmp.hbible.data.RecentBook
+import com.hooloovoochimico.kmp.hbible.data.updateRecentBooks
 import com.hooloovoochimico.kmp.hbible.data.SettingsRepository
 import com.hooloovoochimico.kmp.hbible.data.local.BookEntity
 import com.hooloovoochimico.kmp.hbible.data.local.PostEntity
@@ -61,6 +63,13 @@ class ReaderViewModel(
   private val initialPosition = settingsRepository.loadLastPosition()
   private val selection =
     MutableStateFlow(ReaderSelection(initialPosition.translation, initialPosition.book, initialPosition.chapter))
+  private val _recentBooks =
+    MutableStateFlow(
+      updateRecentBooks(settingsRepository.loadRecentBooks(), initialPosition.book, initialPosition.chapter),
+    )
+
+  /** Libri letti di recente (il primo è quello in lettura), per il foglio "Scegli un libro". */
+  val recentBooks: StateFlow<List<RecentBook>> = _recentBooks
   private val imported = MutableStateFlow(false)
   private val error = MutableStateFlow<Throwable?>(null)
 
@@ -81,6 +90,8 @@ class ReaderViewModel(
     viewModelScope.launch {
       selection.drop(1).collect {
         settingsRepository.saveLastPosition(LastPosition(it.translation, it.book, it.chapter))
+        _recentBooks.value = updateRecentBooks(_recentBooks.value, it.book, it.chapter)
+        settingsRepository.saveRecentBooks(_recentBooks.value)
       }
     }
   }
@@ -139,6 +150,11 @@ class ReaderViewModel(
 
   fun selectChapter(chapter: Int) {
     selection.value = selection.value.copy(chapter = chapter)
+  }
+
+  /** Libro e capitolo insieme (un solo cambio di selezione). */
+  fun select(book: Int, chapter: Int) {
+    selection.value = selection.value.copy(book = book, chapter = chapter)
   }
 
   suspend fun verse(book: Int, chapter: Int, verse: Int): VerseEntity? =

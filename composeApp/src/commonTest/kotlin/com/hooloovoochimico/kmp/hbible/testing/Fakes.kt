@@ -4,6 +4,7 @@ import com.hooloovoochimico.kmp.hbible.data.BibleRepository
 import com.hooloovoochimico.kmp.hbible.data.CmsRepository
 import com.hooloovoochimico.kmp.hbible.data.InterlinearPosition
 import com.hooloovoochimico.kmp.hbible.data.LastPosition
+import com.hooloovoochimico.kmp.hbible.data.RecentBook
 import com.hooloovoochimico.kmp.hbible.data.ReaderFontSize
 import com.hooloovoochimico.kmp.hbible.data.SettingsRepository
 import com.hooloovoochimico.kmp.hbible.data.ThemeMode
@@ -119,6 +120,14 @@ internal class FakeSettingsRepository : SettingsRepository {
   override fun loadLastPosition(): LastPosition = LastPosition("OTB", 1, 1)
 
   override fun saveLastPosition(position: LastPosition) {}
+
+  var recentBooks: List<RecentBook> = emptyList()
+
+  override fun loadRecentBooks(): List<RecentBook> = recentBooks
+
+  override fun saveRecentBooks(recents: List<RecentBook>) {
+    recentBooks = recents
+  }
 
   override fun loadInterlinearPosition(): InterlinearPosition = InterlinearPosition(1, 1, 1)
 
