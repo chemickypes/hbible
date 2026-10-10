@@ -34,6 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.hooloovoochimico.kmp.hbible.data.ai.AiChatMessage
@@ -171,6 +172,8 @@ private fun ChatBubble(
   onSaveToNote: ((AiChatMessage) -> Unit)?,
 ) {
   val isUser = message.role == "user"
+  // Le risposte arrivano in Markdown: niente asterischi a vista, né nella nota salvata.
+  val rendered = remember(message.content) { chatMarkdown(message.content) }
   Column(
     Modifier.fillMaxWidth().padding(horizontal = 16.dp),
     horizontalAlignment = if (isUser) Alignment.End else Alignment.Start,
@@ -191,7 +194,7 @@ private fun ChatBubble(
         },
     ) {
       Text(
-        message.content,
+        if (isUser) AnnotatedString(message.content) else rendered,
         style = MaterialTheme.typography.bodyMedium,
         modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
       )
@@ -199,7 +202,7 @@ private fun ChatBubble(
     if (!isUser) {
       Row {
         if (onSaveToNote != null) {
-          TextButton(onClick = { onSaveToNote(message) }) {
+          TextButton(onClick = { onSaveToNote(message.copy(content = rendered.text)) }) {
             Text("Salva in nota", style = MaterialTheme.typography.labelMedium)
           }
         }

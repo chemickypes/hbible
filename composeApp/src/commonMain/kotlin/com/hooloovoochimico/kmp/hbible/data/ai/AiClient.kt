@@ -58,8 +58,9 @@ abstract class BaseAiClient(
   final override suspend fun chat(system: String, messages: List<AiChatMessage>, maxTokens: Int): String {
     val response =
       client.post(endpointUrl()) {
+        // Ogni provider mette la chiave nella sua intestazione: un "Authorization: Bearer"
+        // in più fa rispondere 401 a Gemini (lo legge come token OAuth non valido).
         headers(this)
-        header("Authorization", "Bearer $apiKey")
         contentType(ContentType.Application.Json)
         setBody(buildRequestBody(system, messages, maxTokens))
       }
@@ -94,6 +95,10 @@ open class OpenAiCompatibleClient(
   client: HttpClient = aiHttpClient(),
 ) : BaseAiClient(company, apiKey, model, client) {
   override fun endpointUrl(): String = endpoint
+
+  override fun headers(builder: HttpRequestBuilder) {
+    builder.header("Authorization", "Bearer $apiKey")
+  }
 
   override fun buildRequestBody(system: String, messages: List<AiChatMessage>, maxTokens: Int): String =
     buildJsonObject {
