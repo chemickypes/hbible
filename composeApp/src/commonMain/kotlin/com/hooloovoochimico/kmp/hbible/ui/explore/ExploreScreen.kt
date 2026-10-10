@@ -515,7 +515,8 @@ private fun SearchBar(
         )
       },
       singleLine = !aiMode,
-      minLines = if (aiMode) 3 else 1,
+      // 4 righe: lo spazio per ✦ in alto e per l'invio in basso senza che si tocchino.
+      minLines = if (aiMode) 4 else 1,
       maxLines = if (aiMode) 6 else 1,
       // Tighter line spacing while composing the AI prompt.
       textStyle =
@@ -883,7 +884,7 @@ private fun FirstAidCard(theme: String, reflection: String, onSaveToNote: () -> 
     Text(
       reflection,
       style = ScriptureTypography.body,
-      color = colors.onSecondaryContainer,
+      color = colors.onSurface,
       modifier = Modifier.padding(top = 12.dp, end = 8.dp),
     )
     Row(Modifier.padding(top = 4.dp)) {
