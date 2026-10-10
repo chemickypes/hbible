@@ -25,6 +25,9 @@ actual fun copyToClipboard(text: String) {
 }
 
 @OptIn(ExperimentalForeignApi::class)
+actual fun readClipboardText(): String? = UIPasteboard.generalPasteboard.string
+
+@OptIn(ExperimentalForeignApi::class)
 actual fun openUrl(url: String) {
     val nsUrl = NSURL.URLWithString(url) ?: return
     UIApplication.sharedApplication.openURL(nsUrl)

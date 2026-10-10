@@ -6,6 +6,9 @@ expect fun shareText(text: String)
 /** Copia negli appunti di sistema. */
 expect fun copyToClipboard(text: String)
 
+/** Testo negli appunti di sistema (null se vuoti o non testuali). */
+expect fun readClipboardText(): String?
+
 /** Apre un URL esterno (browser/mappa/mail secondo lo schema). */
 expect fun openUrl(url: String)
 

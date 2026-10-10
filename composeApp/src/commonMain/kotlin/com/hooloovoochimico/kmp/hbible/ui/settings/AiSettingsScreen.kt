@@ -1,6 +1,7 @@
 package com.hooloovoochimico.kmp.hbible.ui.settings
 
 import com.hooloovoochimico.kmp.hbible.platform.BackHandler
+import com.hooloovoochimico.kmp.hbible.platform.readClipboardText
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -181,7 +183,14 @@ private fun AiProviderCard(
         label = { Text("Chiave API") },
         singleLine = true,
         visualTransformation = PasswordVisualTransformation(),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+        // Non KeyboardType.Password: Android lo tratta come una password (autofill e
+        // "suggerisci password" al posto di "Incolla"), mentre qui si incolla una chiave.
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii, autoCorrectEnabled = false),
+        trailingIcon = {
+          TextButton(onClick = { readClipboardText()?.trim()?.takeIf { it.isNotEmpty() }?.let(onApiKeyChange) }) {
+            Text("Incolla")
+          }
+        },
         modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
       )
       Text(

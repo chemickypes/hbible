@@ -29,6 +29,14 @@ actual fun copyToClipboard(text: String) {
     clipboard.setPrimaryClip(ClipData.newPlainText("versetti", text))
 }
 
+actual fun readClipboardText(): String? {
+    val context = AndroidAppContext.appContext
+    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    val clip = clipboard.primaryClip ?: return null
+    if (clip.itemCount == 0) return null
+    return clip.getItemAt(0).coerceToText(context)?.toString()
+}
+
 actual fun openUrl(url: String) {
     val context = AndroidAppContext.appContext
     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
