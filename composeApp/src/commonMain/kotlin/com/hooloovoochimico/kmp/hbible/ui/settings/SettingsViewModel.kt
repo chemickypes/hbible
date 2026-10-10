@@ -71,7 +71,7 @@ fun AiConfig.configuredSummary(): String =
 
 data class SettingsUiState(
   val themeMode: ThemeMode = ThemeMode.SYSTEM,
-  val dynamicColor: Boolean = true,
+  val dynamicColor: Boolean = false,
   val readerFontSize: ReaderFontSize = ReaderFontSize.NORMAL,
   val aiConfig: AiConfig = AiConfig(),
   val contentSync: ContentSyncUiState = ContentSyncUiState(),

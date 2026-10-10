@@ -6,10 +6,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
 
-/** Large title of a full-screen page ("Esplora", "Impostazioni", ...). */
+/** Large serif title of a full-screen page ("Esplora", "Impostazioni", ...). */
 @Composable
 fun ScreenTitle(text: String, modifier: Modifier = Modifier) {
-  Text(text, style = MaterialTheme.typography.titleLarge, modifier = modifier)
+  Text(text, style = MaterialTheme.typography.headlineMedium, modifier = modifier)
 }
 
 /** Small section label above a group of content. Padding is caller-driven. */

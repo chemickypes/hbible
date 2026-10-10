@@ -170,7 +170,9 @@ class DefaultSettingsRepository(
 object ThemePreferences {
   const val PREFS = "settings"
   private const val KEY = "theme_mode"
-  private const val DYNAMIC_COLOR_KEY = "dynamic_color"
+  // Chiave nuova (v2, 2026-10-10): con la palette "Pergamena e oro" i colori dinamici
+  // partono spenti per tutti, anche per chi li aveva attivi col default precedente.
+  private const val DYNAMIC_COLOR_KEY = "dynamic_color_v2"
   private const val FONT_SIZE_KEY = "reader_font_size"
   private const val LAST_TRANSLATION_KEY = "last_translation"
   private const val LAST_BOOK_KEY = "last_book"
@@ -192,7 +194,7 @@ object ThemePreferences {
   }
 
   fun loadDynamicColor(settings: Settings): Boolean =
-    settings.getBoolean(DYNAMIC_COLOR_KEY, true)
+    settings.getBoolean(DYNAMIC_COLOR_KEY, false)
 
   fun saveDynamicColor(settings: Settings, enabled: Boolean) {
     settings.putBoolean(DYNAMIC_COLOR_KEY, enabled)

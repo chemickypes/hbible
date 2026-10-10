@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.window.core.layout.WindowSizeClass
@@ -1064,6 +1065,11 @@ private fun AppNavigationRail(
         onClick = { onSelect(tab) },
         icon = { Icon(tab.icon, contentDescription = null) },
         label = { Text(tab.label) },
+        colors =
+          NavigationRailItemDefaults.colors(
+            indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+            selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+          ),
         modifier = Modifier.padding(vertical = 4.dp),
       )
     }
@@ -1097,7 +1103,7 @@ private fun FloatingBottomBar(
           Modifier
             .clip(RoundedCornerShape(24.dp))
             .background(
-              if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
+              if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
             )
             .clickable { onSelect(tab) }
             // 5 voci × (24dp icona + 2×14dp) + gap + padding: deve stare in 360dp
@@ -1110,7 +1116,7 @@ private fun FloatingBottomBar(
             tab.icon,
             contentDescription = tab.label,
             tint =
-              if (selected) MaterialTheme.colorScheme.onSecondaryContainer
+              if (selected) MaterialTheme.colorScheme.onPrimaryContainer
               else MaterialTheme.colorScheme.onSurfaceVariant,
           )
         }

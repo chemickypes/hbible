@@ -4,24 +4,13 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import com.hooloovoochimico.kmp.hbible.data.ThemeMode
 import com.hooloovoochimico.kmp.hbible.platform.dynamicColorScheme
 import com.hooloovoochimico.kmp.hbible.platform.isDynamicColorSupported
 
-private val DarkColorScheme = darkColorScheme(primary = Purple80, secondary = PurpleGrey80, tertiary = Pink80)
-
-private val LightColorScheme =
-  lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40,
-  )
-
-/** Replaces the near-black neutral surfaces with soft dark grays (accents untouched). */
+/** Replaces the near-black neutral surfaces of Material You with soft dark grays (accents untouched). */
 private fun ColorScheme.softened(): ColorScheme =
   copy(
     background = DarkBackground,
@@ -39,8 +28,9 @@ private fun ColorScheme.softened(): ColorScheme =
 @Composable
 fun HBibleTheme(
   themeMode: ThemeMode = ThemeMode.SYSTEM,
-  // Dynamic color is available on Android 12+
-  dynamicColor: Boolean = true,
+  // Dynamic color is available on Android 12+; off by default so the app keeps
+  // its own palette (Color.kt).
+  dynamicColor: Boolean = false,
   content: @Composable () -> Unit,
 ) {
   val darkTheme =
@@ -51,12 +41,13 @@ fun HBibleTheme(
     }
   val colorScheme =
     when {
-      // Soften the dark palette whether it comes from Material You or the static scheme.
+      // Material You dark schemes are near-black: soften them. The app palette
+      // already has warm, lifted dark surfaces.
       darkTheme -> {
         if (dynamicColor && isDynamicColorSupported()) {
-          dynamicColorScheme(true)?.softened() ?: DarkColorScheme.softened()
+          dynamicColorScheme(true)?.softened() ?: DarkColorScheme
         } else {
-          DarkColorScheme.softened()
+          DarkColorScheme
         }
       }
       dynamicColor && isDynamicColorSupported() -> dynamicColorScheme(false) ?: LightColorScheme

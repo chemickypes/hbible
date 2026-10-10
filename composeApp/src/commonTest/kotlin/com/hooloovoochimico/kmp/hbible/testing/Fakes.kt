@@ -108,7 +108,7 @@ internal class FakeSettingsRepository : SettingsRepository {
 
   override fun saveThemeMode(mode: ThemeMode) {}
 
-  override fun loadDynamicColor(): Boolean = true
+  override fun loadDynamicColor(): Boolean = false
 
   override fun saveDynamicColor(enabled: Boolean) {}
 
