@@ -37,9 +37,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -64,6 +61,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.Saver
@@ -97,17 +95,13 @@ import com.hooloovoochimico.kmp.hbible.platform.toast
 import com.hooloovoochimico.kmp.hbible.theme.Dimens
 import com.hooloovoochimico.kmp.hbible.theme.ExpressiveMotion
 import com.hooloovoochimico.kmp.hbible.theme.ScriptureTypography
-import com.hooloovoochimico.kmp.hbible.ui.common.BookSheetRow
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
-import com.hooloovoochimico.kmp.hbible.ui.common.GroupHeader
 import com.hooloovoochimico.kmp.hbible.ui.common.TonalIcon
-import com.hooloovoochimico.kmp.hbible.ui.common.SectionHeader
 import com.hooloovoochimico.kmp.hbible.ui.common.VerseRef
-import com.hooloovoochimico.kmp.hbible.ui.common.displayAbbr
 import com.hooloovoochimico.kmp.hbible.ui.settings.SettingsViewModel
 import com.hooloovoochimico.kmp.hbible.ui.common.AppIcons
 import kotlinx.coroutines.flow.first
@@ -282,6 +276,16 @@ private fun ReaderContent(
     toast(message)
   }
 
+  val recentBooks by viewModel.recentBooks.collectAsStateWithLifecycle()
+
+  /** Scelta dal foglio dei libri: apre il capitolo dall'inizio e chiude il foglio. */
+  fun pickPassage(book: Int, chapter: Int) {
+    viewModel.select(book, chapter)
+    pendingScroll.value = PendingScroll(book, chapter, 1)
+    showBookSheet = false
+    showChapterSheet = false
+  }
+
   fun showDetailFor(versesToShow: List<VerseEntity>) {
     onOpenVerseDetail(versesToShow.map { VerseRef(it.book, it.chapter, it.verse) })
   }
@@ -449,40 +453,20 @@ private fun ReaderContent(
               modifier = Modifier.width(360.dp).fillMaxHeight(),
             ) {
               Column {
-                Row(
-                  Modifier
-                    .fillMaxWidth()
-                    .padding(start = 24.dp, end = 8.dp, top = 8.dp),
-                  horizontalArrangement = Arrangement.SpaceBetween,
-                  verticalAlignment = Alignment.CenterVertically,
-                ) {
-                  Text(
-                    if (showBookSheet) "Scegli un libro" else "$bookName — capitolo",
-                    style = MaterialTheme.typography.titleMedium,
-                  )
+                Row(Modifier.fillMaxWidth().padding(end = 8.dp, top = 8.dp), horizontalArrangement = Arrangement.End) {
                   IconButton(onClick = { showBookSheet = false; showChapterSheet = false }) {
                     Icon(AppIcons.Close, contentDescription = "Chiudi")
                   }
                 }
-                if (showBookSheet) {
-                  BookPicker(
+                // key: riaprendo il pannello si riparte dal passo giusto (libri o capitoli).
+                key(showChapterSheet) {
+                  BookChapterPicker(
                     books = books,
-                    selectedBook = selection.book,
-                    onPick = { book ->
-                      viewModel.selectBook(book.n)
-                      showBookSheet = false
-                      showChapterSheet = true
-                    },
-                    modifier = Modifier.fillMaxSize(),
-                  )
-                } else {
-                  ChapterPicker(
-                    maxChapters = maxChapters,
-                    selectedChapter = selection.chapter,
-                    onPick = { chapter ->
-                      viewModel.selectChapter(chapter)
-                      showChapterSheet = false
-                    },
+                    currentBook = selection.book,
+                    currentChapter = selection.chapter,
+                    recents = recentBooks,
+                    onPick = ::pickPassage,
+                    startOnChapters = showChapterSheet,
                     modifier = Modifier.fillMaxSize(),
                   )
                 }
@@ -590,9 +574,9 @@ private fun ReaderContent(
     }
   }
 
-  if (!widePickers && showBookSheet) {
+  if (!widePickers && (showBookSheet || showChapterSheet)) {
     ModalBottomSheet(
-      onDismissRequest = { showBookSheet = false },
+      onDismissRequest = { showBookSheet = false; showChapterSheet = false },
       sheetState =
         rememberBottomSheetState(
           initialValue = SheetValue.Hidden,
@@ -600,112 +584,15 @@ private fun ReaderContent(
           enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
         ),
     ) {
-      Text(
-        "Scegli un libro",
-        style = MaterialTheme.typography.headlineSmall,
-        modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-      )
-      BookPicker(
+      BookChapterPicker(
         books = books,
-        selectedBook = selection.book,
-        onPick = { book ->
-          viewModel.selectBook(book.n)
-          showBookSheet = false
-          showChapterSheet = true
-        },
-        modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+        currentBook = selection.book,
+        currentChapter = selection.chapter,
+        recents = recentBooks,
+        onPick = ::pickPassage,
+        startOnChapters = showChapterSheet,
+        modifier = Modifier.fillMaxWidth().fillMaxHeight(0.92f),
       )
-    }
-  }
-
-  if (!widePickers && showChapterSheet) {
-    ModalBottomSheet(onDismissRequest = { showChapterSheet = false }) {
-      Text(
-        "$bookName — capitolo",
-        style = MaterialTheme.typography.headlineSmall,
-        modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-      )
-      ChapterPicker(
-        maxChapters = maxChapters,
-        selectedChapter = selection.chapter,
-        onPick = { chapter ->
-          viewModel.selectChapter(chapter)
-          showChapterSheet = false
-        },
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 24.dp),
-      )
-    }
-  }
-}
-
-/** Elenco dei libri per testamenti (contenuto riusato da foglio e pannello, 6d). */
-@Composable
-private fun BookPicker(
-  books: List<BookEntity>,
-  selectedBook: Int,
-  onPick: (BookEntity) -> Unit,
-  modifier: Modifier = Modifier,
-) {
-  LazyColumn(modifier) {
-    item { GroupHeader("Antico Testamento", Modifier.padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 4.dp)) }
-    items(books.filter { it.n <= 39 }, key = { it.n }) { book ->
-      BookSheetRow(
-        name = book.name,
-        abbr = book.displayAbbr,
-        selected = book.n == selectedBook,
-        onClick = { onPick(book) },
-      )
-    }
-    item { GroupHeader("Nuovo Testamento", Modifier.padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 4.dp)) }
-    items(books.filter { it.n >= 40 }, key = { it.n }) { book ->
-      BookSheetRow(
-        name = book.name,
-        abbr = book.displayAbbr,
-        selected = book.n == selectedBook,
-        onClick = { onPick(book) },
-      )
-    }
-  }
-}
-
-/** Griglia dei capitoli (contenuto riusato da foglio e pannello, 6d). */
-@Composable
-private fun ChapterPicker(
-  maxChapters: Int,
-  selectedChapter: Int,
-  onPick: (Int) -> Unit,
-  modifier: Modifier = Modifier,
-) {
-  LazyVerticalGrid(
-    columns = GridCells.Adaptive(minSize = 60.dp),
-    modifier = modifier.heightIn(max = 480.dp),
-    verticalArrangement = Arrangement.spacedBy(8.dp),
-    horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
-  ) {
-    items((1..maxChapters).toList()) { chapter ->
-      val selected = chapter == selectedChapter
-      Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        Box(
-          modifier =
-            Modifier
-              .size(52.dp)
-              .clip(MaterialTheme.shapes.medium)
-              .background(
-                if (selected) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.surfaceContainerHigh,
-              )
-              .clickable { onPick(chapter) },
-          contentAlignment = Alignment.Center,
-        ) {
-          Text(
-            chapter.toString(),
-            style = MaterialTheme.typography.bodyLarge,
-            color =
-              if (selected) MaterialTheme.colorScheme.onPrimary
-              else MaterialTheme.colorScheme.onSurface,
-          )
-        }
-      }
     }
   }
 }
