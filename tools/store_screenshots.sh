@@ -162,12 +162,15 @@ for cfg in "${CONFIGS[@]}"; do
   ash input keyevent KEYCODE_BACK; sleep 2
 
   tap "Bibbia" 1 && sleep 2
-  tap "Genesi 1" && sleep 2 && scroll_tap "Salmi" && sleep 2 && tap "23" && sleep 3
+  # Foglio "Scegli un libro" (tessere): si cerca il libro invece di scorrere l'elenco.
+  tap "Genesi 1" && sleep 2 && tap "Cerca un libro (es. Romani, 1Cor)" && sleep 1
+  ash input text "salmi"; sleep 2; ash input keyevent KEYCODE_ESCAPE; sleep 1
+  tap "Salmi" && sleep 2 && tap "23" && sleep 3
   ash cmd uimode night yes >/dev/null; sleep 4
   has_text "Salmi 23" && shot "$dir/4.png"
   ash cmd uimode night no >/dev/null; sleep 3
 
-  tap "Cerca" 1 && sleep 2 && tap "Cerca testo o riferimento (1 Gv 1:3)" && sleep 1
+  tap "Cerca" 1 && sleep 2 && tap "Testo o riferimento (1 Gv 1:3)" && sleep 1
   ash input text "pastore"; ash input keyevent KEYCODE_ENTER; sleep 4
   ash input keyevent KEYCODE_ESCAPE; sleep 1
   shot "$dir/5.png"
