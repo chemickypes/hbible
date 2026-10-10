@@ -2,7 +2,9 @@ name: Release
 
 # Rilascio sul Play Store (task R09). Gira solo nel repo pubblico chemickypes/hbible, dove ci sono i
 # secret (firma e account di servizio).
-# - tag vX.Y.Z o vX.Y.Z-test1 → AAB firmato sulla traccia internal + GitHub Release con AAB e mapping;
+# - tag → AAB firmato + GitHub Release con AAB e mapping; la traccia dipende dal tag
+#   (tools/release_version.py): vX.Y.Z-test1 → internal, -alpha3 → alpha (test chiuso),
+#   -beta4 → beta (test aperto), vX.Y.Z → production in bozza;
 # - avvio manuale → traccia scelta, oppure solo la scheda dello store (metadata_only), oppure solo
 #   l'AAB come artefatto senza caricarlo (upload=false: serve per il primo caricamento a mano, R10).
 on:
@@ -34,7 +36,6 @@ concurrency:
 env:
   PACKAGE_NAME: com.hooloovoochimico.hbible
   FASTLANE_VERSION: 2.240.1
-  TRACK: ${{ inputs.track || 'internal' }}
 
 jobs:
   metadata:
@@ -76,7 +77,9 @@ jobs:
           else TAG="$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)"; fi
           [ -n "$TAG" ] || { echo "::error::Nessun tag v*: crea prima un tag (es. v1.0.0-test1)"; exit 1; }
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          python3 tools/release_version.py "$TAG" >> "$GITHUB_OUTPUT"
+          python3 tools/release_version.py "$TAG" | tee -a "$GITHUB_OUTPUT"
+          # Avvio manuale: vale la traccia scelta, non quella del tag.
+          if [ -n "${{ inputs.track }}" ]; then echo "track=${{ inputs.track }}" >> "$GITHUB_OUTPUT"; fi
 
       - name: Setup JDK 21 (temurin)
         uses: actions/setup-java@v6
@@ -143,6 +146,7 @@ jobs:
         if: github.event_name == 'push' || inputs.upload
         env:
           SUPPLY_JSON_KEY_DATA: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          TRACK: ${{ steps.version.outputs.track }}
         run: |
           gem install fastlane -v "$FASTLANE_VERSION" --no-document
           # In produzione resta in bozza: si pubblica dalla Console (rilascio graduale).
