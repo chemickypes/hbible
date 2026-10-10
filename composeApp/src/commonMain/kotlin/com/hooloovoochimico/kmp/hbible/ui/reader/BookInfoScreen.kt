@@ -1,5 +1,10 @@
 package com.hooloovoochimico.kmp.hbible.ui.reader
 
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.ui.unit.sp
+import com.hooloovoochimico.kmp.hbible.ui.common.EmptyState
+import com.hooloovoochimico.kmp.hbible.ui.common.TonalIcon
+import com.hooloovoochimico.kmp.hbible.ui.settings.SettingsIcons
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -121,14 +126,20 @@ fun BookInfoScreen(
       IconButton(onClick = onDismiss) {
         Icon(AppIcons.Close, contentDescription = "Chiudi introduzione")
       }
-      Column(Modifier.padding(start = 4.dp)) {
-        Text(book.name, style = MaterialTheme.typography.titleMedium)
-        Text(
-          "Introduzione · $testament",
-          style = MaterialTheme.typography.labelSmall,
-          color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-      }
+    }
+    // Frontespizio: testamento, nome del libro, numero di capitoli.
+    Column(Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, bottom = 8.dp)) {
+      Text(
+        "INTRODUZIONE · ${testament.uppercase()}",
+        style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.5.sp),
+        color = MaterialTheme.colorScheme.primary,
+      )
+      Text(book.name, style = MaterialTheme.typography.displaySmall, modifier = Modifier.padding(top = 4.dp))
+      Text(
+        if (book.chapters == 1) "1 capitolo" else "${book.chapters} capitoli",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+      )
     }
 
     val info = state.info
@@ -189,42 +200,41 @@ fun BookInfoScreen(
         }
       }
       else -> {
-        Column(Modifier.weight(1f).fillMaxWidth().padding(24.dp)) {
-          Text(
-            state.error ?: "Nessuna introduzione disponibile.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.error,
+        Column(Modifier.weight(1f).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+          EmptyState(
+            SettingsIcons.AutoAwesome,
+            "Introduzione non disponibile",
+            hint = state.error ?: "Nessuna introduzione disponibile.",
           )
-          TextButton(onClick = { viewModel.generate() }) { Text("Riprova") }
+          FilledTonalButton(onClick = { viewModel.generate() }) { Text("Riprova") }
         }
       }
     }
 
-    HorizontalDivider()
-    if (aiConfigured) {
-      HBibleCard(
-        onClick = { showChat = true },
-        shape = MaterialTheme.shapes.extraLarge,
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
-      ) {
-        Text(
-          "Chatta su ${book.name}",
-          style = MaterialTheme.typography.titleSmall,
-        )
-        Text(
-          "Domande e approfondimenti sul libro",
-          style = MaterialTheme.typography.bodySmall,
-          color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+    HBibleCard(
+      onClick = if (aiConfigured) ({ showChat = true }) else null,
+      color = MaterialTheme.colorScheme.surfaceContainer,
+      modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+      contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
+    ) {
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        TonalIcon(SettingsIcons.AutoAwesome)
+        Column(Modifier.weight(1f).padding(start = 14.dp)) {
+          Text(
+            if (aiConfigured) "Chatta su ${book.name}" else "Assistente AI non configurato",
+            style = MaterialTheme.typography.titleSmall,
+          )
+          Text(
+            if (aiConfigured) "Domande e approfondimenti sul libro"
+            else "Configura un servizio in Impostazioni → Assistente AI.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+          )
+        }
+        if (aiConfigured) {
+          Icon(AppIcons.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
       }
-    } else {
-      Text(
-        "Per chattare configura un servizio AI in Impostazioni → Assistente AI.",
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(16.dp),
-      )
     }
   }
 
@@ -264,15 +274,12 @@ fun BookInfoScreen(
 @Composable
 private fun InfoSection(title: String, body: String) {
   if (body.isBlank()) return
-  Text(
-    title,
-    style = MaterialTheme.typography.labelLarge,
-    color = MaterialTheme.colorScheme.primary,
-    modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 20.dp, bottom = 6.dp),
-  )
-  Text(
-    body,
-    style = ScriptureTypography.intro,
-    modifier = Modifier.padding(horizontal = 24.dp),
-  )
+  HBibleCard(
+    color = MaterialTheme.colorScheme.surfaceContainerLow,
+    contentPadding = PaddingValues(20.dp),
+    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
+  ) {
+    Text(title, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+    Text(body, style = ScriptureTypography.intro, modifier = Modifier.padding(top = 8.dp))
+  }
 }

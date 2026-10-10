@@ -1,5 +1,14 @@
 package com.hooloovoochimico.kmp.hbible.ui.interlineare
 
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.sp
+import com.hooloovoochimico.kmp.hbible.ui.common.AppIcons
+import com.hooloovoochimico.kmp.hbible.ui.common.GroupHeader
+import com.hooloovoochimico.kmp.hbible.ui.common.groupedShape
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -97,38 +106,56 @@ fun InterlineareScreen(
       .padding(top = 12.dp),
   ) {
     // Titolo grande, come le altre pagine a schermo intero ("Esplora", "Impostazioni").
-    ScreenTitle("Interlineare", Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+    ScreenTitle("Interlineare", Modifier.padding(horizontal = 20.dp))
+    Text(
+      "Il testo originale parola per parola",
+      style = MaterialTheme.typography.bodyMedium,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+      modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 2.dp, bottom = 12.dp),
+    )
 
-    // Header centrato: freccette precedenti/successivi, titolo = picker.
-    Row(
-      Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-      verticalAlignment = Alignment.CenterVertically,
+    // Barra del riferimento: versetto precedente/successivo, al centro il picker.
+    Surface(
+      shape = CircleShape,
+      color = MaterialTheme.colorScheme.surfaceContainer,
+      modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
     ) {
-      TextButton(onClick = viewModel::prev, enabled = state.hasPrev) {
-        Text("◀", style = MaterialTheme.typography.titleMedium)
-      }
-      Column(
-        Modifier
-          .weight(1f)
-          .clip(MaterialTheme.shapes.medium)
-          .clickable { showPicker = true }
-          .padding(vertical = 4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-      ) {
-        Text(
-          "$bookName ${position.chapter}:${position.verse}",
-          style = MaterialTheme.typography.titleLarge,
-        )
-        Text(
-          translationName,
-          style = MaterialTheme.typography.labelSmall,
-          color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-      }
-      TextButton(onClick = viewModel::next, enabled = state.hasNext) {
-        Text("▶", style = MaterialTheme.typography.titleMedium)
+      Row(Modifier.padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
+        IconButton(onClick = viewModel::prev, enabled = state.hasPrev) {
+          Icon(AppIcons.ChevronLeft, contentDescription = "Versetto precedente")
+        }
+        Column(
+          Modifier
+            .weight(1f)
+            .clip(MaterialTheme.shapes.medium)
+            .clickable { showPicker = true }
+            .padding(vertical = 4.dp),
+          horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+          Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+              "$bookName ${position.chapter}:${position.verse}",
+              style = MaterialTheme.typography.titleLarge.copy(fontFamily = FontFamily.Serif),
+            )
+            Icon(
+              AppIcons.KeyboardArrowDown,
+              contentDescription = "Scegli il versetto",
+              tint = MaterialTheme.colorScheme.onSurfaceVariant,
+              modifier = Modifier.padding(start = 2.dp).size(20.dp),
+            )
+          }
+          Text(
+            translationName,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+          )
+        }
+        IconButton(onClick = viewModel::next, enabled = state.hasNext) {
+          Icon(AppIcons.ChevronRight, contentDescription = "Versetto successivo")
+        }
       }
     }
+    Spacer(Modifier.height(8.dp))
 
     val original = state.original
     when {
@@ -161,12 +188,13 @@ fun InterlineareScreen(
               onOpenWord(VerseRef(position.book, position.chapter, position.verse), index)
             },
           )
-          SectionHeader(
+          GroupHeader(
             "Il versetto nelle versioni",
             Modifier.padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 8.dp),
           )
-          state.versions.forEach { version ->
+          state.versions.forEachIndexed { index, version ->
             VersionRow(
+              shape = groupedShape(index, state.versions.size),
               abbr = version.translation,
               name =
                 TRANSLATION_META.firstOrNull { it.abbr == version.translation }?.name
@@ -311,27 +339,32 @@ private fun OriginalWordColumn(
  */
 @Composable
 private fun VersionRow(
+  shape: Shape,
   abbr: String,
   name: String,
   text: String,
   current: Boolean,
 ) {
   Surface(
-    shape = MaterialTheme.shapes.extraLarge,
+    shape = shape,
     color =
-      if (current) MaterialTheme.colorScheme.secondaryContainer
-      else MaterialTheme.colorScheme.surfaceContainerHigh,
+      if (current) MaterialTheme.colorScheme.primaryContainer
+      else MaterialTheme.colorScheme.surfaceContainer,
     contentColor =
-      if (current) MaterialTheme.colorScheme.onSecondaryContainer
+      if (current) MaterialTheme.colorScheme.onPrimaryContainer
       else MaterialTheme.colorScheme.onSurface,
-    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 1.dp),
   ) {
-    Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp)) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
       Row(verticalAlignment = Alignment.CenterVertically) {
         Surface(
           shape = MaterialTheme.shapes.extraLarge,
-          color = MaterialTheme.colorScheme.primaryContainer,
-          contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+          color =
+            if (current) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.surfaceContainerHighest,
+          contentColor =
+            if (current) MaterialTheme.colorScheme.onPrimary
+            else MaterialTheme.colorScheme.onSurfaceVariant,
         ) {
           Text(
             abbr,
@@ -354,8 +387,8 @@ private fun VersionRow(
       }
       Text(
         text,
-        style = MaterialTheme.typography.bodyMedium,
-        modifier = Modifier.padding(top = 6.dp),
+        style = ScriptureTypography.body.copy(fontSize = 16.sp, lineHeight = 24.sp),
+        modifier = Modifier.padding(top = 8.dp),
       )
     }
   }

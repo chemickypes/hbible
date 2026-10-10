@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -27,22 +28,22 @@ fun BookSheetRow(
 ) {
   Surface(
     onClick = onClick,
-    shape = MaterialTheme.shapes.extraLarge,
+    shape = MaterialTheme.shapes.large,
     color =
-      if (selected) MaterialTheme.colorScheme.secondaryContainer
-      else MaterialTheme.colorScheme.surfaceContainerHigh,
+      if (selected) MaterialTheme.colorScheme.primaryContainer
+      else MaterialTheme.colorScheme.surfaceContainer,
     contentColor =
-      if (selected) MaterialTheme.colorScheme.onSecondaryContainer
+      if (selected) MaterialTheme.colorScheme.onPrimaryContainer
       else MaterialTheme.colorScheme.onSurface,
     modifier =
-      Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 4.dp),
+      Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 3.dp, bottom = 3.dp),
   ) {
     Row(
-      Modifier.padding(start = 32.dp, end = 14.dp, top = 12.dp, bottom = 12.dp),
+      Modifier.padding(start = 20.dp, end = 14.dp, top = 12.dp, bottom = 12.dp),
       horizontalArrangement = Arrangement.spacedBy(8.dp),
       verticalAlignment = Alignment.CenterVertically,
     ) {
-      Text(name, style = MaterialTheme.typography.titleMedium)
+      Text(name, style = MaterialTheme.typography.titleMedium.copy(fontFamily = FontFamily.Serif))
       SheetChip(label = abbr)
       Spacer(Modifier.weight(1f))
       if (selected) {
@@ -70,8 +71,8 @@ fun BookSheetRow(
 private fun SheetChip(label: String) {
   Surface(
     shape = MaterialTheme.shapes.extraLarge,
-    color = MaterialTheme.colorScheme.primaryContainer,
-    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
   ) {
     Text(
       label,

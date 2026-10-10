@@ -22,7 +22,7 @@ private val Gold20 = Color(0xFF472A00)
 private val Terracotta30 = Color(0xFF7A3219)
 private val Terracotta40 = Color(0xFF9A4A2E)
 private val Terracotta80 = Color(0xFFFFB59C)
-private val Terracotta90 = Color(0xFFFFDBCF)
+private val Terracotta90 = Color(0xFFF7DCC7)
 private val Terracotta20 = Color(0xFF5C1A05)
 
 // Salvia

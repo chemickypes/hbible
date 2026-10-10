@@ -1,5 +1,14 @@
 package com.hooloovoochimico.kmp.hbible.ui.reader
 
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Surface
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.text.font.FontFamily
+import com.hooloovoochimico.kmp.hbible.ui.common.GroupHeader
+import com.hooloovoochimico.kmp.hbible.ui.common.TonalIcon
+import com.hooloovoochimico.kmp.hbible.ui.settings.SettingsIcons
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -252,7 +261,7 @@ fun VerseDetailScreen(
         Icon(AppIcons.Close, contentDescription = "Chiudi dettaglio")
       }
       Column(Modifier.padding(start = 4.dp)) {
-        Text(reference, style = MaterialTheme.typography.titleMedium)
+        Text(reference, style = MaterialTheme.typography.titleLarge.copy(fontFamily = FontFamily.Serif))
         Text(
           translationName,
           style = MaterialTheme.typography.labelSmall,
@@ -267,21 +276,26 @@ fun VerseDetailScreen(
     }
 
     if (count > 1) {
-      Row(
-        Modifier
-          .fillMaxWidth()
-          .padding(horizontal = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+      Surface(
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        modifier = Modifier.align(Alignment.CenterHorizontally).padding(vertical = 4.dp),
       ) {
-        TextButton(onClick = onPrev, enabled = index > 0) { Text("‹ Prec.") }
-        Text(
-          "${index + 1} di $count",
-          style = MaterialTheme.typography.labelLarge,
-          color = MaterialTheme.colorScheme.onSurfaceVariant,
-          modifier = Modifier.weight(1f),
-          textAlign = TextAlign.Center,
-        )
-        TextButton(onClick = onNext, enabled = index < count - 1) { Text("Succ. ›") }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          IconButton(onClick = onPrev, enabled = index > 0) {
+            Icon(AppIcons.ChevronLeft, contentDescription = "Versetto precedente")
+          }
+          Text(
+            "${index + 1} di $count",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 8.dp),
+          )
+          IconButton(onClick = onNext, enabled = index < count - 1) {
+            Icon(AppIcons.ChevronRight, contentDescription = "Versetto successivo")
+          }
+        }
       }
     }
 
@@ -309,16 +323,25 @@ fun VerseDetailScreen(
           }
           append(v.text.substring(start))
         }
-        Text(
-          annotated,
-          style = ScriptureTypography.detail,
-          modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-        )
+        // Il versetto come citazione: filetto oro a sinistra.
+        Row(
+          Modifier
+            .padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 4.dp)
+            .height(IntrinsicSize.Min),
+        ) {
+          Box(
+            Modifier
+              .width(3.dp)
+              .fillMaxHeight()
+              .background(MaterialTheme.colorScheme.primary, CircleShape),
+          )
+          Text(annotated, style = ScriptureTypography.detail, modifier = Modifier.padding(start = 16.dp))
+        }
       }
 
-        SectionHeader(
+        GroupHeader(
           "Testo originale",
-          Modifier.padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 8.dp),
+          Modifier.padding(start = 24.dp, end = 24.dp, top = 28.dp, bottom = 8.dp),
         )
         val original = detail?.original
         if (original == null) {
@@ -328,12 +351,18 @@ fun VerseDetailScreen(
             MaterialTheme.typography.bodySmall,
           )
         } else {
-          Text(
-            if (original.lang == "he") "Ebraico" else "Greco",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.primary,
+          Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 24.dp),
-          )
+          ) {
+            Text(
+              if (original.lang == "he") "Ebraico · tocca una parola" else "Greco · tocca una parola",
+              style = MaterialTheme.typography.labelSmall,
+              modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+            )
+          }
           val wordStyle = ScriptureTypography.original(original.lang)
           if (selectable) {
             val wordRow = @Composable { word: String, idx: Int ->
@@ -513,7 +542,7 @@ fun VerseDetailScreen(
           )
       }
 
-      SectionHeader("Riferimenti", Modifier.padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 8.dp))
+      GroupHeader("Riferimenti", Modifier.padding(start = 24.dp, end = 24.dp, top = 28.dp, bottom = 8.dp))
       val refs = detail?.references.orEmpty()
       if (detail != null && refs.isEmpty()) {
         EmptyMessage(
@@ -532,30 +561,31 @@ fun VerseDetailScreen(
         )
       }
 
-      SectionHeader("Chiedi all'AI", Modifier.padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 8.dp))
-      if (aiConfigured) {
-        HBibleCard(
-          onClick = { showChat = true },
-          shape = MaterialTheme.shapes.extraLarge,
-          modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
-          contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
-        ) {
-          Text(
-            "Chatta su $reference",
-            style = MaterialTheme.typography.titleSmall,
-          )
-          Text(
-            "Spiegazione, contesto e domande sul versetto",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-          )
+      GroupHeader("Chiedi all'AI", Modifier.padding(start = 24.dp, end = 24.dp, top = 28.dp, bottom = 8.dp))
+      HBibleCard(
+        onClick = if (aiConfigured) ({ showChat = true }) else null,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
+      ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          TonalIcon(SettingsIcons.AutoAwesome)
+          Column(Modifier.weight(1f).padding(start = 14.dp)) {
+            Text(
+              if (aiConfigured) "Chatta su $reference" else "Assistente AI non configurato",
+              style = MaterialTheme.typography.titleSmall,
+            )
+            Text(
+              if (aiConfigured) "Spiegazione, contesto e domande sul versetto"
+              else "Configura un servizio in Impostazioni → Assistente AI.",
+              style = MaterialTheme.typography.bodySmall,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+          }
+          if (aiConfigured) {
+            Icon(AppIcons.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+          }
         }
-      } else {
-        EmptyMessage(
-          "Per chattare configura un servizio AI in Impostazioni → Assistente AI.",
-          Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
-          MaterialTheme.typography.bodySmall,
-        )
       }
 
       Spacer(Modifier.height(32.dp))

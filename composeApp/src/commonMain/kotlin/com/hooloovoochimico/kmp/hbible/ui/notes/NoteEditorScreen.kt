@@ -1,5 +1,13 @@
 package com.hooloovoochimico.kmp.hbible.ui.notes
 
+import androidx.compose.material3.Button
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.layout.Arrangement
+import com.hooloovoochimico.kmp.hbible.ui.common.GroupHeader
+import com.hooloovoochimico.kmp.hbible.ui.settings.SettingsIcons
 import com.hooloovoochimico.kmp.hbible.platform.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -163,14 +171,21 @@ fun NoteEditorScreen(
         Icon(AppIcons.Close, contentDescription = "Chiudi nota")
       }
       Column(Modifier.padding(start = 4.dp).weight(1f)) {
-        Text(if (note == null) "Nuova nota" else "Nota", style = MaterialTheme.typography.titleMedium)
+        Text(if (note == null) "Nuova nota" else "Nota", style = MaterialTheme.typography.headlineSmall)
         Text(
-          "Modifica" + note?.let { " · " + formatDate(it.updatedAt, "d MMMM yyyy, HH:mm") }.orEmpty(),
+          note?.let { "Modificata il " + formatDate(it.updatedAt, "d MMMM yyyy, HH:mm") } ?: "Non ancora salvata",
           style = MaterialTheme.typography.labelSmall,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
       }
-      TextButton(onClick = { persistAndClose() }, enabled = dirty) { Text("Salva") }
+      Button(
+        onClick = { persistAndClose() },
+        enabled = dirty,
+        contentPadding = PaddingValues(horizontal = 18.dp),
+        modifier = Modifier.padding(end = 4.dp),
+      ) {
+        Text("Salva")
+      }
       IconButton(onClick = { shareNote() }, enabled = content.text.isNotBlank()) {
         Icon(AppIcons.Share, contentDescription = "Condividi nota")
       }
@@ -182,22 +197,33 @@ fun NoteEditorScreen(
     }
 
     linkedRef?.let { ref ->
-      AssistChip(
+      Surface(
         onClick = { onOpenReference(ref) },
-        label = {
-          Text(
-            "Versetto: ${bookName(ref.book)} ${ref.chapter}" +
-              ref.verse.takeIf { v -> v > 0 }?.let { ":$it" }.orEmpty(),
-          )
-        },
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-      )
+      ) {
+        Row(
+          Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+          verticalAlignment = Alignment.CenterVertically,
+        ) {
+          Icon(SettingsIcons.MenuBook, contentDescription = null, modifier = Modifier.size(16.dp))
+          Text(
+            "${bookName(ref.book)} ${ref.chapter}" + ref.verse.takeIf { v -> v > 0 }?.let { ":$it" }.orEmpty(),
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.padding(start = 8.dp),
+          )
+        }
+      }
     }
 
     Row(
-      Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
+      Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
       verticalAlignment = Alignment.CenterVertically,
     ) {
+      Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+      Row(Modifier.padding(4.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
       FormatButton("B", NoteStyleType.BOLD, styles, content, onStyle = { type ->
         val sel = content.selection
         if (!sel.collapsed) {
@@ -226,7 +252,16 @@ fun NoteEditorScreen(
           dirty = true
         }
       }, textDecoration = TextDecoration.LineThrough)
-      Spacer(Modifier.weight(1f))
+      }
+      }
+      if (content.selection.collapsed) {
+        Text(
+          "Seleziona del testo per formattarlo",
+          style = MaterialTheme.typography.labelSmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+          modifier = Modifier.padding(start = 12.dp).weight(1f),
+        )
+      }
     }
     Column(
       Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(vertical = 8.dp),
@@ -241,12 +276,8 @@ fun NoteEditorScreen(
         textStyle = ScriptureTypography.body.copy(color = MaterialTheme.colorScheme.onSurface),
         cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
         decorationBox = { inner ->
-          Surface(
-            shape = RoundedCornerShape(12.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerLow,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-          ) {
-            Box(Modifier.padding(12.dp).heightIn(min = 140.dp)) {
+          // Si scrive direttamente sulla "pagina", senza riquadro.
+          Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp).heightIn(min = 240.dp)) {
               if (content.text.isEmpty()) {
                 Text(
                   "Scrivi la nota… (es. \"Gv 3:16 mi ricorda che…\")",
@@ -255,8 +286,7 @@ fun NoteEditorScreen(
                   ),
                 )
               }
-              inner()
-            }
+            inner()
           }
         },
         visualTransformation =
@@ -268,11 +298,9 @@ fun NoteEditorScreen(
         modifier = Modifier.fillMaxWidth(),
       )
       if (refs.isNotEmpty()) {
-        Text(
+        GroupHeader(
           "Riferimenti trovati",
-          style = MaterialTheme.typography.labelSmall,
-          color = MaterialTheme.colorScheme.onSurfaceVariant,
-          modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp),
+          Modifier.padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 4.dp),
         )
         VerseChipRow(
           refs =
@@ -326,12 +354,12 @@ private fun FormatButton(
   val active = isStyled(styles, content.selection.min, content.selection.max, type)
   Surface(
     onClick = { onStyle(type) },
-    shape = RoundedCornerShape(8.dp),
+    shape = CircleShape,
     color =
-      if (active) MaterialTheme.colorScheme.primaryContainer
+      if (active) MaterialTheme.colorScheme.primary
       else Color.Transparent,
     contentColor =
-      if (active) MaterialTheme.colorScheme.onPrimaryContainer
+      if (active) MaterialTheme.colorScheme.onPrimary
       else MaterialTheme.colorScheme.onSurfaceVariant,
     enabled = !content.selection.collapsed,
   ) {
@@ -342,7 +370,7 @@ private fun FormatButton(
         fontStyle = fontStyle,
         textDecoration = textDecoration,
       ),
-      modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+      modifier = Modifier.size(40.dp).wrapContentSize(),
     )
   }
 }

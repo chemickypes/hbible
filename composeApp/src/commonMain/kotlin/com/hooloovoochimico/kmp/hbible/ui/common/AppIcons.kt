@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.addPathNodes
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
 
@@ -460,5 +461,32 @@ object AppIcons {
             
       }
     }.build()
+  }
+
+  // Icone aggiunte col restyling (2026-10-10), dai path data Material "Filled".
+  private fun fromPath(name: String, pathData: String, autoMirror: Boolean = false): ImageVector =
+    builder("AppIcons.$name", autoMirror)
+      .addPath(pathData = addPathNodes(pathData), fill = SolidColor(Color.Black))
+      .build()
+
+  val ChevronLeft: ImageVector by lazy {
+    fromPath("ChevronLeft", "M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z", autoMirror = true)
+  }
+
+  val ChevronRight: ImageVector by lazy {
+    fromPath("ChevronRight", "M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z", autoMirror = true)
+  }
+
+  /** "Apps": griglia 3×3, apre la scelta del capitolo. */
+  val Grid: ImageVector by lazy {
+    fromPath(
+      "Grid",
+      "M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z",
+    )
+  }
+
+  /** "Notes": righe di testo, per le note. */
+  val Notes: ImageVector by lazy {
+    fromPath("Notes", "M3 18h12v-2H3v2zM3 6v2h18V6H3zm0 7h18v-2H3v2z")
   }
 }

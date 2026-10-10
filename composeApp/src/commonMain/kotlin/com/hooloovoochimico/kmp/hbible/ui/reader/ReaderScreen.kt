@@ -98,6 +98,13 @@ import com.hooloovoochimico.kmp.hbible.theme.Dimens
 import com.hooloovoochimico.kmp.hbible.theme.ExpressiveMotion
 import com.hooloovoochimico.kmp.hbible.theme.ScriptureTypography
 import com.hooloovoochimico.kmp.hbible.ui.common.BookSheetRow
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
+import com.hooloovoochimico.kmp.hbible.ui.common.GroupHeader
+import com.hooloovoochimico.kmp.hbible.ui.common.TonalIcon
 import com.hooloovoochimico.kmp.hbible.ui.common.SectionHeader
 import com.hooloovoochimico.kmp.hbible.ui.common.VerseRef
 import com.hooloovoochimico.kmp.hbible.ui.common.displayAbbr
@@ -333,38 +340,59 @@ private fun ReaderContent(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(end = 4.dp),
               ) {
-                Column(
+                // Libro e capitolo: apre la scelta del libro.
+                Row(
                   Modifier
+                    .weight(1f, fill = false)
+                    .clip(MaterialTheme.shapes.medium)
                     .clickable { showBookSheet = true }
-                    .padding(vertical = 4.dp),
+                    .padding(horizontal = 6.dp, vertical = 4.dp),
+                  verticalAlignment = Alignment.CenterVertically,
                 ) {
-                  Text("$bookName ${selection.chapter}", style = MaterialTheme.typography.titleMedium)
-                  Text(
-                    TRANSLATION_NAMES[selection.translation] ?: "",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  Column(Modifier.weight(1f, fill = false)) {
+                    Text(
+                      "$bookName ${selection.chapter}",
+                      style = MaterialTheme.typography.titleLarge.copy(fontFamily = FontFamily.Serif),
+                      maxLines = 1,
+                      overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                      TRANSLATION_NAMES[selection.translation] ?: "",
+                      style = MaterialTheme.typography.labelSmall,
+                      color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                  }
+                  Icon(
+                    AppIcons.KeyboardArrowDown,
+                    contentDescription = "Scegli il libro",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 2.dp).size(20.dp),
                   )
                 }
                 IconButton(onClick = onOpenBookInfo) {
-                  Icon(AppIcons.Info, contentDescription = "Info sul libro")
+                  Icon(
+                    AppIcons.Info,
+                    contentDescription = "Info sul libro",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                  )
                 }
               }
             },
             actions = {
-              TextButton(
-                onClick = { viewModel.selectChapter(selection.chapter - 1) },
-                enabled = selection.chapter > 1,
-              ) {
-                Text("‹", style = MaterialTheme.typography.titleLarge)
-              }
-              TextButton(onClick = { showChapterSheet = true }) { Text("Capitoli") }
-              TextButton(
-                onClick = { viewModel.selectChapter(selection.chapter + 1) },
-                enabled = selection.chapter < maxChapters,
-              ) {
-                Text("›", style = MaterialTheme.typography.titleLarge)
-              }
+              ChapterStepper(
+                canGoBack = selection.chapter > 1,
+                canGoForward = selection.chapter < maxChapters,
+                onBack = { viewModel.selectChapter(selection.chapter - 1) },
+                onForward = { viewModel.selectChapter(selection.chapter + 1) },
+                onOpenChapters = { showChapterSheet = true },
+                modifier = Modifier.padding(end = 8.dp),
+              )
             },
+            colors =
+              TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+                scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+              ),
           )
         }
       }
@@ -496,6 +524,9 @@ private fun ReaderContent(
           modifier = Modifier.fillMaxSize(),
           contentPadding = PaddingValues(start = side, end = side, bottom = bottomClearance),
         ) {
+          if (verses.isNotEmpty()) {
+            item(key = "chapter-header") { ChapterHeader(bookName, selection.chapter) }
+          }
           items(verses, key = { "${it.translation}-${it.book}-${it.chapter}-${it.verse}" }) { verse ->
           VerseRow(
             verse = verse,
@@ -509,6 +540,25 @@ private fun ReaderContent(
             onLongClick = { showDetailFor(listOf(verse)) },
           )
         }
+          // "Continua": capitolo successivo, o primo capitolo del libro seguente.
+          val nextBook = books.firstOrNull { it.n == selection.book + 1 }
+          if (verses.isNotEmpty() && (selection.chapter < maxChapters || nextBook != null)) {
+            item(key = "next-chapter") {
+              val inBook = selection.chapter < maxChapters
+              NextChapterCard(
+                label = if (inBook) "$bookName ${selection.chapter + 1}" else "${nextBook?.name} 1",
+                onClick = {
+                  if (inBook) {
+                    viewModel.selectChapter(selection.chapter + 1)
+                    pendingScroll.value = PendingScroll(selection.book, selection.chapter + 1, 1)
+                  } else if (nextBook != null) {
+                    viewModel.selectBook(nextBook.n)
+                    pendingScroll.value = PendingScroll(nextBook.n, 1, 1)
+                  }
+                },
+              )
+            }
+          }
           // Crediti della traduzione in fondo al capitolo (obbligatori per la CC BY-SA).
           val credit = TRANSLATION_META.firstOrNull { it.abbr == selection.translation }?.attribution.orEmpty()
           if (credit.isNotBlank() && verses.isNotEmpty()) {
@@ -517,7 +567,7 @@ private fun ReaderContent(
                 credit,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 24.dp),
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp),
               )
             }
           }
@@ -532,7 +582,9 @@ private fun ReaderContent(
         val first = verses.firstOrNull() ?: return@LaunchedEffect
         if (first.book != target.book || first.chapter != target.chapter) return@LaunchedEffect
         val index = verses.indexOfFirst { it.verse == target.verse }
-        listState.scrollToItem(if (index >= 0) index else 0)
+        // +1: la prima voce della lista è l'intestazione del capitolo; il primo
+        // versetto riporta in cima, intestazione compresa.
+        listState.scrollToItem(if (index > 0) index + 1 else 0)
         pendingScroll.value = null
       }
     }
@@ -550,7 +602,7 @@ private fun ReaderContent(
     ) {
       Text(
         "Scegli un libro",
-        style = MaterialTheme.typography.titleMedium,
+        style = MaterialTheme.typography.headlineSmall,
         modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
       )
       BookPicker(
@@ -570,7 +622,7 @@ private fun ReaderContent(
     ModalBottomSheet(onDismissRequest = { showChapterSheet = false }) {
       Text(
         "$bookName — capitolo",
-        style = MaterialTheme.typography.titleMedium,
+        style = MaterialTheme.typography.headlineSmall,
         modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
       )
       ChapterPicker(
@@ -595,7 +647,7 @@ private fun BookPicker(
   modifier: Modifier = Modifier,
 ) {
   LazyColumn(modifier) {
-    item { SectionHeader("Antico Testamento", Modifier.padding(horizontal = 24.dp)) }
+    item { GroupHeader("Antico Testamento", Modifier.padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 4.dp)) }
     items(books.filter { it.n <= 39 }, key = { it.n }) { book ->
       BookSheetRow(
         name = book.name,
@@ -604,7 +656,7 @@ private fun BookPicker(
         onClick = { onPick(book) },
       )
     }
-    item { SectionHeader("Nuovo Testamento", Modifier.padding(horizontal = 24.dp)) }
+    item { GroupHeader("Nuovo Testamento", Modifier.padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 4.dp)) }
     items(books.filter { it.n >= 40 }, key = { it.n }) { book ->
       BookSheetRow(
         name = book.name,
@@ -625,9 +677,9 @@ private fun ChapterPicker(
   modifier: Modifier = Modifier,
 ) {
   LazyVerticalGrid(
-    columns = GridCells.Adaptive(minSize = 56.dp),
+    columns = GridCells.Adaptive(minSize = 60.dp),
     modifier = modifier.heightIn(max = 480.dp),
-    verticalArrangement = Arrangement.spacedBy(4.dp),
+    verticalArrangement = Arrangement.spacedBy(8.dp),
     horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
   ) {
     items((1..maxChapters).toList()) { chapter ->
@@ -636,14 +688,11 @@ private fun ChapterPicker(
         Box(
           modifier =
             Modifier
-              .size(44.dp)
-              .clip(CircleShape)
-              .then(
-                if (selected) {
-                  Modifier.background(MaterialTheme.colorScheme.primary)
-                } else {
-                  Modifier
-                }
+              .size(52.dp)
+              .clip(MaterialTheme.shapes.medium)
+              .background(
+                if (selected) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.surfaceContainerHigh,
               )
               .clickable { onPick(chapter) },
           contentAlignment = Alignment.Center,
@@ -681,9 +730,8 @@ private fun VerseRow(
     verse.title?.let { title ->
       Text(
         title,
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
+        style = MaterialTheme.typography.titleMedium.copy(fontFamily = FontFamily.Serif, fontWeight = FontWeight.SemiBold),
+        modifier = Modifier.padding(top = 24.dp, bottom = 4.dp),
       )
     }
     // Un versetto che apre un paragrafo (campo `p`, Bibbia Aperta) prende più aria sopra.
@@ -836,6 +884,96 @@ private fun FeedSection(
           }
         }
       }
+    }
+  }
+}
+
+/** Navigazione tra capitoli: capsula tonale con precedente, griglia dei capitoli, successivo. */
+@Composable
+private fun ChapterStepper(
+  canGoBack: Boolean,
+  canGoForward: Boolean,
+  onBack: () -> Unit,
+  onForward: () -> Unit,
+  onOpenChapters: () -> Unit,
+  modifier: Modifier = Modifier,
+) {
+  Surface(
+    shape = CircleShape,
+    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+    modifier = modifier,
+  ) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+      IconButton(onClick = onBack, enabled = canGoBack) {
+        Icon(AppIcons.ChevronLeft, contentDescription = "Capitolo precedente")
+      }
+      IconButton(onClick = onOpenChapters) {
+        Icon(
+          AppIcons.Grid,
+          contentDescription = "Capitoli",
+          tint = MaterialTheme.colorScheme.primary,
+          modifier = Modifier.size(20.dp),
+        )
+      }
+      IconButton(onClick = onForward, enabled = canGoForward) {
+        Icon(AppIcons.ChevronRight, contentDescription = "Capitolo successivo")
+      }
+    }
+  }
+}
+
+/** Apertura del capitolo come in un'edizione a stampa: nome del libro, numero grande, filetto. */
+@Composable
+private fun ChapterHeader(bookName: String, chapter: Int) {
+  Column(
+    Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 12.dp),
+    horizontalAlignment = Alignment.CenterHorizontally,
+  ) {
+    Text(
+      bookName.uppercase(),
+      style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 3.sp),
+      color = MaterialTheme.colorScheme.primary,
+    )
+    Text(
+      chapter.toString(),
+      style = MaterialTheme.typography.displayMedium,
+      color = MaterialTheme.colorScheme.onSurface,
+    )
+    Box(
+      Modifier
+        .padding(top = 6.dp)
+        .size(width = 40.dp, height = 2.dp)
+        .background(MaterialTheme.colorScheme.primary, CircleShape),
+    )
+  }
+}
+
+/** Invito a proseguire la lettura, in fondo al capitolo. */
+@Composable
+private fun NextChapterCard(label: String, onClick: () -> Unit) {
+  Surface(
+    onClick = onClick,
+    shape = MaterialTheme.shapes.large,
+    color = MaterialTheme.colorScheme.surfaceContainer,
+    modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 32.dp),
+  ) {
+    Row(
+      Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      Column(Modifier.weight(1f)) {
+        Text(
+          "CONTINUA",
+          style = MaterialTheme.typography.labelSmall,
+          color = MaterialTheme.colorScheme.primary,
+        )
+        Text(
+          label,
+          style = MaterialTheme.typography.titleLarge.copy(fontFamily = FontFamily.Serif),
+          modifier = Modifier.padding(top = 2.dp),
+        )
+      }
+      TonalIcon(AppIcons.ArrowForward, container = MaterialTheme.colorScheme.primary, content = MaterialTheme.colorScheme.onPrimary)
     }
   }
 }
