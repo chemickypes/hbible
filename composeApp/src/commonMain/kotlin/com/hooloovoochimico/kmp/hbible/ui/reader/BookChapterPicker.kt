@@ -1,5 +1,11 @@
 package com.hooloovoochimico.kmp.hbible.ui.reader
 
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.CircularProgressIndicator
+import com.hooloovoochimico.kmp.hbible.data.local.VerseEntity
+import com.hooloovoochimico.kmp.hbible.theme.ScriptureTypography
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -76,6 +82,16 @@ private sealed interface PickerEntry {
   data class Tile(val book: BookEntity) : PickerEntry
 }
 
+/**
+ * Terzo passo opzionale del foglio (Interlineare): dopo il capitolo si sceglie il versetto.
+ * [versesOf] carica i versetti del capitolo nella traduzione corrente.
+ */
+class VerseStep(
+  val currentVerse: Int,
+  val versesOf: suspend (book: Int, chapter: Int) -> List<VerseEntity>,
+  val onPick: (book: Int, chapter: Int, verse: Int) -> Unit,
+)
+
 /** Minuscolo e senza accenti, per cercare "giosue" o "GV". */
 internal fun normalizeBookQuery(text: String): String =
   text.lowercase()
@@ -102,7 +118,8 @@ internal fun bookMatches(name: String, abbr: String, query: String): Boolean {
  * Foglio "Scegli un libro" (variante A del prototipo): ricerca, libri recenti, interruttore
  * Antico/Nuovo Testamento e tessere per sezione; toccando un libro si sceglie il capitolo
  * nello stesso foglio. Si apre già sul libro in lettura. [startOnChapters] apre direttamente
- * i capitoli del libro in lettura (pulsante griglia del Lettore).
+ * i capitoli del libro in lettura (pulsante griglia del Lettore). Con [verseStep] il capitolo
+ * porta alla scelta del versetto invece di chiudere il foglio.
  */
 @Composable
 fun BookChapterPicker(
@@ -113,23 +130,114 @@ fun BookChapterPicker(
   onPick: (book: Int, chapter: Int) -> Unit,
   modifier: Modifier = Modifier,
   startOnChapters: Boolean = false,
+  verseStep: VerseStep? = null,
 ) {
   var pickedBook by rememberSaveable { mutableStateOf(if (startOnChapters) currentBook else 0) }
+  var pickedChapter by rememberSaveable { mutableStateOf(0) }
   val picked = books.firstOrNull { it.n == pickedBook }
 
+  // Capitolo scelto: chiude il foglio, oppure passa ai versetti se richiesti.
+  fun chooseChapter(book: Int, chapter: Int) {
+    if (verseStep == null) onPick(book, chapter) else {
+      pickedBook = book
+      pickedChapter = chapter
+    }
+  }
+
   Column(modifier) {
-    if (picked == null) {
-      BookStep(books, currentBook, recents, onPick, onOpenBook = { book ->
-        // Un libro di un solo capitolo (Abdia, Filemone…) si apre subito.
-        if (book.chapters <= 1) onPick(book.n, 1) else pickedBook = book.n
-      })
-    } else {
-      ChapterStep(
-        book = picked,
-        currentChapter = if (picked.n == currentBook) currentChapter else 0,
-        onBack = { pickedBook = 0 },
-        onPick = { chapter -> onPick(picked.n, chapter) },
-      )
+    when {
+      picked == null ->
+        BookStep(books, currentBook, recents, ::chooseChapter, onOpenBook = { book ->
+          // Un libro di un solo capitolo (Abdia, Filemone…) salta la griglia dei capitoli.
+          if (book.chapters <= 1) chooseChapter(book.n, 1) else pickedBook = book.n
+        })
+      verseStep != null && pickedChapter > 0 ->
+        VerseStepContent(
+          book = picked,
+          chapter = pickedChapter,
+          step = verseStep,
+          currentVerse =
+            if (picked.n == currentBook && pickedChapter == currentChapter) verseStep.currentVerse else 0,
+          onBack = { if (picked.chapters <= 1) pickedBook = 0 else pickedChapter = 0 },
+        )
+      else ->
+        ChapterStep(
+          book = picked,
+          currentChapter = if (picked.n == currentBook) currentChapter else 0,
+          onBack = { pickedBook = 0 },
+          onPick = { chapter -> chooseChapter(picked.n, chapter) },
+        )
+    }
+  }
+}
+
+/** Terzo passo: versetti del capitolo con l'inizio del testo, il versetto corrente in oro. */
+@Composable
+private fun VerseStepContent(
+  book: BookEntity,
+  chapter: Int,
+  step: VerseStep,
+  currentVerse: Int,
+  onBack: () -> Unit,
+) {
+  var verses by remember(book.n, chapter) { mutableStateOf<List<VerseEntity>?>(null) }
+  LaunchedEffect(book.n, chapter) { verses = step.versesOf(book.n, chapter) }
+  StepHeader("${book.name} $chapter", "scegli il versetto", backLabel = "Torna ai capitoli", onBack = onBack)
+  val list = verses
+  if (list == null) {
+    Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+    return
+  }
+  val listState = rememberLazyListState()
+  LaunchedEffect(list) {
+    val index = list.indexOfFirst { it.verse == currentVerse }
+    if (index > 0) listState.scrollToItem(index)
+  }
+  LazyColumn(
+    state = listState,
+    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp),
+    verticalArrangement = Arrangement.spacedBy(4.dp),
+  ) {
+    items(list, key = { it.verse }) { verse ->
+      val selected = verse.verse == currentVerse
+      Surface(
+        onClick = { step.onPick(book.n, chapter, verse.verse) },
+        shape = MaterialTheme.shapes.medium,
+        color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainer,
+        contentColor = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+      ) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.Top) {
+          Text(
+            verse.verse.toString(),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.width(32.dp).padding(top = 2.dp),
+          )
+          Text(
+            verse.text.replace("\n", " "),
+            style = ScriptureTypography.body.copy(fontSize = 15.sp, lineHeight = 22.sp),
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+          )
+        }
+      }
+    }
+  }
+}
+
+/** Intestazione dei passi capitolo/versetto: "‹" per tornare indietro, titolo e sottotitolo. */
+@Composable
+private fun StepHeader(title: String, subtitle: String, backLabel: String, onBack: () -> Unit) {
+  Row(Modifier.padding(horizontal = 16.dp).padding(bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+    IconButton(
+      onClick = onBack,
+      colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+    ) {
+      Icon(AppIcons.ChevronLeft, contentDescription = backLabel)
+    }
+    Column(Modifier.padding(start = 10.dp)) {
+      Text(title, style = MaterialTheme.typography.headlineSmall)
+      Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
   }
 }
@@ -327,22 +435,7 @@ private fun BookTile(book: BookEntity, current: Boolean, onClick: () -> Unit) {
 /** Secondo passo: griglia dei capitoli del libro scelto, con "‹" per tornare ai libri. */
 @Composable
 private fun ChapterStep(book: BookEntity, currentChapter: Int, onBack: () -> Unit, onPick: (Int) -> Unit) {
-  Row(Modifier.padding(horizontal = 16.dp).padding(bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-    IconButton(
-      onClick = onBack,
-      colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-    ) {
-      Icon(AppIcons.ChevronLeft, contentDescription = "Torna ai libri")
-    }
-    Column(Modifier.padding(start = 10.dp)) {
-      Text(book.name, style = MaterialTheme.typography.headlineSmall)
-      Text(
-        "${book.chapters} capitoli · scegli il capitolo",
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-      )
-    }
-  }
+  StepHeader(book.name, "${book.chapters} capitoli · scegli il capitolo", backLabel = "Torna ai libri", onBack = onBack)
   val gridState = rememberLazyGridState()
   LaunchedEffect(book.n) { if (currentChapter > 0) gridState.scrollToItem((currentChapter - 1).coerceAtLeast(0)) }
   LazyVerticalGrid(
