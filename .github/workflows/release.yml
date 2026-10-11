@@ -44,8 +44,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - name: Controllo dei metadati
         run: python3 tools/check_store_metadata.py
+      # supply 2.240.1 senza versionCode cerca una release vuota sulla traccia production e
+      # fallisce (uploader.rb: `version_codes.to_s == ""` invece di `version_code`): gli si
+      # passano traccia e versionCode del tag più alto, che sulla Console esiste.
+      - name: Ultima versione caricata
+        id: version
+        run: |
+          best=0
+          for t in $(git tag -l 'v*'); do
+            eval "$(python3 tools/release_version.py "$t")"
+            if [ "$version_code" -gt "$best" ]; then best=$version_code; best_track=$track; fi
+          done
+          [ "$best" -gt 0 ] || { echo "::error::Nessun tag v*"; exit 1; }
+          echo "version_code=$best" >> "$GITHUB_OUTPUT"
+          echo "track=$best_track" >> "$GITHUB_OUTPUT"
+          echo "versionCode $best sulla traccia $best_track"
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.3"
@@ -56,6 +73,7 @@ jobs:
           SUPPLY_JSON_KEY_DATA: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
         run: |
           fastlane supply --package_name "$PACKAGE_NAME" --metadata_path fastlane/metadata/android \
+            --track "${{ steps.version.outputs.track }}" --version_code "${{ steps.version.outputs.version_code }}" \
             --skip_upload_aab true --skip_upload_apk true --skip_upload_changelogs true
 
   release:
