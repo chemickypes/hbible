@@ -37,7 +37,7 @@ iosApp/
 └── iosApp/
     ├── iOSApp.swift      entry @main → ContentView
     ├── ContentView.swift → MainViewControllerKt.MainViewController() (framework ComposeApp)
-    ├── Assets.xcassets   AppIcon (set vuoto: aggiungere l'immagine 1024×1024 se serve)
+    ├── Assets.xcassets   AppIcon (icona "H-libro" 1024×1024)
     └── Info.plist        nome "HBible", orientamenti portrait/landscape
 ```
 
@@ -108,9 +108,9 @@ servisse, l'unica via è anche degradare navigation/lifecycle (es. 2.9.x).
 
 ## Icona app
 
-`Assets.xcassets/AppIcon.appiconset/` è creato ma vuoto: trascinare in Xcode una PNG
-1024×1024 (formato single-size) oppure sostituire il `Contents.json` con il formato
-multi-size se si vuole una serie completa.
+`Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png` (formato single-size, 1024×1024 senza
+trasparenza) è l'icona "H-libro", la stessa di Android. Sorgente vettoriale:
+`docs/design/icona-h-libro.svg`.
 
 ## Se qualcosa non va (punti UNVERIFIED)
 
