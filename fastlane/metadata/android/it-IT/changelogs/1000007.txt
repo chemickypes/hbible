@@ -1,0 +1,1 @@
+Nuova icona (H a forma di libro aperto, anche a tema su Android 13+). Interfaccia rinnovata in Lettore, Note, Interlineare e dettaglio del versetto. Nuovo foglio Scegli un libro, con sezioni, ricerca e libri recenti. Chat AI: risposte formattate; corretto l'errore di accesso con Gemini.
