@@ -1,14 +1,14 @@
 {
-  "version": "20261013T094104",
-  "generatedAt": "2026-10-13T09:41:04.864Z",
+  "version": "20261013T191322",
+  "generatedAt": "2026-10-13T19:13:22.985Z",
   "formats": {
     "originals": 2
   },
   "minApp": 1,
   "packages": {
     "bible/OTB.json": {
-      "hash": "db3ef47950019afff4dbf39407629dd66a39bd2f40e29b0963bae983e581eb95",
-      "size": 4894948
+      "hash": "b52a674e28f88a7f487b0a5dd49644dfd0fb2c2bfbb76b927820567c973117fd",
+      "size": 4894985
     },
     "bible/R27.json": {
       "hash": "c7a5df9dbf258f021cf0c8258aee20266c087a3fdb47524f429109987b5329f7",
@@ -103,8 +103,8 @@
       "size": 540726
     },
     "originals/21.json": {
-      "hash": "0c73fbd0703fa787d65f9a676f565c6235d9adc584f1382dbd4b05d35ac7ec7e",
-      "size": 200254
+      "hash": "34c2435754f717ac11aab3aa67710fa52b98fbb2948933c27779613b03a0b620",
+      "size": 200288
     },
     "originals/22.json": {
       "hash": "5a1aec8d0d2b09f82343ce9729c7abdefa4d8e05f26763a942d4a5b9357946c8",
@@ -295,8 +295,12 @@
       "size": 3703331
     },
     "book_info.json": {
-      "hash": "2df1a25bc875f81e37ea93db79c90944f57f9b8a54d8c31e94ca7299011714b8",
-      "size": 12
+      "hash": "efa218ecb8b64fd7ca2d0b29f0ff5ee448a8fdc7c44ea7550b6edc1f65b4d2ae",
+      "size": 371711
+    },
+    "first_aid.json": {
+      "hash": "c305424201adf80b3d0126beebb3b44c8dfff3119de79ffe5b6e95bf9aa7db35",
+      "size": 62731
     },
     "votd.json": {
       "hash": "44cb1ba2cc33e10b466fcdf2c6931d5639549cc44d9a55e100a32d610adfb20d",
