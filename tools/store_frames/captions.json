@@ -1,0 +1,8 @@
+[
+  {"kicker": "Lettore", "title": "Leggi la Bibbia, *anche offline*", "text": "Quattro traduzioni a licenza libera, con la Bibbia Aperta. Sempre disponibili, senza connessione."},
+  {"kicker": "Interlineare", "title": "Il testo originale, *parola per parola*", "text": "Ebraico e greco allineati all'italiano, con traslitterazione e numeri di Strong."},
+  {"kicker": "Lessico", "title": "Tocca una parola, *scopri cosa significa*", "text": "Il lessico di Strong in italiano e tutti i versetti in cui ricorre."},
+  {"kicker": "Tema scuro", "title": "Comoda da leggere, *giorno e notte*", "text": "Tema chiaro o scuro e un testo grande quanto ti serve."},
+  {"kicker": "Esplora", "title": "Trova ogni passo *in un attimo*", "text": "Cerca nel testo, filtra per Antico o Nuovo Testamento o vai dritto a un riferimento."},
+  {"kicker": "Impostazioni", "title": "Su misura *per te*", "text": "Scegli traduzione, testo e tema. E, se vuoi, un assistente AI con la tua chiave."}
+]
