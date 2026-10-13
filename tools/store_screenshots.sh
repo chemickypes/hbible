@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Screenshot per la scheda del Play Store (task R07), salvati direttamente in
-# fastlane/metadata/android/it-IT/images/{phone,sevenInch,tenInch}Screenshots/.
+# fastlane/raw-screenshots/{phone,sevenInch,tenInch}Screenshots/ (grezzi); alla fine
+# tools/store_frames/render.py li mette in cornice su fondo oro con titolo e testo
+# (captions.json) e scrive i PNG finali in fastlane/metadata/android/it-IT/images/.
 #
 # Uso: ./tools/store_screenshots.sh [serial]   (default ANDROID_SERIAL o emulator-5554)
 #
@@ -17,7 +19,7 @@ SERIAL="${1:-${ANDROID_SERIAL:-emulator-5554}}"
 PKG="com.hooloovoochimico.hbible"
 ACTIVITY="$PKG/com.hooloovoochimico.kmp.hbible.MainActivity"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-IMAGES="$ROOT/fastlane/metadata/android/it-IT/images"
+IMAGES="$ROOT/fastlane/raw-screenshots"
 UI=/tmp/hbible-store-ui.xml
 
 adb="adb -s $SERIAL"
@@ -178,4 +180,6 @@ for cfg in "${CONFIGS[@]}"; do
   tap "Impostazioni" 1 && sleep 3 && shot "$dir/6.png"
 done
 
+echo ">> Cornici dello store"
+python3 "$ROOT/tools/store_frames/render.py" || exit 1
 echo ">> Fatto"
