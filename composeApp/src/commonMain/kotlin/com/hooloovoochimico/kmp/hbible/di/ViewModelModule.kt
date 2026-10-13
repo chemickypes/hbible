@@ -1,6 +1,8 @@
 package com.hooloovoochimico.kmp.hbible.di
 
+import com.hooloovoochimico.kmp.hbible.data.content.ContentSyncer
 import com.hooloovoochimico.kmp.hbible.ui.explore.ExploreViewModel
+import com.hooloovoochimico.kmp.hbible.ui.explore.FirstAidViewModel
 import com.hooloovoochimico.kmp.hbible.ui.interlineare.InterlineareViewModel
 import com.hooloovoochimico.kmp.hbible.ui.notes.NotesViewModel
 import com.hooloovoochimico.kmp.hbible.ui.reader.BookInfoViewModel
@@ -21,9 +23,10 @@ import org.koin.dsl.module
 val viewModelModule = module {
     viewModel { ReaderViewModel(get(), get(), get()) }
     viewModel { VerseDetailViewModel(get(), get(), get()) }
-    viewModel { BookInfoViewModel(get(), get(), get()) }
+    viewModel { BookInfoViewModel(get(), get(), get(), get<ContentSyncer>()) }
+    viewModel { FirstAidViewModel(get(), get<ContentSyncer>()) }
     viewModel { NotesViewModel(get()) }
-    viewModel { ExploreViewModel(get(), get(), get(), get()) }
+    viewModel { ExploreViewModel(get(), get(), get(), get(), get<ContentSyncer>()) }
     viewModel { InterlineareViewModel(get(), get()) }
     viewModel { SettingsViewModel(get(), get()) }
 }

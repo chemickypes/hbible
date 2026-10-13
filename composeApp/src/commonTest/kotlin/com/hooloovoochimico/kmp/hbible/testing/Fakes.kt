@@ -11,6 +11,7 @@ import com.hooloovoochimico.kmp.hbible.data.ThemeMode
 import com.hooloovoochimico.kmp.hbible.data.ai.AiConfig
 import com.hooloovoochimico.kmp.hbible.data.local.BookEntity
 import com.hooloovoochimico.kmp.hbible.data.local.BookInfoEntity
+import com.hooloovoochimico.kmp.hbible.data.local.FirstAidEntity
 import com.hooloovoochimico.kmp.hbible.data.local.CrossReferenceEntity
 import com.hooloovoochimico.kmp.hbible.data.local.LexemeEntity
 import com.hooloovoochimico.kmp.hbible.data.local.OriginalVerseEntity
@@ -36,9 +37,8 @@ internal class FakeBibleRepository(
   crossRefs: List<CrossReferenceEntity> = emptyList(),
   bookInfos: List<BookInfoEntity> = emptyList(),
   lexemes: List<LexemeEntity> = emptyList(),
+  firstAid: List<FirstAidEntity> = emptyList(),
 ) : BibleRepository {
-
-  val savedBookInfo = mutableListOf<BookInfoEntity>()
 
   private val booksData = books
   private val versesData = verses
@@ -46,6 +46,7 @@ internal class FakeBibleRepository(
   private val crossRefsData = crossRefs
   private val bookInfosData = bookInfos
   private val lexemesData = lexemes
+  private val firstAidData = firstAid
 
   override fun books(): Flow<List<BookEntity>> = flowOf(booksData)
 
@@ -97,9 +98,9 @@ internal class FakeBibleRepository(
   override fun bookInfo(book: Int): Flow<BookInfoEntity?> =
     flowOf(bookInfosData.firstOrNull { it.book == book })
 
-  override suspend fun saveBookInfo(info: BookInfoEntity) {
-    savedBookInfo.add(info)
-  }
+  override fun firstAidEntries(): Flow<List<FirstAidEntity>> = flowOf(firstAidData)
+
+  override fun firstAid(slug: String): Flow<FirstAidEntity?> = flowOf(firstAidData.firstOrNull { it.slug == slug })
 }
 
 internal class FakeSettingsRepository : SettingsRepository {

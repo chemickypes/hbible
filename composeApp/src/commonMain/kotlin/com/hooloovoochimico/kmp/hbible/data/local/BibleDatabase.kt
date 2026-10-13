@@ -29,8 +29,9 @@ expect object BibleDatabaseConstructor : RoomDatabaseConstructor<BibleDatabase> 
     TranslationMetaEntity::class,
     VotdEntity::class,
     PostEntity::class,
+    FirstAidEntity::class,
   ],
-  version = 16,
+  version = 17,
   exportSchema = true,
 )
 abstract class BibleDatabase : RoomDatabase() {

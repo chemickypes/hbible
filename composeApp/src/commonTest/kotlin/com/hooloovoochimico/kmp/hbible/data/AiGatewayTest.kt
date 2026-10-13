@@ -152,55 +152,6 @@ class AiGatewayTest {
   }
 
   @Test
-  fun `firstAid returns reflection and matches from the first working provider`() = runTest {
-    val failing = FakeClient(AiCompany.Z_AI) { throw IOException("boom") }
-    val working =
-      FakeClient(AiCompany.OPENAI) {
-        """{"riflessione": "Non sei solo.", "corrispondenze_perfette": ["Sal 23"], "simili": ["Mt 11:28"]}"""
-      }
-    val cfg =
-      config(
-        AiProviderConfig(AiCompany.Z_AI.name, apiKey = "zai", enabled = true),
-        AiProviderConfig(AiCompany.OPENAI.name, apiKey = "sk", enabled = true),
-      )
-    val matches = gateway(cfg, failing, working).firstAid("ansia", listOf("Sal", "Mt"))
-    assertEquals("Non sei solo.", matches.riflessione)
-    assertEquals(listOf("Sal 23"), matches.perfect)
-    assertEquals(listOf("Mt 11:28"), matches.similar)
-    assertEquals(1, failing.calls.size)
-    assertEquals(1, working.calls.size)
-  }
-
-  @Test
-  fun `firstAid falls back in priority order`() = runTest {
-    val first = FakeClient(AiCompany.Z_AI) { throw IOException("primo giu") }
-    val second =
-      FakeClient(AiCompany.OPENAI) {
-        """{"riflessione": "Coraggio.", "corrispondenze_perfette": [], "simili": ["Sal 27"]}"""
-      }
-    val cfg =
-      config(
-        AiProviderConfig(AiCompany.Z_AI.name, apiKey = "zai", enabled = true),
-        AiProviderConfig(AiCompany.OPENAI.name, apiKey = "sk", enabled = true),
-      )
-    val matches = gateway(cfg, first, second).firstAid("paura", listOf("Sal"))
-    assertEquals("Coraggio.", matches.riflessione)
-    assertEquals(1, first.calls.size)
-    assertEquals(1, second.calls.size)
-  }
-
-  @Test
-  fun `verse search without riflessione defaults to empty`() = runTest {
-    val working =
-      FakeClient(AiCompany.OPENAI) {
-        """{"corrispondenze_perfette": ["Gv 3:16"], "simili": []}"""
-      }
-    val cfg = config(AiProviderConfig(AiCompany.OPENAI.name, apiKey = "sk", enabled = true))
-    val matches = gateway(cfg, working).search("descr", listOf("Gv"))
-    assertEquals("", matches.riflessione)
-  }
-
-  @Test
   fun `translateGloss tries next provider when one fails`() = runTest {
     val first = FakeClient(AiCompany.Z_AI) { throw IOException("down") }
     val second = FakeClient(AiCompany.OPENAI) { "amore" }

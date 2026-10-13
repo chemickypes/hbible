@@ -198,5 +198,22 @@ interface BibleDao {
   fun bookInfo(book: Int): Flow<BookInfoEntity?>
 
   @Insert(onConflict = OnConflictStrategy.REPLACE)
-  suspend fun insertBookInfo(info: BookInfoEntity)
+  suspend fun insertBookInfos(infos: List<BookInfoEntity>)
+
+  @Query("DELETE FROM book_info")
+  suspend fun deleteAllBookInfo()
+
+  // --- Pronto soccorso ---
+
+  @Query("SELECT * FROM first_aid ORDER BY order_index, title")
+  fun firstAidEntries(): Flow<List<FirstAidEntity>>
+
+  @Query("SELECT * FROM first_aid WHERE slug = :slug LIMIT 1")
+  fun firstAid(slug: String): Flow<FirstAidEntity?>
+
+  @Insert(onConflict = OnConflictStrategy.REPLACE)
+  suspend fun insertFirstAid(entries: List<FirstAidEntity>)
+
+  @Query("DELETE FROM first_aid")
+  suspend fun deleteAllFirstAid()
 }

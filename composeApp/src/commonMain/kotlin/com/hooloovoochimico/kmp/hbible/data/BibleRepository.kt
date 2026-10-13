@@ -3,6 +3,7 @@ package com.hooloovoochimico.kmp.hbible.data
 import com.hooloovoochimico.kmp.hbible.data.local.BibleDatabase
 import com.hooloovoochimico.kmp.hbible.data.local.BookEntity
 import com.hooloovoochimico.kmp.hbible.data.local.BookInfoEntity
+import com.hooloovoochimico.kmp.hbible.data.local.FirstAidEntity
 import com.hooloovoochimico.kmp.hbible.data.local.CrossReferenceEntity
 import com.hooloovoochimico.kmp.hbible.data.local.LexemeEntity
 import com.hooloovoochimico.kmp.hbible.data.local.OriginalVerseEntity
@@ -77,11 +78,14 @@ interface BibleRepository {
   /** Restores bundled content missing from the user database (new translations, emptied tables). */
   suspend fun ensureImported()
 
-  // --- Book info ---
+  // --- Contenuti curati dal CMS (pacchetti book_info.json e first_aid.json) ---
 
   fun bookInfo(book: Int): Flow<BookInfoEntity?>
 
-  suspend fun saveBookInfo(info: BookInfoEntity)
+  /** Voci del pronto soccorso, nell'ordine deciso nel CMS. */
+  fun firstAidEntries(): Flow<List<FirstAidEntity>>
+
+  fun firstAid(slug: String): Flow<FirstAidEntity?>
 }
 
 class DefaultBibleRepository(
@@ -136,9 +140,9 @@ class DefaultBibleRepository(
 
   override fun bookInfo(book: Int): Flow<BookInfoEntity?> = db.bibleDao().bookInfo(book)
 
-  override suspend fun saveBookInfo(info: BookInfoEntity) {
-    db.bibleDao().insertBookInfo(info)
-  }
+  override fun firstAidEntries(): Flow<List<FirstAidEntity>> = db.bibleDao().firstAidEntries()
+
+  override fun firstAid(slug: String): Flow<FirstAidEntity?> = db.bibleDao().firstAid(slug)
 
   override suspend fun ensureImported() = withContext(Dispatchers.Default) {
     val dao = db.bibleDao()

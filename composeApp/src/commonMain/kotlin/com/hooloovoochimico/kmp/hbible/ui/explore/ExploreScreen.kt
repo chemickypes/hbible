@@ -94,6 +94,7 @@ import com.hooloovoochimico.kmp.hbible.data.BibleReferenceParser
 import com.hooloovoochimico.kmp.hbible.data.SearchHistoryEntry
 import com.hooloovoochimico.kmp.hbible.data.SearchScope
 import com.hooloovoochimico.kmp.hbible.data.aiReportUrl
+import com.hooloovoochimico.kmp.hbible.data.local.FirstAidEntity
 import com.hooloovoochimico.kmp.hbible.data.local.NoteEntity
 import com.hooloovoochimico.kmp.hbible.platform.BackHandler
 import com.hooloovoochimico.kmp.hbible.platform.formatDate
@@ -128,13 +129,6 @@ private val SEARCH_EXAMPLES =
     SearchExample("Libro", "cantico dei cantici 2"),
     SearchExample("Parola", "amore"),
     SearchExample("Frase", "non temere"),
-  )
-
-/** Tematiche del pronto soccorso: versetti e riflessioni per i momenti difficili. */
-private val FIRST_AID_THEMES =
-  listOf(
-    "Ansia", "Paura", "Burnout", "Stress", "Dolore", "Morte", "Perdita e lutto",
-    "Sconfitta", "Solitudine", "Sconforto", "Malattia", "Tentazione", "Perdono", "Rabbia",
   )
 
 private val AI_EXAMPLES =
@@ -188,7 +182,7 @@ fun ExploreScreen(
   onDismiss: () -> Unit,
   onGoToVerse: (Int, Int, Int) -> Unit,
   onOpenNote: (Long) -> Unit,
-  onSaveReflectionToNote: (String, String) -> Unit,
+  onOpenFirstAid: (String) -> Unit,
   focusSearchRequest: Int = 0,
   modifier: Modifier = Modifier,
   viewModel: ExploreViewModel,
@@ -197,6 +191,7 @@ fun ExploreScreen(
   val state by viewModel.uiState.collectAsStateWithLifecycle()
   val books by viewModel.books.collectAsStateWithLifecycle()
   val aiResults by viewModel.aiResults.collectAsStateWithLifecycle()
+  val firstAid by viewModel.firstAidEntries.collectAsStateWithLifecycle()
 
   // Verse previews are loaded in the translation the reader is showing.
   LaunchedEffect(translation) { viewModel.setTranslation(translation) }
@@ -290,7 +285,11 @@ fun ExploreScreen(
               aiMode = aiMode,
               aiSearching = state.aiSearching,
               history = state.history,
-              onFirstAid = viewModel::onFirstAid,
+              firstAid = firstAid,
+              onFirstAid = {
+                keyboard?.hide()
+                onOpenFirstAid(it)
+              },
               onRestoreHistory = {
                 keyboard?.hide()
                 viewModel.restoreHistory(it)
@@ -346,17 +345,6 @@ fun ExploreScreen(
               EmptyState(AiIcon, "Nessun risultato", hint = "Prova a descrivere il passo con altre parole.")
             else ->
               LazyColumn(listModifier.navigationBarsPadding(), contentPadding = listPadding) {
-                val reflection = savedAi?.matches?.riflessione.orEmpty()
-                if (reflection.isNotBlank()) {
-                  item(key = "first-aid-card") {
-                    val themeLabel = (savedAi?.query.orEmpty()).replaceFirstChar { it.uppercase() }
-                    FirstAidCard(
-                      theme = themeLabel,
-                      reflection = reflection,
-                      onSaveToNote = { onSaveReflectionToNote(themeLabel, reflection) },
-                    )
-                  }
-                }
                 aiSection("perfect", "Corrispondenze perfette", r.perfect, bookNames, onGoToVerse)
                 aiSection("similar", "Simili", r.similar, bookNames, onGoToVerse)
               }
@@ -655,6 +643,7 @@ private fun LazyListScope.exploreHome(
   aiMode: Boolean,
   aiSearching: Boolean,
   history: List<SearchHistoryEntry>,
+  firstAid: List<FirstAidEntity>,
   onFirstAid: (String) -> Unit,
   onRestoreHistory: (SearchHistoryEntry) -> Unit,
   onClearHistory: () -> Unit,
@@ -662,8 +651,8 @@ private fun LazyListScope.exploreHome(
 ) {
   item(key = "pronto-soccorso") {
     ProntoSoccorsoSection(
-      enabled = !aiSearching,
-      onTheme = onFirstAid,
+      entries = firstAid,
+      onOpen = onFirstAid,
       modifier = Modifier.padding(horizontal = ScreenPadding, vertical = 8.dp),
     )
   }
@@ -781,15 +770,15 @@ private fun ExampleCard(kind: String, text: String, wide: Boolean = false, onCli
 
 /** Warm gradient of the first-aid cards (terracotta to gold). */
 @Composable
-private fun firstAidBrush(): Brush =
+internal fun firstAidBrush(): Brush =
   Brush.linearGradient(
     listOf(MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.primaryContainer),
   )
 
-/** Sezione "pronto soccorso": tematiche difficili con versetti e riflessione via AI. */
+/** Sezione "pronto soccorso": voci scritte nel CMS, ognuna apre riflessione e versetti. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ProntoSoccorsoSection(enabled: Boolean, onTheme: (String) -> Unit, modifier: Modifier = Modifier) {
+private fun ProntoSoccorsoSection(entries: List<FirstAidEntity>, onOpen: (String) -> Unit, modifier: Modifier = Modifier) {
   val colors = MaterialTheme.colorScheme
   Column(
     modifier
@@ -813,87 +802,38 @@ private fun ProntoSoccorsoSection(enabled: Boolean, onTheme: (String) -> Unit, m
         )
       }
     }
+    if (entries.isEmpty()) {
+      Text(
+        "Le voci si scaricano con l'aggiornamento dei contenuti: collegati a internet e riapri Esplora.",
+        style = MaterialTheme.typography.bodyMedium,
+        color = colors.onSecondaryContainer.copy(alpha = 0.8f),
+        modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 16.dp),
+      )
+      return@Column
+    }
     // Two rows that scroll sideways together, instead of a tall wall of chips.
     FlowRow(
       Modifier
         .padding(top = 18.dp)
         .horizontalScroll(rememberScrollState())
-        .padding(horizontal = 20.dp)
-        .alpha(if (enabled) 1f else 0.5f),
+        .padding(horizontal = 20.dp),
       horizontalArrangement = Arrangement.spacedBy(8.dp),
       verticalArrangement = Arrangement.spacedBy(8.dp),
-      maxItemsInEachRow = (FIRST_AID_THEMES.size + 1) / 2,
+      maxItemsInEachRow = (entries.size + 1) / 2,
     ) {
-      FIRST_AID_THEMES.forEach { theme ->
+      entries.forEach { entry ->
         Surface(
-          onClick = { onTheme(theme) },
-          enabled = enabled,
+          onClick = { onOpen(entry.slug) },
           shape = CircleShape,
           color = colors.surface.copy(alpha = 0.75f),
           contentColor = colors.onSurface,
         ) {
           Text(
-            theme,
+            entry.title,
             style = MaterialTheme.typography.labelLarge,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
           )
         }
-      }
-    }
-    Row(
-      Modifier.padding(start = 20.dp, end = 20.dp, top = 16.dp),
-      verticalAlignment = Alignment.CenterVertically,
-    ) {
-      Icon(
-        AiIcon,
-        contentDescription = null,
-        tint = colors.onSecondaryContainer.copy(alpha = 0.7f),
-        modifier = Modifier.size(14.dp),
-      )
-      Text(
-        "Con l'assistente AI",
-        style = MaterialTheme.typography.labelMedium,
-        color = colors.onSecondaryContainer.copy(alpha = 0.7f),
-        modifier = Modifier.padding(start = 6.dp),
-      )
-    }
-  }
-}
-
-/** Card con la riflessione di conforto generata dall'AI per il tema scelto. */
-@Composable
-private fun FirstAidCard(theme: String, reflection: String, onSaveToNote: () -> Unit) {
-  val colors = MaterialTheme.colorScheme
-  Column(
-    Modifier
-      .fillMaxWidth()
-      .padding(horizontal = ScreenPadding, vertical = 8.dp)
-      .clip(MaterialTheme.shapes.extraLarge)
-      .background(firstAidBrush())
-      .padding(start = 20.dp, top = 20.dp, end = 12.dp, bottom = 8.dp),
-  ) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-      TonalIcon(AppIcons.Favorite, size = 32.dp, container = colors.secondary, content = colors.onSecondary)
-      Text(
-        "Pronto soccorso · $theme",
-        style = MaterialTheme.typography.labelLarge,
-        color = colors.onSecondaryContainer,
-        modifier = Modifier.padding(start = 10.dp),
-      )
-    }
-    Text(
-      reflection,
-      style = ScriptureTypography.body,
-      color = colors.onSurface,
-      modifier = Modifier.padding(top = 12.dp, end = 8.dp),
-    )
-    Row(Modifier.padding(top = 4.dp)) {
-      TextButton(onClick = onSaveToNote) {
-        Icon(AppIcons.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-        Text("Crea nota dalla riflessione", modifier = Modifier.padding(start = 6.dp))
-      }
-      TextButton(onClick = { openUrl(aiReportUrl(reflection, "pronto soccorso: $theme")) }) {
-        Text("Segnala")
       }
     }
   }

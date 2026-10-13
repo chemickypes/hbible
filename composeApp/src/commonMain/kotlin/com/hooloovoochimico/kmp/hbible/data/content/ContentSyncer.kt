@@ -11,8 +11,10 @@ import com.hooloovoochimico.kmp.hbible.data.TRANSLATION_NAMES
 import com.hooloovoochimico.kmp.hbible.data.local.BibleDao
 import com.hooloovoochimico.kmp.hbible.data.local.BibleDatabase
 import com.hooloovoochimico.kmp.hbible.data.local.BookEntity
+import com.hooloovoochimico.kmp.hbible.data.local.BookInfoEntity
 import com.hooloovoochimico.kmp.hbible.data.local.ContentStateEntity
 import com.hooloovoochimico.kmp.hbible.data.local.CrossReferenceEntity
+import com.hooloovoochimico.kmp.hbible.data.local.FirstAidEntity
 import com.hooloovoochimico.kmp.hbible.data.local.LexemeEntity
 import com.hooloovoochimico.kmp.hbible.data.local.OriginalAlignmentEntity
 import com.hooloovoochimico.kmp.hbible.data.local.OriginalVerseEntity
@@ -63,6 +65,50 @@ data class PostDto(
   val publishedAt: String? = null,
 )
 
+/** `/content/book_info.json`: introductions of the books written in the CMS (key = book number). */
+@Serializable
+data class BookInfoDoc(
+  val books: Map<String, BookInfoDto> = emptyMap(),
+)
+
+@Serializable
+data class BookInfoDto(
+  val theme: String = "",
+  val author: String = "",
+  val period: String = "",
+  val context: String = "",
+  val summary: String = "",
+  val keyVerse: String = "",
+  val keyVerseNote: String = "",
+  val characters: String = "",
+  val christocentric: String = "",
+  val outline: String = "",
+)
+
+/** `/content/first_aid.json`: "Pronto soccorso" entries written in the CMS, in display order. */
+@Serializable
+data class FirstAidDoc(
+  val entries: List<FirstAidDto> = emptyList(),
+)
+
+@Serializable
+data class FirstAidDto(
+  val slug: String,
+  val title: String,
+  val subtitle: String = "",
+  val verses: List<String> = emptyList(),
+  val body: String = "",
+)
+
+/**
+ * Downloads a single package on demand (e.g. the book introductions the first
+ * time the page is opened, before the daily check ran). Implemented by [ContentSyncer].
+ */
+fun interface PackageFetcher {
+  /** True when [path] is available locally, already or after downloading it now. */
+  suspend fun ensurePackage(path: String): Boolean
+}
+
 /**
  * Downloads content packages from the CMS (`/content/…`) and applies them to
  * Room with replace semantics. The applied state lives in `content_state`
@@ -74,9 +120,12 @@ data class PostDto(
  *  - `originals/{nn}.json` → original verses for that book (per-book replace)
  *  - `lexicon.json`        → full lexemes replace
  *  - `crossrefs.json`      → full cross-references replace
+ *  - `book_info.json`      → introductions of the books (full replace)
+ *  - `first_aid.json`      → "Pronto soccorso" entries (full replace)
+ *  - `votd.json`, `posts.json` → verse of the day and feed (no UI yet)
  *
- * Other packages (`book_info.json`, `votd.json`, `posts.json`) are recognized
- * but not yet applied — they ship with their app-side feature.
+ * `book_info.json` and `first_aid.json` are not bundled: they arrive with the
+ * first sync, or on demand through [ensurePackage].
  */
 class ContentSyncer(
   private val db: BibleDatabase,
@@ -88,7 +137,7 @@ class ContentSyncer(
   /** Debug builds only: the content URL saved in Settings → Avanzate replaces the default. */
   private val allowUrlOverride: Boolean,
   private val downloader: ContentDownloader = ContentDownloader(client),
-) {
+) : PackageFetcher {
   private val json = Json { ignoreUnknownKeys = true }
 
   /** Content site base URL (without trailing slash): [DEFAULT_CONTENT_URL] or the debug override. */
@@ -98,6 +147,21 @@ class ContentSyncer(
   }
 
   fun isConfigured(): Boolean = baseUrl().isNotBlank()
+
+  override suspend fun ensurePackage(path: String): Boolean {
+    if (dao.contentStateFor(path) != null) return true
+    if (!isConfigured()) return false
+    return try {
+      val result = sync(listOf(path))
+      result.failed[path]?.let { throw IllegalStateException(it) }
+      path in result.applied
+    } catch (e: CancellationException) {
+      throw e
+    } catch (t: Throwable) {
+      appLog.w(t) { "Download su richiesta fallito: $path" }
+      false
+    }
+  }
 
   /** Fetches the manifest and diffs it against the locally applied packages. */
   suspend fun checkForUpdates(): UpdateCheck {
@@ -192,6 +256,8 @@ class ContentSyncer(
       path == "crossrefs.json" -> importCrossrefs(bytes, version)
       path == "votd.json" -> importVotd(bytes, version)
       path == "posts.json" -> importPosts(bytes, version)
+      path == "book_info.json" -> importBookInfo(bytes, version)
+      path == "first_aid.json" -> importFirstAid(bytes, version)
     }
   }
 
@@ -329,6 +395,52 @@ class ContentSyncer(
       dao.insertPosts(entities)
     }
     dao.upsertContentState(ContentStateEntity("posts.json", Sha256.hexOf(bytes), version, epochMillis()))
+  }
+
+  private suspend fun importBookInfo(bytes: ByteArray, version: String) {
+    val doc = json.decodeFromString<BookInfoDoc>(bytes.decodeToString())
+    val entities =
+      doc.books.mapNotNull { (key, b) ->
+        val book = key.toIntOrNull()?.takeIf { it in 1..66 } ?: return@mapNotNull null
+        BookInfoEntity(
+          book = book,
+          theme = b.theme,
+          author = b.author,
+          period = b.period,
+          contextText = b.context,
+          summary = b.summary,
+          keyVerse = b.keyVerse,
+          keyVerseNote = b.keyVerseNote,
+          characters = b.characters,
+          christocentric = b.christocentric,
+          outline = b.outline,
+        )
+      }
+    db.withTransaction {
+      dao.deleteAllBookInfo()
+      dao.insertBookInfos(entities)
+    }
+    dao.upsertContentState(ContentStateEntity("book_info.json", Sha256.hexOf(bytes), version, epochMillis()))
+  }
+
+  private suspend fun importFirstAid(bytes: ByteArray, version: String) {
+    val doc = json.decodeFromString<FirstAidDoc>(bytes.decodeToString())
+    val entities =
+      doc.entries.mapIndexed { index, e ->
+        FirstAidEntity(
+          slug = e.slug,
+          title = e.title,
+          subtitle = e.subtitle,
+          verses = e.verses.joinToString("\n"),
+          body = e.body,
+          orderIndex = index,
+        )
+      }
+    db.withTransaction {
+      dao.deleteAllFirstAid()
+      dao.insertFirstAid(entities)
+    }
+    dao.upsertContentState(ContentStateEntity("first_aid.json", Sha256.hexOf(bytes), version, epochMillis()))
   }
 
   /** Verifies the downloaded bytes against the manifest hash when provided. */

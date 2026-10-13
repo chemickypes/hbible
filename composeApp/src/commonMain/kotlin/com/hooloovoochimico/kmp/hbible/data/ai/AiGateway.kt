@@ -19,23 +19,6 @@ object AiPrompts {
       appendLine("- Se non trovi nulla di sensato, restituisci liste vuote.")
     }
 
-  fun firstAidSystem(bookCodes: List<String>): String =
-    buildString {
-      appendLine("Sei un esperto della Bibbia che porta conforto tramite le Scritture a chi attraversa un momento difficile.")
-      appendLine("L'utente indica la sua difficoltà; individua i versetti più adatti a confortare e aggiungi una breve riflessione.")
-      appendLine("Rispondi SOLO con un oggetto JSON, senza alcun testo prima o dopo, con questa struttura esatta:")
-      appendLine("""{"riflessione": "...", "corrispondenze_perfette": ["Sigla Cap:Vers"], "simili": ["Sigla Cap:Vers"]}""")
-      appendLine("- \"riflessione\": in italiano, breve (max 120 parole), tono caldo e sobrio: riconosci la fatica della persona,")
-      appendLine("  offri speranza senza minimizzare e cita al massimo un versetto senza elencarne altri.")
-      appendLine("- \"corrispondenze_perfette\": versetti che parlano direttamente di questa difficoltà (al massimo 5).")
-      appendLine("- \"simili\": versetti di speranza e consolazione collegati al tema (al massimo 5).")
-      appendLine("- Ogni riferimento usa ESCLUSIVAMENTE queste sigle: ${bookCodes.joinToString(", ")}.")
-      appendLine("- Formato: \"Sigla Cap:Vers\" (es. \"Gv 3:16\"), oppure \"Sigla Cap:VersA-VersB\" per un intervallo (es. \"1 Gv 1:3-5\").")
-      appendLine("- Non inventare sigle fuori lista e non usare nomi completi dei libri.")
-    }
-
-  fun firstAidUser(theme: String): String = "Pronto soccorso per: $theme."
-
   fun glossSystem(): String =
     "Sei un lessicografo biblico. Rispondi SOLO con la traduzione richiesta, senza commenti né virgolette."
 
@@ -43,20 +26,6 @@ object AiPrompts {
     val language = if (lang == "he") "ebraico" else "greco"
     return "Traduci in italiano questo significato da dizionario biblico (termine $language): \"$gloss\""
   }
-
-  fun bookInfoSystem(): String =
-    buildString {
-      appendLine("Sei un esperto di Bibbia che scrive introduzioni ai libri biblici per lettori italiani.")
-      appendLine("Rispondi SOLO con un oggetto JSON, senza alcun testo prima o dopo, con questa struttura esatta:")
-      appendLine("""{"contesto": "...", "protagonisti": "...", "cristocentrico": "..."}""")
-      appendLine("- \"contesto\": autore, data probabile, destinatari, genere letterario e situazione storica (un paragrafo, max 90 parole).")
-      appendLine("- \"protagonisti\": i personaggi principali del libro, ciascuno con una descrizione di una riga (max 6 personaggi).")
-      appendLine("- \"cristocentrico\": come il libro rivela e punta a Gesù Cristo nella storia della salvezza (un paragrafo, max 90 parole).")
-      appendLine("- Scrivi in italiano, con tono chiaro e fedele al testo biblico; non inventare dati discutibili.")
-    }
-
-  fun bookInfoUser(bookName: String, testament: String, chapters: Int): String =
-    "Scrivi l'introduzione del libro di $bookName ($testament, $chapters capitoli) nel formato JSON richiesto."
 
   fun bookChatSystem(bookName: String, testament: String, chapters: Int, summary: String?): String =
     buildString {
@@ -124,27 +93,6 @@ class AiGateway(
     throw lastError ?: IllegalStateException("Nessun servizio AI disponibile")
   }
 
-  /**
-   * "Pronto soccorso": versetti di conforto e una breve riflessione per una
-   * difficoltà personale (ansia, lutto, ...), con fallback sul provider successivo.
-   */
-  suspend fun firstAid(theme: String, bookCodes: List<String>): AiMatches {
-    var lastError: Throwable? = null
-    for (client in requireChain()) {
-      try {
-        val content =
-          client.chat(AiPrompts.firstAidSystem(bookCodes), AiPrompts.firstAidUser(theme), MAX_FIRST_AID_TOKENS)
-        return AiSearchResponseParser.parse(content)
-      } catch (e: CancellationException) {
-        throw e
-      } catch (t: Throwable) {
-        appLog.w(t) { "AI firstAid: provider ${client.company.label} fallito, provo il successivo" }
-        lastError = t
-      }
-    }
-    throw lastError ?: IllegalStateException("Nessun servizio AI disponibile")
-  }
-
   /** Translates a Strong's dictionary gloss into Italian. Returns the bare translation. */
   suspend fun translateGloss(gloss: String, lang: String): String {
     var lastError: Throwable? = null
@@ -157,28 +105,6 @@ class AiGateway(
         throw e
       } catch (t: Throwable) {
         appLog.w(t) { "AI translateGloss: provider ${client.company.label} fallito, provo il successivo" }
-        lastError = t
-      }
-    }
-    throw lastError ?: IllegalStateException("Nessun servizio AI disponibile")
-  }
-
-  /** Generates the introduction (context, protagonists, Christocentric vision) of a book. */
-  suspend fun bookInfo(bookName: String, testament: String, chapters: Int): Pair<AiBookInfo, String> {
-    var lastError: Throwable? = null
-    for (client in requireChain()) {
-      try {
-        val content =
-          client.chat(
-            AiPrompts.bookInfoSystem(),
-            AiPrompts.bookInfoUser(bookName, testament, chapters),
-            MAX_BOOK_INFO_TOKENS,
-          )
-        if (content.isNotBlank()) return AiBookInfoParser.parse(content) to client.company.label
-      } catch (e: CancellationException) {
-        throw e
-      } catch (t: Throwable) {
-        appLog.w(t) { "AI bookInfo: provider ${client.company.label} fallito, provo il successivo" }
         lastError = t
       }
     }
@@ -204,9 +130,7 @@ class AiGateway(
 
   private companion object {
     const val MAX_SEARCH_TOKENS = 2048
-    const val MAX_FIRST_AID_TOKENS = 2048
     const val MAX_GLOSS_TOKENS = 200
-    const val MAX_BOOK_INFO_TOKENS = 2048
     const val MAX_CHAT_TOKENS = 1024
   }
 }

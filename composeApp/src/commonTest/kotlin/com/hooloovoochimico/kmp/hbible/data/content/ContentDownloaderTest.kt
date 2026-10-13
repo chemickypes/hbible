@@ -28,6 +28,7 @@ class ContentDownloaderTest {
           "originals/01.json" to PackageInfo("o1"),
           "lexicon.json" to PackageInfo("lx"),
           "book_info.json" to PackageInfo("bi"),
+          "future.json" to PackageInfo("fu"),
         ),
     )
 
@@ -40,8 +41,8 @@ class ContentDownloaderTest {
   @Test
   fun onlyChangedSupportedPackages_inImportOrder() {
     val local = mapOf("bible/OTB.json" to "old", "originals/01.json" to "o1")
-    // book_info.json has no app-side consumer: never downloaded.
-    assertEquals(listOf("bible/OTB.json", "lexicon.json"), manifest.packagesToApply(local))
+    // future.json has no app-side consumer: never downloaded.
+    assertEquals(listOf("bible/OTB.json", "book_info.json", "lexicon.json"), manifest.packagesToApply(local))
   }
 
   @Test

@@ -32,7 +32,9 @@ fun ContentManifest.isSupported(path: String): Boolean =
     path == "lexicon.json" ||
     path == "crossrefs.json" ||
     path == "votd.json" ||
-    path == "posts.json"
+    path == "posts.json" ||
+    path == "book_info.json" ||
+    path == "first_aid.json"
 
 /** Import order: bibles first (they create the books), then originals, then the rest. */
 private fun importRank(path: String): Int =

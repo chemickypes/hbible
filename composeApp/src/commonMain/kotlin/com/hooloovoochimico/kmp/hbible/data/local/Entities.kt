@@ -128,17 +128,44 @@ data class NoteEntity(
   val updatedAt: Long,
 )
 
-/** AI-generated introduction of a Bible book, cached locally. */
+/**
+ * Introduction of a Bible book, written in the CMS and downloaded with the
+ * `book_info.json` package (replaced as a whole at every sync). Empty fields
+ * are not shown.
+ */
 @Entity(tableName = "book_info")
 data class BookInfoEntity(
   /** Canonical book number (1-66). */
   @PrimaryKey val book: Int,
-  @ColumnInfo(name = "context_text") val contextText: String,
-  val protagonists: String,
-  @ColumnInfo(name = "christocentric") val christocentric: String,
-  /** Model that produced the text, for reference. */
-  val model: String = "",
-  val updatedAt: Long,
+  val theme: String = "",
+  val author: String = "",
+  val period: String = "",
+  @ColumnInfo(name = "context_text") val contextText: String = "",
+  val summary: String = "",
+  /** Reference of the key verse ("Gv 20:31"): the text comes from the reader's translation. */
+  @ColumnInfo(name = "key_verse") val keyVerse: String = "",
+  @ColumnInfo(name = "key_verse_note") val keyVerseNote: String = "",
+  /** Important characters, one per line ("Nome — ruolo"). */
+  val characters: String = "",
+  val christocentric: String = "",
+  /** Outline, one section per line ("1–11 Titolo"). */
+  val outline: String = "",
+)
+
+/**
+ * Entry of the "Pronto soccorso" (first aid) section, written in the CMS and
+ * downloaded with the `first_aid.json` package (replaced as a whole).
+ */
+@Entity(tableName = "first_aid")
+data class FirstAidEntity(
+  @PrimaryKey val slug: String,
+  val title: String,
+  val subtitle: String = "",
+  /** Verse references separated by "\n" ("Fil 4:6-7"). */
+  val verses: String = "",
+  /** Reflection: plain text, paragraphs separated by a blank line. */
+  val body: String = "",
+  @ColumnInfo(name = "order_index") val orderIndex: Int = 0,
 )
 
 /**

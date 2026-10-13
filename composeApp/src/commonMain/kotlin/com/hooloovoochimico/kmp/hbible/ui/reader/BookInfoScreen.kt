@@ -2,6 +2,9 @@ package com.hooloovoochimico.kmp.hbible.ui.reader
 
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.FontStyle
+import com.hooloovoochimico.kmp.hbible.ui.explore.AiVerseMatch
+import com.hooloovoochimico.kmp.hbible.ui.explore.aiRangeLabel
 import com.hooloovoochimico.kmp.hbible.ui.common.EmptyState
 import com.hooloovoochimico.kmp.hbible.ui.common.TonalIcon
 import com.hooloovoochimico.kmp.hbible.ui.settings.SettingsIcons
@@ -21,7 +24,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -44,15 +46,12 @@ import com.hooloovoochimico.kmp.hbible.data.ai.AiChatMessage
 import com.hooloovoochimico.kmp.hbible.data.ai.AiPrompts
 import com.hooloovoochimico.kmp.hbible.data.local.BookEntity
 import com.hooloovoochimico.kmp.hbible.platform.BackHandler
-import com.hooloovoochimico.kmp.hbible.platform.formatDate
 import com.hooloovoochimico.kmp.hbible.theme.ScriptureTypography
 import com.hooloovoochimico.kmp.hbible.ui.common.AiChatPanel
 import com.hooloovoochimico.kmp.hbible.ui.common.AppIcons
 import com.hooloovoochimico.kmp.hbible.ui.common.HBibleCard
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
-import com.hooloovoochimico.kmp.hbible.data.aiReportUrl
-import com.hooloovoochimico.kmp.hbible.platform.openUrl
 
 private val BOOK_CHAT_SUGGESTIONS =
   listOf(
@@ -63,13 +62,15 @@ private val BOOK_CHAT_SUGGESTIONS =
   )
 
 /**
- * Full-screen introduction of a Bible book: AI-generated context, protagonists
- * and Christocentric vision (cached locally) plus a chat about the book.
+ * Full-screen introduction of a Bible book written in the CMS (writer, period,
+ * context, summary, key verse, characters, Christocentric vision, outline) plus
+ * an optional chat about the book with the user's AI.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookInfoScreen(
   book: BookEntity,
+  onGoToVerse: (Int, Int, Int) -> Unit,
   onSaveToNote: (String) -> Unit,
   onDismiss: () -> Unit,
   modifier: Modifier = Modifier,
@@ -98,7 +99,7 @@ fun BookInfoScreen(
             book.name,
             testament,
             book.chapters,
-            state.info?.contextText,
+            state.info?.let { listOf(it.theme, it.summary).filter(String::isNotBlank).joinToString("\n") },
           )
         val reply = viewModel.chat(system, messages.toList())
         messages.add(AiChatMessage("assistant", reply))
@@ -144,69 +145,50 @@ fun BookInfoScreen(
 
     val info = state.info
     when {
-      state.busy && info == null -> {
+      info != null -> {
+        Column(
+          Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(bottom = 16.dp),
+        ) {
+          if (info.theme.isNotBlank()) {
+            Text(
+              info.theme,
+              style = ScriptureTypography.intro.copy(fontStyle = FontStyle.Italic),
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+              modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 8.dp),
+            )
+          }
+          InfoSection("Scrittore", info.author)
+          InfoSection("Periodo di scrittura", info.period)
+          InfoSection("Contesto", info.contextText)
+          InfoSection("Riassunto", info.summary)
+          state.keyVerse?.let { key -> KeyVerseSection(key, info.keyVerseNote, book.name, onGoToVerse) }
+          InfoSection("Personaggi importanti", info.characters)
+          InfoSection("Visione cristocentrica", info.christocentric)
+          InfoSection("Struttura", info.outline)
+        }
+      }
+      state.loading -> {
         Column(
           Modifier.weight(1f).fillMaxWidth().padding(24.dp),
           horizontalAlignment = Alignment.CenterHorizontally,
         ) {
           CircularProgressIndicator()
           Text(
-            "L'AI sta scrivendo l'introduzione…",
+            "Scarico l'introduzione…",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 16.dp),
           )
         }
       }
-      info != null -> {
-        Column(
-          Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(bottom = 16.dp),
-        ) {
-          InfoSection("Contesto", info.contextText)
-          InfoSection("Protagonisti", info.protagonists)
-          InfoSection("Visione cristocentrica", info.christocentric)
-          Row(
-            Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-          ) {
-            Text(
-              "Generata con l'AI · " + formatDate(info.updatedAt, "d MMMM yyyy HH:mm"),
-              style = MaterialTheme.typography.labelSmall,
-              color = MaterialTheme.colorScheme.onSurfaceVariant,
-              modifier = Modifier.weight(1f),
-            )
-            TextButton(
-              onClick = {
-                val text = listOf(info.contextText, info.protagonists, info.christocentric).joinToString("\n\n")
-                openUrl(aiReportUrl(text, "introduzione a ${book.name}"))
-              },
-            ) { Text("Segnala", style = MaterialTheme.typography.labelMedium) }
-            IconButton(onClick = { viewModel.generate() }, enabled = !state.busy) {
-              Icon(
-                AppIcons.Refresh,
-                contentDescription = "Rigenera introduzione",
-                modifier = Modifier.size(20.dp),
-              )
-            }
-          }
-          if (state.busy) {
-            Text(
-              "Rigenerazione in corso…",
-              style = MaterialTheme.typography.labelSmall,
-              color = MaterialTheme.colorScheme.primary,
-              modifier = Modifier.padding(horizontal = 24.dp),
-            )
-          }
-        }
-      }
       else -> {
         Column(Modifier.weight(1f).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
           EmptyState(
-            SettingsIcons.AutoAwesome,
+            SettingsIcons.MenuBook,
             "Introduzione non disponibile",
-            hint = state.error ?: "Nessuna introduzione disponibile.",
+            hint = "Le introduzioni si scaricano con l'aggiornamento dei contenuti: collegati a internet e riprova.",
           )
-          FilledTonalButton(onClick = { viewModel.generate() }) { Text("Riprova") }
+          FilledTonalButton(onClick = { viewModel.retry() }) { Text("Riprova") }
         }
       }
     }
@@ -267,6 +249,45 @@ fun BookInfoScreen(
           modifier = Modifier.fillMaxWidth().weight(1f),
         )
       }
+    }
+  }
+}
+
+/** Key verse: reference and text in the reader's translation (tap opens it), plus why it matters. */
+@Composable
+private fun KeyVerseSection(
+  match: AiVerseMatch,
+  note: String,
+  bookName: String,
+  onGoToVerse: (Int, Int, Int) -> Unit,
+) {
+  val r = match.ref
+  HBibleCard(
+    onClick = { onGoToVerse(r.book, r.chapter, r.verse ?: 1) },
+    color = MaterialTheme.colorScheme.primaryContainer,
+    contentPadding = PaddingValues(20.dp),
+    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
+  ) {
+    Text(
+      "Versetto chiave · " + aiRangeLabel(match, mapOf(r.book to bookName)),
+      style = MaterialTheme.typography.labelLarge,
+      color = MaterialTheme.colorScheme.onPrimaryContainer,
+    )
+    match.text?.let {
+      Text(
+        it,
+        style = ScriptureTypography.intro.copy(fontStyle = FontStyle.Italic),
+        color = MaterialTheme.colorScheme.onPrimaryContainer,
+        modifier = Modifier.padding(top = 8.dp),
+      )
+    }
+    if (note.isNotBlank()) {
+      Text(
+        note,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
+        modifier = Modifier.padding(top = 8.dp),
+      )
     }
   }
 }

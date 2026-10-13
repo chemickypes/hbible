@@ -14,7 +14,9 @@ import com.hooloovoochimico.kmp.hbible.data.SearchHistoryEntry
 import com.hooloovoochimico.kmp.hbible.data.SearchScope
 import com.hooloovoochimico.kmp.hbible.data.ai.AiGateway
 import com.hooloovoochimico.kmp.hbible.data.ai.AiMatches
+import com.hooloovoochimico.kmp.hbible.data.content.PackageFetcher
 import com.hooloovoochimico.kmp.hbible.data.local.BookEntity
+import com.hooloovoochimico.kmp.hbible.data.local.FirstAidEntity
 import com.hooloovoochimico.kmp.hbible.data.local.NoteEntity
 import com.hooloovoochimico.kmp.hbible.data.local.VerseEntity
 import com.hooloovoochimico.kmp.hbible.ui.common.displayAbbr
@@ -30,6 +32,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -44,8 +47,6 @@ data class ExploreUiState(
   val scope: SearchScope = SearchScope.ALL,
   val aiMode: Boolean = false,
   val noteMode: Boolean = false,
-  /** Tema del pronto soccorso attivo per la query corrente (null = ricerca normale). */
-  val firstAidTheme: String? = null,
   val searching: Boolean = false,
   val results: List<VerseEntity> = emptyList(),
   val noteResults: List<NoteEntity> = emptyList(),
@@ -73,6 +74,7 @@ class ExploreViewModel(
   private val bibleRepository: BibleRepository,
   private val notesRepository: NotesRepository,
   private val aiGateway: AiGateway,
+  private val fetcher: PackageFetcher,
 ) : ViewModel() {
 
   private val _uiState =
@@ -91,6 +93,10 @@ class ExploreViewModel(
   val books: StateFlow<List<BookEntity>> =
     bibleRepository.books().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+  /** "Pronto soccorso" entries written in the CMS (package `first_aid.json`). */
+  val firstAidEntries: StateFlow<List<FirstAidEntity>> =
+    bibleRepository.firstAidEntries().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
   /** Translation used to load verse previews; kept in sync with the reader. */
   private val translation = MutableStateFlow(DEFAULT_TRANSLATION)
 
@@ -101,6 +107,10 @@ class ExploreViewModel(
   private var aiSearchJob: Job? = null
 
   init {
+    // First opening before the daily sync: download the first-aid entries now.
+    viewModelScope.launch {
+      if (bibleRepository.firstAidEntries().first().isEmpty()) fetcher.ensurePackage(FIRST_AID_PACKAGE)
+    }
     // Debounced live search: text verses or notes, never in AI mode.
     viewModelScope.launch {
       _uiState
@@ -172,7 +182,7 @@ class ExploreViewModel(
   // --- Events ---
 
   fun onQueryChange(query: String) {
-    _uiState.update { it.copy(query = query, firstAidTheme = null) }
+    _uiState.update { it.copy(query = query) }
     exploreRepository.saveLastQuery(query, _uiState.value.scope)
   }
 
@@ -187,7 +197,7 @@ class ExploreViewModel(
 
   fun onToggleAiMode() {
     val newMode = !_uiState.value.aiMode
-    _uiState.update { it.copy(aiMode = newMode, firstAidTheme = null) }
+    _uiState.update { it.copy(aiMode = newMode) }
     exploreRepository.saveAiMode(newMode)
     // Run a search only when there is nothing to restore for this query.
     val state = _uiState.value
@@ -196,20 +206,11 @@ class ExploreViewModel(
     }
   }
 
-  /** Avvia una ricerca "pronto soccorso" sul tema scelto. */
-  fun onFirstAid(theme: String) {
-    _uiState.update { it.copy(firstAidTheme = theme, aiMode = true, query = theme.lowercase()) }
-    exploreRepository.saveAiMode(true)
-    exploreRepository.saveLastQuery(theme.lowercase(), _uiState.value.scope)
-    runAiSearch()
-  }
-
   fun runAiSearch() {
     val prompt = _uiState.value.query.trim()
     if (prompt.isEmpty() || _uiState.value.aiSearching) return
     aiSearchJob?.cancel()
     _uiState.update { it.copy(aiSearching = true, ai = null) }
-    val theme = _uiState.value.firstAidTheme
     aiSearchJob =
       viewModelScope.launch {
         try {
@@ -218,7 +219,7 @@ class ExploreViewModel(
           val bookCodes = books.value.map { it.displayAbbr }
           val matches =
             cached
-              ?: (if (theme != null) aiGateway.firstAid(theme, bookCodes) else aiGateway.search(prompt, bookCodes))
+              ?: aiGateway.search(prompt, bookCodes)
                 .also {
                   exploreRepository.addHistory(
                     SearchHistoryEntry(
@@ -259,7 +260,6 @@ class ExploreViewModel(
     _uiState.update {
       it.copy(
         query = entry.query,
-        firstAidTheme = null,
         aiMode = entry.aiMode,
         ai =
           if (entry.aiMode && entry.matches != null) {

@@ -224,6 +224,32 @@ private val MIGRATION_15_16 =
     }
   }
 
+/**
+ * Contenuti curati dal CMS al posto dell'AI: `book_info` (prima una cache delle
+ * introduzioni generate con l'AI dell'utente) si ricrea vuota con i campi delle
+ * schede del CMS, nuova `first_aid` per il pronto soccorso. Entrambe si
+ * riempiono scaricando `book_info.json` e `first_aid.json`.
+ */
+private val MIGRATION_16_17 =
+  object : Migration(16, 17) {
+    override fun migrate(connection: SQLiteConnection) {
+      connection.execSQL("DROP TABLE IF EXISTS `book_info`")
+      connection.execSQL(
+        "CREATE TABLE IF NOT EXISTS `book_info` (`book` INTEGER NOT NULL, `theme` TEXT NOT NULL, " +
+          "`author` TEXT NOT NULL, `period` TEXT NOT NULL, `context_text` TEXT NOT NULL, " +
+          "`summary` TEXT NOT NULL, `key_verse` TEXT NOT NULL, `key_verse_note` TEXT NOT NULL, " +
+          "`characters` TEXT NOT NULL, `christocentric` TEXT NOT NULL, `outline` TEXT NOT NULL, " +
+          "PRIMARY KEY(`book`))",
+      )
+      connection.execSQL(
+        "CREATE TABLE IF NOT EXISTS `first_aid` (`slug` TEXT NOT NULL, `title` TEXT NOT NULL, " +
+          "`subtitle` TEXT NOT NULL, `verses` TEXT NOT NULL, `body` TEXT NOT NULL, " +
+          "`order_index` INTEGER NOT NULL, PRIMARY KEY(`slug`))",
+      )
+      connection.execSQL("DELETE FROM `content_state` WHERE `package_id` IN ('book_info.json', 'first_aid.json')")
+    }
+  }
+
 val ALL_MIGRATIONS: Array<Migration> =
   arrayOf(
     MIGRATION_1_2,
@@ -241,4 +267,5 @@ val ALL_MIGRATIONS: Array<Migration> =
     MIGRATION_13_14,
     MIGRATION_14_15,
     MIGRATION_15_16,
+    MIGRATION_16_17,
   )

@@ -11,8 +11,6 @@ import kotlinx.serialization.json.Json
 data class AiMatches(
   @SerialName("corrispondenze_perfette") val perfect: List<String> = emptyList(),
   @SerialName("simili") val similar: List<String> = emptyList(),
-  /** Breve riflessione di conforto, presente solo nelle ricerche "pronto soccorso". */
-  val riflessione: String = "",
 )
 
 /** Extracts [AiMatches] from the model reply, tolerating markdown fences or extra text. */

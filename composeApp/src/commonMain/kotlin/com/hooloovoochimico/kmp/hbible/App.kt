@@ -91,6 +91,8 @@ import com.hooloovoochimico.kmp.hbible.ui.notes.NoteEditorScreen
 import com.hooloovoochimico.kmp.hbible.ui.notes.NotesScreen
 import com.hooloovoochimico.kmp.hbible.ui.notes.NotesViewModel
 import com.hooloovoochimico.kmp.hbible.ui.reader.BookInfoScreen
+import com.hooloovoochimico.kmp.hbible.ui.explore.FirstAidScreen
+import com.hooloovoochimico.kmp.hbible.ui.explore.FirstAidViewModel
 import com.hooloovoochimico.kmp.hbible.ui.reader.PendingScroll
 import com.hooloovoochimico.kmp.hbible.ui.reader.ReaderScreen
 import com.hooloovoochimico.kmp.hbible.ui.reader.ReaderSelection
@@ -135,6 +137,10 @@ data class VerseDetailRoute(
 
 @Serializable
 data class BookInfoRoute(val book: Int)
+
+/** Voce del "Pronto soccorso" (contenuto del CMS), aperta da Esplora. */
+@Serializable
+data class FirstAidRoute(val slug: String)
 
 @Serializable
 data class NoteEditorRoute(val noteId: Long? = null)
@@ -675,9 +681,11 @@ private fun HBibleAppShell(
                         state.books.firstOrNull { it.n == state.selection?.book }
                       }
                     if (paneBook != null) {
-                      LaunchedEffect(paneBook.n) { bookInfoViewModel.open(paneBook.n) }
+                      val paneTranslation = (readerState as? ReaderUiState.Ready)?.selection?.translation ?: DEFAULT_TRANSLATION
+                      LaunchedEffect(paneBook.n, paneTranslation) { bookInfoViewModel.open(paneBook.n, paneTranslation) }
                       BookInfoScreen(
                         book = paneBook,
+                        onGoToVerse = goToVerse,
                         onSaveToNote = { content ->
                           paneScope.launch {
                             val id =
@@ -778,11 +786,7 @@ private fun HBibleAppShell(
                         onDismiss = { goToTab(ReaderRoute) },
                         onGoToVerse = openDetailFromExplore,
                         onOpenNote = openNote,
-                        onSaveReflectionToNote = { theme, reflection ->
-                          scope.launch {
-                            saveChatToNote("Pronto soccorso · $theme", reflection, 0, 0, 0)
-                          }
-                        },
+                        onOpenFirstAid = { slug -> navController.navigate(FirstAidRoute(slug)) },
                         focusSearchRequest = exploreFocusSearchRequest,
                         viewModel = exploreViewModel,
                       )
@@ -803,11 +807,7 @@ private fun HBibleAppShell(
                     onDismiss = { goToTab(ReaderRoute) },
                     onGoToVerse = goToVerse,
                     onOpenNote = openNote,
-                    onSaveReflectionToNote = { theme, reflection ->
-                      scope.launch {
-                        saveChatToNote("Pronto soccorso · $theme", reflection, 0, 0, 0)
-                      }
-                    },
+                    onOpenFirstAid = { slug -> navController.navigate(FirstAidRoute(slug)) },
                     focusSearchRequest = exploreFocusSearchRequest,
                     viewModel = exploreViewModel,
                   )
@@ -858,11 +858,13 @@ private fun HBibleAppShell(
               if (infoBook != null) {
                 // VM legato a questa destinazione: lo stato si azzera uscendo.
                 val bookInfoViewModel: BookInfoViewModel = koinViewModel()
-                LaunchedEffect(infoBook.n) { bookInfoViewModel.open(infoBook.n) }
+                val infoTranslation = (readerState as? ReaderUiState.Ready)?.selection?.translation ?: DEFAULT_TRANSLATION
+                LaunchedEffect(infoBook.n, infoTranslation) { bookInfoViewModel.open(infoBook.n, infoTranslation) }
                 val scope = rememberCoroutineScope()
                 ContentWidth {
                   BookInfoScreen(
                     book = infoBook,
+                    onGoToVerse = goToVerse,
                     onSaveToNote = { content ->
                       scope.launch {
                         val id = notesViewModel.createNoteFromChat("Chat su ${infoBook.name}", content, infoBook.n, 0, 0)
@@ -873,6 +875,25 @@ private fun HBibleAppShell(
                     viewModel = bookInfoViewModel,
                   )
                 }
+              }
+            }
+            composable<FirstAidRoute> { entry ->
+              val route = entry.toRoute<FirstAidRoute>()
+              val readerState by readerViewModel.uiState.collectAsStateWithLifecycle()
+              val ready = readerState as? ReaderUiState.Ready
+              val translation = ready?.selection?.translation ?: DEFAULT_TRANSLATION
+              // VM legato a questa destinazione: lo stato si azzera uscendo.
+              val firstAidViewModel: FirstAidViewModel = koinViewModel()
+              LaunchedEffect(route.slug, translation) { firstAidViewModel.open(route.slug, translation) }
+              val scope = rememberCoroutineScope()
+              ContentWidth {
+                FirstAidScreen(
+                  books = ready?.books.orEmpty(),
+                  onGoToVerse = goToVerse,
+                  onSaveToNote = { title, body -> scope.launch { saveChatToNote(title, body, 0, 0, 0) } },
+                  onDismiss = { navController.popBackStack() },
+                  viewModel = firstAidViewModel,
+                )
               }
             }
             composable<NoteEditorRoute> { entry ->

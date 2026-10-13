@@ -144,6 +144,6 @@ class MigrationTest {
   private companion object {
     const val TEST_DB = "migration-test.db"
     const val OLDEST_VERSION = 8
-    const val LATEST_VERSION = 16
+    const val LATEST_VERSION = 17
   }
 }
