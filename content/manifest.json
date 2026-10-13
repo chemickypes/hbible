@@ -1,14 +1,14 @@
 {
-  "version": "20261009T104320",
-  "generatedAt": "2026-10-09T10:43:20.595Z",
+  "version": "20261013T094104",
+  "generatedAt": "2026-10-13T09:41:04.864Z",
   "formats": {
     "originals": 2
   },
   "minApp": 1,
   "packages": {
     "bible/OTB.json": {
-      "hash": "f0957372d1cc9e3334d748aaf1499ad4824ecbe3accef13f5c37032994b16c1b",
-      "size": 4894954
+      "hash": "db3ef47950019afff4dbf39407629dd66a39bd2f40e29b0963bae983e581eb95",
+      "size": 4894948
     },
     "bible/R27.json": {
       "hash": "c7a5df9dbf258f021cf0c8258aee20266c087a3fdb47524f429109987b5329f7",
@@ -103,8 +103,8 @@
       "size": 540726
     },
     "originals/21.json": {
-      "hash": "bb055765281dc4ec8ef95076c86ce847419b99d73f0e2ed390749c40d98872a9",
-      "size": 200255
+      "hash": "0c73fbd0703fa787d65f9a676f565c6235d9adc584f1382dbd4b05d35ac7ec7e",
+      "size": 200254
     },
     "originals/22.json": {
       "hash": "5a1aec8d0d2b09f82343ce9729c7abdefa4d8e05f26763a942d4a5b9357946c8",
