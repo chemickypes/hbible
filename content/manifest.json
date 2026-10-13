@@ -1,6 +1,6 @@
 {
-  "version": "20261013T191322",
-  "generatedAt": "2026-10-13T19:13:22.985Z",
+  "version": "20261013T191917",
+  "generatedAt": "2026-10-13T19:19:17.346Z",
   "formats": {
     "originals": 2
   },
@@ -299,8 +299,8 @@
       "size": 371711
     },
     "first_aid.json": {
-      "hash": "c305424201adf80b3d0126beebb3b44c8dfff3119de79ffe5b6e95bf9aa7db35",
-      "size": 62731
+      "hash": "b61460bdce0bfa1d16f73db4c685a82c3b50f48c87d415ab2da378537628bd66",
+      "size": 62700
     },
     "votd.json": {
       "hash": "44cb1ba2cc33e10b466fcdf2c6931d5639549cc44d9a55e100a32d610adfb20d",
