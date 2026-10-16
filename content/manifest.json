@@ -1,14 +1,14 @@
 {
-  "version": "20261013T191917",
-  "generatedAt": "2026-10-13T19:19:17.346Z",
+  "version": "20261016T100628",
+  "generatedAt": "2026-10-16T10:06:28.512Z",
   "formats": {
     "originals": 2
   },
   "minApp": 1,
   "packages": {
     "bible/OTB.json": {
-      "hash": "b52a674e28f88a7f487b0a5dd49644dfd0fb2c2bfbb76b927820567c973117fd",
-      "size": 4894985
+      "hash": "49d5b89d554617ea71385afc1f0c3633cfa8f339c0ee2cec17972d100d807e11",
+      "size": 4913275
     },
     "bible/R27.json": {
       "hash": "c7a5df9dbf258f021cf0c8258aee20266c087a3fdb47524f429109987b5329f7",
@@ -103,8 +103,8 @@
       "size": 540726
     },
     "originals/21.json": {
-      "hash": "34c2435754f717ac11aab3aa67710fa52b98fbb2948933c27779613b03a0b620",
-      "size": 200288
+      "hash": "0f63034db8856daf21f6b5656b0b4f78a6411b12fb6c9cb1d728fc5e9559bad1",
+      "size": 200252
     },
     "originals/22.json": {
       "hash": "5a1aec8d0d2b09f82343ce9729c7abdefa4d8e05f26763a942d4a5b9357946c8",
@@ -179,20 +179,20 @@
       "size": 61053
     },
     "originals/40.json": {
-      "hash": "a0220f933b1ee86760618ff84ea25848bde6bc1152d71aa48e9279482f859077",
-      "size": 1064448
+      "hash": "e41672c506668268e0e5bf6ba1e536be8599c5db803a60dc94bec0afc82d5403",
+      "size": 1064422
     },
     "originals/41.json": {
-      "hash": "d4274473b588cf133925d4cde620759db77459cb6881b7dc7d3069bcb0e2e74e",
-      "size": 660996
+      "hash": "9978e4681b9c0b0e456e3dac67dc75015bb31064a09612508f1d11d71f2ac5f0",
+      "size": 660958
     },
     "originals/42.json": {
-      "hash": "2637ee7b755c9844c5770c46553279699a344f9eb1b6ff637f9deed38858fcfd",
-      "size": 1137375
+      "hash": "9bccf1a40e87022602d9f66597234bb57f1cba9c8246e17dd80cd6cb9dab73d2",
+      "size": 1137320
     },
     "originals/43.json": {
-      "hash": "bb71a08e6499f5df057705d3b8644074e0d55017510f52dfa45dc06704103e22",
-      "size": 879293
+      "hash": "05bd89a701681faa4b471e9d3c24773611e38ab0175849a4bad9358b6d83030d",
+      "size": 879225
     },
     "originals/44.json": {
       "hash": "57768f8c88149a3aba4dede7f2cb15f5b4f7f1abd4ea0293f6d765e7aba918ba",
