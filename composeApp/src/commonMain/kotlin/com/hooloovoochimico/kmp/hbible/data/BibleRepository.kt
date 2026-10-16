@@ -25,14 +25,14 @@ import kotlinx.coroutines.withContext
  * the CMS "cassetto" and never shipped (see tasks/README.md).
  */
 val TRANSLATION_NAMES = mapOf(
-  "OTB" to "Bibbia Aperta",
+  "NTA" to "Nuova Traduzione Aperta",
   "R27" to "Riveduta 1927",
   "DIO" to "Diodati",
   "MAR" to "Martini",
 )
 
-/** Default translation everywhere (reader, interlinear, search, AI): the Bibbia Aperta. */
-const val DEFAULT_TRANSLATION = "OTB"
+/** Default translation everywhere (reader, interlinear, search, AI): the Nuova Traduzione Aperta. */
+const val DEFAULT_TRANSLATION = "NTA"
 
 /** [code] if it is a bundled translation, else [DEFAULT_TRANSLATION] (e.g. a removed one saved in settings). */
 fun bundledTranslationOrDefault(code: String?): String =

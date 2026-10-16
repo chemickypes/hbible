@@ -253,7 +253,7 @@ private fun ReaderContent(
     val selected = verses.filter { it.verse in highlightedVerses }.sortedBy { it.verse }
     if (selected.isEmpty()) return null
     val body = selected.joinToString("\n\n") { "${it.verse}  ${it.text}" }
-    // shareAttribution: per la Bibbia Aperta la CC BY-SA chiede di citare opera e licenza.
+    // shareAttribution: per la NTA la CC BY-SA chiede di citare opera e licenza.
     val reference = "$bookName ${selection.chapter} · ${shareAttribution(selection.translation)}"
     return "$body\n\n— $reference".trimEnd()
   }
@@ -621,7 +621,7 @@ private fun VerseRow(
         modifier = Modifier.padding(top = 24.dp, bottom = 4.dp),
       )
     }
-    // Un versetto che apre un paragrafo (campo `p`, Bibbia Aperta) prende più aria sopra.
+    // Un versetto che apre un paragrafo (campo `p`, NTA) prende più aria sopra.
     val topPadding = if (verse.title != null) 0.dp else if (verse.paragraph) 18.dp else 6.dp
     Row(Modifier.padding(top = topPadding)) {
       Text(

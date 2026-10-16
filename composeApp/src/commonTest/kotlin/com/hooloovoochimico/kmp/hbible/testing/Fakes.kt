@@ -31,7 +31,7 @@ internal class FakeBibleRepository(
   books: List<BookEntity> = listOf(BookEntity(1, "Genesi", "Gen", 50)),
   verses: List<VerseEntity> =
     listOf(
-      VerseEntity("OTB", 1, 1, 1, null, "In principio Dio creò i cieli e la terra."),
+      VerseEntity("NTA", 1, 1, 1, null, "In principio Dio creò i cieli e la terra."),
     ),
   originals: List<OriginalVerseEntity> = emptyList(),
   crossRefs: List<CrossReferenceEntity> = emptyList(),
@@ -118,7 +118,7 @@ internal class FakeSettingsRepository : SettingsRepository {
 
   override fun saveFontSize(size: ReaderFontSize) {}
 
-  override fun loadLastPosition(): LastPosition = LastPosition("OTB", 1, 1)
+  override fun loadLastPosition(): LastPosition = LastPosition("NTA", 1, 1)
 
   override fun saveLastPosition(position: LastPosition) {}
 

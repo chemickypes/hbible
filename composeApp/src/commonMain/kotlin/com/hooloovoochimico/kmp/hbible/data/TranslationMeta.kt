@@ -19,28 +19,29 @@ data class TranslationMeta(
   val attribution: String = "",
 )
 
-const val OTB_FORK_URL = "https://github.com/chemickypes/open-bible"
-const val OTB_CHANGES_URL = "https://github.com/chemickypes/open-bible/tree/hbible-correzioni"
+const val NTA_REPO_URL = "https://github.com/NTA-nuova-traduzione-aperta/bibbia"
+const val NTA_CHANGES_URL = "https://github.com/NTA-nuova-traduzione-aperta/bibbia/tree/main/modifiche"
+const val NTA_SITE_URL = "https://nta-nuova-traduzione-aperta.github.io"
 const val CC_BY_SA_4_URL = "https://creativecommons.org/licenses/by-sa/4.0/deed.it"
 
 /** Metadata of the bundled translations, in the app's display order (same as TRANSLATION_NAMES). */
 val TRANSLATION_META: List<TranslationMeta> =
   listOf(
     TranslationMeta(
-      abbr = "OTB",
-      name = "Bibbia Aperta",
-      fullName = "Open Translation Bible — edizione italiana",
+      abbr = "NTA",
+      name = "Nuova Traduzione Aperta",
+      fullName = "Nuova Traduzione Aperta (NTA)",
       year = "2026",
       license = "CC BY-SA 4.0",
-      source = "https://openbible.uk",
+      source = NTA_SITE_URL,
       licenseUrl = CC_BY_SA_4_URL,
       note =
-        "La prima Bibbia open source: si può copiare, adattare e ridistribuire con la stessa licenza. " +
-          "Numerazione dei versetti ricondotta a quella delle altre versioni dell'app; " +
-          "testo adattato (correzioni pubblicate nel fork $OTB_FORK_URL).",
+        "Traduzione italiana aperta: si può copiare, adattare e ridistribuire con la stessa licenza. " +
+          "Nasce dalla revisione della Open Translation Bible (openbible.uk), edizione italiana, " +
+          "confrontata con i testi originali; testo, note e storico delle modifiche in $NTA_REPO_URL.",
       attribution =
-        "Bibbia Aperta © Open Translation Bible (openbible.uk), CC BY-SA 4.0. " +
-          "Testo adattato da HBible: modifiche in $OTB_CHANGES_URL",
+        "Nuova Traduzione Aperta (NTA), CC BY-SA 4.0, derivata dalla Open Translation Bible (openbible.uk). " +
+          "Modifiche in $NTA_CHANGES_URL",
     ),
     TranslationMeta(
       abbr = "R27",

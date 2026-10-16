@@ -36,7 +36,7 @@ SCHEMA_DIR = ROOT / "composeApp/schemas/com.hooloovoochimico.kmp.hbible.data.loc
 # cassetto del CMS e non devono mai finire qui. La prima è la predefinita e da
 # lei si prendono i libri.
 TRANSLATION_ASSETS = [
-    ("bibbia_aperta.json", "OTB"),
+    ("nta.json", "NTA"),
     ("riveduta_1927.json", "R27"),
     ("diodati.json", "DIO"),
     ("martini.json", "MAR"),

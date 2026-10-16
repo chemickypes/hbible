@@ -62,6 +62,6 @@ val SOFTWARE_CREDITS: List<CreditEntry> =
 /** Credits suffix appended to shared/copied verses of [translation] (empty when not required). */
 fun shareAttribution(translation: String): String =
   when (translation) {
-    "OTB" -> "Bibbia Aperta, CC BY-SA 4.0"
+    "NTA" -> "Nuova Traduzione Aperta (NTA), CC BY-SA 4.0"
     else -> TRANSLATION_NAMES[translation].orEmpty()
   }
