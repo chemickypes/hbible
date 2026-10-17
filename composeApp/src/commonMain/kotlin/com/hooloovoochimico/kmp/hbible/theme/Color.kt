@@ -132,3 +132,125 @@ val DarkSurfaceContainer = Color(0xFF27282B)
 val DarkSurfaceContainerHigh = Color(0xFF323336)
 val DarkSurfaceContainerHighest = Color(0xFF3D3E41)
 val DarkSurfaceVariant = Color(0xFF2C2D30)
+
+/*
+ * Palette "Blu": i colori delle pagine di revisione della NTA. Fondi grigio-azzurri freddi,
+ * blu inchiostro come colore primario, verde (secondario) e rosso rubrica (terziario) come
+ * accenti. Segue il sistema per chiaro/scuro; i colori dinamici non si applicano.
+ */
+
+// Blu inchiostro
+private val Ink40 = Color(0xFF1F4FA3)
+private val Ink80 = Color(0xFF8FB4FF)
+private val InkContainerLight = Color(0xFFE4ECFA)
+private val InkContainerDark = Color(0xFF1D2B45)
+private val OnInkContainerLight = Color(0xFF0F2F6B)
+private val OnInkContainerDark = Color(0xFFD6E2FF)
+private val OnInkDark = Color(0xFF0B2A5E)
+
+// Rosso rubrica
+private val Rubric40 = Color(0xFFB3261E)
+private val Rubric80 = Color(0xFFFF8A80)
+private val RubricContainerLight = Color(0xFFFBE7E5)
+private val RubricContainerDark = Color(0xFF3A1F1F)
+private val OnRubricContainerLight = Color(0xFF7A1712)
+private val OnRubricContainerDark = Color(0xFFFFDAD6)
+private val OnRubricDark = Color(0xFF5C0F0A)
+
+// Verde
+private val Ok40 = Color(0xFF1D7A46)
+private val Ok80 = Color(0xFF6FD39B)
+private val OkContainerLight = Color(0xFFE2F3E9)
+private val OkContainerDark = Color(0xFF173326)
+private val OnOkContainerLight = Color(0xFF0E4A29)
+private val OnOkContainerDark = Color(0xFFC7F0D8)
+private val OnOkDark = Color(0xFF0B3A22)
+
+// Neutri freddi
+private val BlueBgLight = Color(0xFFF6F7F9)
+private val BlueTextLight = Color(0xFF1B2230)
+private val BlueMutedLight = Color(0xFF5D6677)
+private val BlueBgDark = Color(0xFF12161D)
+private val BlueTextDark = Color(0xFFE6E9EF)
+private val BlueMutedDark = Color(0xFF9AA3B2)
+private val BlueLineDark = Color(0xFF2C3442)
+
+val BlueLightColorScheme =
+  lightColorScheme(
+    primary = Ink40,
+    onPrimary = Color.White,
+    primaryContainer = InkContainerLight,
+    onPrimaryContainer = OnInkContainerLight,
+    inversePrimary = Ink80,
+    tertiary = Rubric40,
+    onTertiary = Color.White,
+    tertiaryContainer = RubricContainerLight,
+    onTertiaryContainer = OnRubricContainerLight,
+    secondary = Ok40,
+    onSecondary = Color.White,
+    secondaryContainer = OkContainerLight,
+    onSecondaryContainer = OnOkContainerLight,
+    error = LightColorScheme.error,
+    onError = LightColorScheme.onError,
+    errorContainer = LightColorScheme.errorContainer,
+    onErrorContainer = LightColorScheme.onErrorContainer,
+    background = BlueBgLight,
+    onBackground = BlueTextLight,
+    surface = BlueBgLight,
+    onSurface = BlueTextLight,
+    surfaceVariant = Color(0xFFE6EAF0),
+    onSurfaceVariant = BlueMutedLight,
+    surfaceTint = Ink40,
+    inverseSurface = Color(0xFF2A303B),
+    inverseOnSurface = Color(0xFFEEF1F5),
+    outline = Color(0xFF8A93A3),
+    outlineVariant = Color(0xFFDFE3EA),
+    scrim = Color.Black,
+    surfaceBright = BlueBgLight,
+    surfaceDim = Color(0xFFE2E6EC),
+    surfaceContainerLowest = Color.White,
+    surfaceContainerLow = Color.White,
+    surfaceContainer = Color(0xFFEEF1F5),
+    surfaceContainerHigh = Color(0xFFE8ECF1),
+    surfaceContainerHighest = Color(0xFFE2E6EC),
+  )
+
+val BlueDarkColorScheme =
+  darkColorScheme(
+    primary = Ink80,
+    onPrimary = OnInkDark,
+    primaryContainer = InkContainerDark,
+    onPrimaryContainer = OnInkContainerDark,
+    inversePrimary = Ink40,
+    tertiary = Rubric80,
+    onTertiary = OnRubricDark,
+    tertiaryContainer = RubricContainerDark,
+    onTertiaryContainer = OnRubricContainerDark,
+    secondary = Ok80,
+    onSecondary = OnOkDark,
+    secondaryContainer = OkContainerDark,
+    onSecondaryContainer = OnOkContainerDark,
+    error = DarkColorScheme.error,
+    onError = DarkColorScheme.onError,
+    errorContainer = DarkColorScheme.errorContainer,
+    onErrorContainer = DarkColorScheme.onErrorContainer,
+    background = BlueBgDark,
+    onBackground = BlueTextDark,
+    surface = BlueBgDark,
+    onSurface = BlueTextDark,
+    surfaceVariant = BlueLineDark,
+    onSurfaceVariant = BlueMutedDark,
+    surfaceTint = Ink80,
+    inverseSurface = BlueTextDark,
+    inverseOnSurface = Color(0xFF2A303B),
+    outline = Color(0xFF6B7485),
+    outlineVariant = BlueLineDark,
+    scrim = Color.Black,
+    surfaceBright = Color(0xFF323B4A),
+    surfaceDim = BlueBgDark,
+    surfaceContainerLowest = Color(0xFF0E1117),
+    surfaceContainerLow = Color(0xFF1A2029),
+    surfaceContainer = Color(0xFF1E2530),
+    surfaceContainerHigh = Color(0xFF252D39),
+    surfaceContainerHighest = BlueLineDark,
+  )

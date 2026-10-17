@@ -35,12 +35,14 @@ fun HBibleTheme(
 ) {
   val darkTheme =
     when (themeMode) {
-      ThemeMode.SYSTEM -> isSystemInDarkTheme()
+      ThemeMode.SYSTEM, ThemeMode.BLUE -> isSystemInDarkTheme()
       ThemeMode.LIGHT -> false
       ThemeMode.DARK -> true
     }
   val colorScheme =
     when {
+      // Il tema Blu ha colori propri: i colori dinamici non si applicano.
+      themeMode == ThemeMode.BLUE -> if (darkTheme) BlueDarkColorScheme else BlueLightColorScheme
       // Material You dark schemes are near-black: soften them. The app palette
       // already has warm, lifted dark surfaces.
       darkTheme -> {
