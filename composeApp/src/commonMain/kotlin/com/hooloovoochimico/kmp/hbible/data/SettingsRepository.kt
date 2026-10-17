@@ -11,6 +11,8 @@ enum class ThemeMode {
   SYSTEM,
   LIGHT,
   DARK,
+  // Palette blu inchiostro delle pagine di revisione NTA; segue il sistema per chiaro/scuro.
+  BLUE,
 }
 
 fun ThemeMode.label(): String =
@@ -18,6 +20,7 @@ fun ThemeMode.label(): String =
     ThemeMode.SYSTEM -> "Sistema"
     ThemeMode.LIGHT -> "Chiaro"
     ThemeMode.DARK -> "Scuro"
+    ThemeMode.BLUE -> "Blu"
   }
 
 /** Reading text size for Bible verses. */

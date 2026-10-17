@@ -249,7 +249,10 @@ private fun SettingsList(
                 "Colori dinamici",
                 checked = state.dynamicColor,
                 onCheckedChange = viewModel::setDynamicColor,
-                subtitle = "Usa i colori dello sfondo del telefono",
+                subtitle =
+                  if (state.themeMode == ThemeMode.BLUE) "Non si applica al tema Blu"
+                  else "Usa i colori dello sfondo del telefono",
+                enabled = state.themeMode != ThemeMode.BLUE,
               )
             }
           }

@@ -158,14 +158,20 @@ fun SwitchItem(
   onCheckedChange: (Boolean) -> Unit,
   modifier: Modifier = Modifier,
   subtitle: String? = null,
+  enabled: Boolean = true,
 ) {
   SettingsRow(
     icon,
     title,
     subtitle,
-    modifier.toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange),
+    modifier.toggleable(
+      value = checked,
+      enabled = enabled,
+      role = Role.Switch,
+      onValueChange = onCheckedChange,
+    ),
   ) {
-    Switch(checked = checked, onCheckedChange = null)
+    Switch(checked = checked, onCheckedChange = null, enabled = enabled)
   }
 }
 
