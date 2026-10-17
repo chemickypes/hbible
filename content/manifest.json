@@ -1,14 +1,14 @@
 {
-  "version": "20261017T170300",
-  "generatedAt": "2026-10-17T17:03:00.010Z",
+  "version": "20261017T191322",
+  "generatedAt": "2026-10-17T19:13:22.926Z",
   "formats": {
     "originals": 2
   },
   "minApp": 1000010,
   "packages": {
     "bible/NTA.json": {
-      "hash": "cc8203fadff5b88f638b34058dcde775cff59851d1d36efd93718d01a5e817c4",
-      "size": 4925385
+      "hash": "7cc024cab7b2f0fd8d8a55ab6a5dacc1aaf2f90321da40e05a0e2d04d8d46c0f",
+      "size": 4927043
     },
     "bible/R27.json": {
       "hash": "c7a5df9dbf258f021cf0c8258aee20266c087a3fdb47524f429109987b5329f7",
@@ -283,8 +283,8 @@
       "size": 28762
     },
     "originals/66.json": {
-      "hash": "f36065dc0ea550e3c85966beb2b479d2328c584f2fb9b1874f53ead8084ea85f",
-      "size": 540923
+      "hash": "dd34b56919d29b8cf034e44924165b92afdec96bcc52f842d8872adddd15262f",
+      "size": 540907
     },
     "lexicon.json": {
       "hash": "86f303a9d31f9b8f0bc21c6cf027bddad6c3db93f7d11688f57dba839956c8af",
