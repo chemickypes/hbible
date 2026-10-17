@@ -14,7 +14,7 @@ import kotlin.test.assertTrue
 
 class ContentDownloaderTest {
   private val base = "https://example.org/hbible"
-  private val otb = "OTB v2".encodeToByteArray()
+  private val otb = "NTA v2".encodeToByteArray()
   private val otbHash = Sha256.hexOf(otb)
 
   private val manifest =
@@ -24,7 +24,7 @@ class ContentDownloaderTest {
       minApp = 2,
       packages =
         mapOf(
-          "bible/OTB.json" to PackageInfo(otbHash),
+          "bible/NTA.json" to PackageInfo(otbHash),
           "originals/01.json" to PackageInfo("o1"),
           "lexicon.json" to PackageInfo("lx"),
           "book_info.json" to PackageInfo("bi"),
@@ -40,9 +40,9 @@ class ContentDownloaderTest {
 
   @Test
   fun onlyChangedSupportedPackages_inImportOrder() {
-    val local = mapOf("bible/OTB.json" to "old", "originals/01.json" to "o1")
+    val local = mapOf("bible/NTA.json" to "old", "originals/01.json" to "o1")
     // future.json has no app-side consumer: never downloaded.
-    assertEquals(listOf("bible/OTB.json", "book_info.json", "lexicon.json"), manifest.packagesToApply(local))
+    assertEquals(listOf("bible/NTA.json", "book_info.json", "lexicon.json"), manifest.packagesToApply(local))
   }
 
   @Test
@@ -84,7 +84,7 @@ class ContentDownloaderTest {
       calls++
       if (calls < 3) respond("", HttpStatusCode.ServiceUnavailable) else respond(otb)
     }
-    val bytes = ContentDownloader(HttpClient(engine), retryDelayMs = 0).pkg(base, "bible/OTB.json", otbHash)
+    val bytes = ContentDownloader(HttpClient(engine), retryDelayMs = 0).pkg(base, "bible/NTA.json", otbHash)
     assertContentEquals(otb, bytes)
     assertEquals(3, calls)
   }
@@ -97,7 +97,7 @@ class ContentDownloaderTest {
       respond("corrotto")
     }
     assertFailsWith<IllegalStateException> {
-      ContentDownloader(HttpClient(engine), retryDelayMs = 0).pkg(base, "bible/OTB.json", otbHash)
+      ContentDownloader(HttpClient(engine), retryDelayMs = 0).pkg(base, "bible/NTA.json", otbHash)
     }
     assertEquals(3, calls)
   }

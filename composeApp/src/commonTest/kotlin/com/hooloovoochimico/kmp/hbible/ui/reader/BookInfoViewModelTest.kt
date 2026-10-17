@@ -52,7 +52,7 @@ class BookInfoViewModelTest {
     val info = BookInfoEntity(book = 1, theme = "Le origini", contextText = "Genesi apre la Torà…", keyVerse = "Gen 1:1")
     val fetched = mutableListOf<String>()
     val vm = viewModel(FakeBibleRepository(bookInfos = listOf(info)), fetched)
-    vm.open(1, "OTB")
+    vm.open(1, "NTA")
     val state = vm.state.first { it.info != null }
     assertEquals(info, state.info)
     assertEquals("In principio Dio creò i cieli e la terra.", state.keyVerse?.text)
@@ -64,7 +64,7 @@ class BookInfoViewModelTest {
   fun open_withoutInfo_triesDownloadThenUnavailable() = runTest {
     val fetched = mutableListOf<String>()
     val vm = viewModel(FakeBibleRepository(), fetched)
-    vm.open(1, "OTB")
+    vm.open(1, "NTA")
     val state = vm.state.first { it.unavailable }
     assertEquals(listOf(BOOK_INFO_PACKAGE), fetched)
     assertFalse(state.loading)

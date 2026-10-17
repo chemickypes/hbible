@@ -95,7 +95,7 @@ enum class SettingsPage(val title: String) {
 /** Width of the settings list next to the sub-page pane on wide windows. */
 private val ListPaneWidth = 400.dp
 
-/** Psalm 23:1 (Bibbia Aperta) as text-size preview. */
+/** Psalm 23:1 (NTA) as text-size preview. */
 private const val PREVIEW_VERSE = "Il Signore è il mio pastore, nulla mi mancherà."
 
 /** Settings tab (R05): grouped list, sub-pages for versions, credits and developer options. */
@@ -223,7 +223,7 @@ private fun SettingsList(
                 Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
                   Text(PREVIEW_VERSE, style = ScriptureTypography.reader(state.readerFontSize))
                   Text(
-                    "Salmo 23:1 · Bibbia Aperta",
+                    "Salmo 23:1 · NTA",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp),

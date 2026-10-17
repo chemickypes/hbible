@@ -25,8 +25,8 @@ class CreditsTest {
 
   @Test
   fun defaultIsTheOpenBibleAndRemovedTranslationsFallBack() {
-    assertEquals("OTB", DEFAULT_TRANSLATION)
-    assertEquals("OTB", TRANSLATION_NAMES.keys.first())
+    assertEquals("NTA", DEFAULT_TRANSLATION)
+    assertEquals("NTA", TRANSLATION_NAMES.keys.first())
     assertEquals(DEFAULT_TRANSLATION, bundledTranslationOrDefault("NR"))
     assertEquals("R27", bundledTranslationOrDefault("R27"))
     assertEquals(DEFAULT_TRANSLATION, bundledTranslationOrDefault(null))
@@ -34,6 +34,6 @@ class CreditsTest {
 
   @Test
   fun sharedOpenBibleVersesCarryTheLicense() {
-    assertTrue(shareAttribution("OTB").contains("CC BY-SA 4.0"))
+    assertTrue(shareAttribution("NTA").contains("CC BY-SA 4.0"))
   }
 }
