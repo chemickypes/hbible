@@ -1,14 +1,14 @@
 {
-  "version": "20261019T020958",
-  "generatedAt": "2026-10-19T02:09:58.242Z",
+  "version": "20261019T072343",
+  "generatedAt": "2026-10-19T07:23:43.032Z",
   "formats": {
     "originals": 2
   },
   "minApp": 1000010,
   "packages": {
     "bible/NTA.json": {
-      "hash": "3578f7aae230c05498bac3f9e6e5d9a90d0dd4f82df813b1a35da788a6f062aa",
-      "size": 4942304
+      "hash": "26fe144dffd6275d94d71ab9fda7a039fcdbfe27117964feb2fe4e7dd4f89b97",
+      "size": 4942134
     },
     "bible/R27.json": {
       "hash": "c7a5df9dbf258f021cf0c8258aee20266c087a3fdb47524f429109987b5329f7",
@@ -27,23 +27,23 @@
       "size": 1399284
     },
     "originals/02.json": {
-      "hash": "69dba8ba34b46ef59193e0376b3d8bbfb7aef15a8841430b57d033872866e52b",
-      "size": 1149869
+      "hash": "ed7ef473d80a64c59f786aa21b24ff718998073ae20dd86e9d5f9a5d27251da2",
+      "size": 1149866
     },
     "originals/03.json": {
-      "hash": "6ea4b08a9e0624642ae163498b86ea8500a89b06352489550d623497e4fdfcd8",
-      "size": 828263
+      "hash": "3e3518604884cc966e285401c5046ff5c43cde4d1ed0bc9292e90b896109bb55",
+      "size": 828256
     },
     "originals/04.json": {
-      "hash": "bd8ef870b413cc9601b1b80c47e58b1a3f23600295b30a9cc48c247a2ba041e6",
-      "size": 1155044
+      "hash": "8f001fe9851a73a35856d5daa67e8ec5ae462c409de390c0b919743c7f4bd152",
+      "size": 1155030
     },
     "originals/05.json": {
-      "hash": "798f51b834df03ee76c1b7d54e15723395dcf3f5b888f912f8fce25d9f8a1115",
-      "size": 980062
+      "hash": "7bbcb0866d83f298254769e4dc671f6c4e631edf922e9d3f843cfc4cb13523c7",
+      "size": 980061
     },
     "originals/06.json": {
-      "hash": "9f5fa74800d27dcc539a002692af40dd6f052b465def78967986218fd6d97ce5",
+      "hash": "bc1884a99ee955981296bdfee705a013216ae8819c2b6e38852d0b09ba3b375f",
       "size": 689526
     },
     "originals/07.json": {
@@ -55,7 +55,7 @@
       "size": 88611
     },
     "originals/09.json": {
-      "hash": "977d3dbef5f631be1c2407c6cb3351cd1280dd6307baf97e12f9ed0c34f18fb3",
+      "hash": "76a80a3bec320973b4e9a4273dfd35a61c652a42d3e3a833679d411ecb4ba716",
       "size": 892797
     },
     "originals/10.json": {
@@ -63,19 +63,19 @@
       "size": 742262
     },
     "originals/11.json": {
-      "hash": "9a73cfe6a65d883fb7ee0aa54ed98a0f13ebc60bacbcad0639a06b7c68c06768",
+      "hash": "2155277c0bbf5bcbe7dc15bb1c517c59a5a58adeefba709921a8a6ddf820eb6e",
       "size": 883963
     },
     "originals/12.json": {
-      "hash": "1f8de296db6067b453cb30177e2df606ce184ae6c2f6f10176ebcdc1c0d09e57",
+      "hash": "b01dd7c05fc6e084ca95845926e5e4f873dcd0486f2ba26e5bbac7c84b57c08f",
       "size": 829262
     },
     "originals/13.json": {
-      "hash": "dc7e643f2457ba9491d592b2d4f09076e7204aacd898e17f136113feb5a73d42",
-      "size": 766670
+      "hash": "76722b63637adabb7fd74788378a80fef21ea8e67d6f957d362fe7aa913855e2",
+      "size": 766669
     },
     "originals/14.json": {
-      "hash": "d8f2607bc9ab4c35fd63706c335277966282b743d2ca2e93a0327de639e86d74",
+      "hash": "7760c4b99f383d377605221b73a7e8c1c2ac708aa18323c405683781f6628003",
       "size": 928325
     },
     "originals/15.json": {
@@ -87,19 +87,19 @@
       "size": 386931
     },
     "originals/17.json": {
-      "hash": "980ccb6d98c66d3ee4c8c804822de312e4fb64ba575dbbc68a6d4ce4b2b0a4b3",
-      "size": 209091
+      "hash": "07b1f533251e40937f049e7fdf08d4b3791b0bc1f4fa7d94fc16a6db495bd0a2",
+      "size": 209093
     },
     "originals/18.json": {
       "hash": "4c9504c179ce6fab29418544dd30b4aabc1bc4757b2cafcc685e472a4496a515",
       "size": 642103
     },
     "originals/19.json": {
-      "hash": "6ea51968e16bb3c2bba50b7548a38e21aa7071cc184d72b5a82776539a7c25f0",
+      "hash": "75d70d527995ed1624bc596854f9ac85d3ba9c97fc9542d7eef1cbc139e155c5",
       "size": 1500134
     },
     "originals/20.json": {
-      "hash": "7cf669b0509294b52464c4ab1180157221f051a84e40bf6e4c9eefab89a4d550",
+      "hash": "9ac9b4dcd6c0ede808c5d3612f323bc96a16ca891697e6f813fb279ad8c5434f",
       "size": 540726
     },
     "originals/21.json": {
@@ -123,8 +123,8 @@
       "size": 117233
     },
     "originals/26.json": {
-      "hash": "119face25862f9794d6412978e2376ac1a556a65f89832c9ff2d221a4bf59ef8",
-      "size": 1328127
+      "hash": "82d7a47b92418709d049410b7d47f632fa576b6c047d86db75fab0886ac3ecab",
+      "size": 1328126
     },
     "originals/27.json": {
       "hash": "5b563c98dbae6463cef4c7be935b2a12445bc974b4c78ae07fe4a8fe884d9f98",
