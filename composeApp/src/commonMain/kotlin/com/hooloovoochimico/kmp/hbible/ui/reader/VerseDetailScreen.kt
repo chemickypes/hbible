@@ -52,6 +52,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -526,8 +527,11 @@ fun VerseDetailScreen(
                      bookName = bookName,
                      loadVerse = occurrencesTextLoader,
                      onOpenReference = onOpenReference,
-                     color = MaterialTheme.colorScheme.secondaryContainer,
-                     contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                     // Velatura dell'accento sopra il fondo della scheda: secondaryContainer
+                     // al buio è più scuro della scheda (verde su grigio-blu senza contrasto).
+                     color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.16f)
+                       .compositeOver(MaterialTheme.colorScheme.surfaceContainerHigh),
+                     contentColor = MaterialTheme.colorScheme.onSurface,
                      onOpenDetail = onOpenDetail,
                    )
                  }
