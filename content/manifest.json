@@ -1,6 +1,6 @@
 {
-  "version": "20261019T072343",
-  "generatedAt": "2026-10-19T07:23:43.032Z",
+  "version": "20261019T122724",
+  "generatedAt": "2026-10-19T12:27:24.462Z",
   "formats": {
     "originals": 2
   },
@@ -23,84 +23,84 @@
       "size": 4969935
     },
     "originals/01.json": {
-      "hash": "f67e14c93f0064d60a24f1b25911fbf282af566a8579a64b7c29d56c9e63a668",
-      "size": 1399284
+      "hash": "44777f9cb7709fe08125152af117be343b8c0e653977a53be199ded1858c6f68",
+      "size": 1399337
     },
     "originals/02.json": {
-      "hash": "ed7ef473d80a64c59f786aa21b24ff718998073ae20dd86e9d5f9a5d27251da2",
-      "size": 1149866
+      "hash": "959f4f09e5d89ee73f52b2c2e9a962b2c03a38792e6dd9f3f7f18661a2868602",
+      "size": 1149766
     },
     "originals/03.json": {
-      "hash": "3e3518604884cc966e285401c5046ff5c43cde4d1ed0bc9292e90b896109bb55",
-      "size": 828256
+      "hash": "829ccb7a4fd6eec06e0bb4d85f7be117bf4a54aaa9ceb3ef712e7cf7517d5eac",
+      "size": 828160
     },
     "originals/04.json": {
-      "hash": "8f001fe9851a73a35856d5daa67e8ec5ae462c409de390c0b919743c7f4bd152",
-      "size": 1155030
+      "hash": "702bd2634a46ad0c678190e30cc832f4b30b746df9da853f460ff9bb9dd15f8a",
+      "size": 1154911
     },
     "originals/05.json": {
-      "hash": "7bbcb0866d83f298254769e4dc671f6c4e631edf922e9d3f843cfc4cb13523c7",
-      "size": 980061
+      "hash": "2dc08f0dd17197d1267cea9158022a324fe7e0ac2c97f188c0ca47c078d8ee31",
+      "size": 980056
     },
     "originals/06.json": {
-      "hash": "bc1884a99ee955981296bdfee705a013216ae8819c2b6e38852d0b09ba3b375f",
-      "size": 689526
+      "hash": "6cb82540cd3cd29dbd521636dfa9db347d2455e7ac311e84198ab8350f84bcd1",
+      "size": 689531
     },
     "originals/07.json": {
-      "hash": "b6764ecf6fda5ebe3e8b71f34a2a67b7a4c977d6190e306d05921230d4b2d092",
-      "size": 671996
+      "hash": "814bdd33d9e118280290b72c14dce8cf0db5f99e7ad0117e1f0e13765607994c",
+      "size": 671997
     },
     "originals/08.json": {
       "hash": "c5a4a8bd0d684d78ccc982d92566067f30293056cd038b58260d1f3e9f307107",
       "size": 88611
     },
     "originals/09.json": {
-      "hash": "76a80a3bec320973b4e9a4273dfd35a61c652a42d3e3a833679d411ecb4ba716",
-      "size": 892797
+      "hash": "00879bbdcbcd9117004025856255412a43c7b45169a46d73a96d1d146deeb146",
+      "size": 892786
     },
     "originals/10.json": {
-      "hash": "e1ecc025763c6a6fa49e3fbf506e7e77b9c44e4bfb9aacd4f0c160f0dbb880b4",
-      "size": 742262
+      "hash": "2362eed77d10e1a5a348f25a1916170cc684d20e6a29bca161658494d14c6ecb",
+      "size": 742261
     },
     "originals/11.json": {
-      "hash": "2155277c0bbf5bcbe7dc15bb1c517c59a5a58adeefba709921a8a6ddf820eb6e",
-      "size": 883963
+      "hash": "1e1cf541be74a510e3d9287713778a133dcca098c4c5ca1e9552e0f8614e2508",
+      "size": 883952
     },
     "originals/12.json": {
-      "hash": "b01dd7c05fc6e084ca95845926e5e4f873dcd0486f2ba26e5bbac7c84b57c08f",
-      "size": 829262
+      "hash": "e58ce0462109c0a71b4989dc6cc6b33158d21b1158020b8e45ca5fdc2f60c7e6",
+      "size": 829263
     },
     "originals/13.json": {
-      "hash": "76722b63637adabb7fd74788378a80fef21ea8e67d6f957d362fe7aa913855e2",
-      "size": 766669
+      "hash": "3aa7a37f8503d988a94b2a5378114f10a2537399a51525c80254a475c1f3ba4d",
+      "size": 766653
     },
     "originals/14.json": {
-      "hash": "7760c4b99f383d377605221b73a7e8c1c2ac708aa18323c405683781f6628003",
+      "hash": "0fdb24ba4098c08fa6b336479f502ef2cc9fc15b9759073910ca95e3a38f6e45",
       "size": 928325
     },
     "originals/15.json": {
-      "hash": "738c4a6ab78c34251791e92622f29ff7703e9dbdf78807898cbb03b44992bf53",
-      "size": 270072
+      "hash": "c156b8fdfaec116f127dce8b21e99bc618d65b04ee57fa650996bca511c41f56",
+      "size": 270070
     },
     "originals/16.json": {
-      "hash": "6b6930584ebd1633c1084fea8d5e46d57fd98fce21cf69e665d3b5c235ac4f35",
-      "size": 386931
+      "hash": "88761b34d3c7165713e74a24f9e6a3c72406db0233564f4315b66f2b987082d5",
+      "size": 386930
     },
     "originals/17.json": {
-      "hash": "07b1f533251e40937f049e7fdf08d4b3791b0bc1f4fa7d94fc16a6db495bd0a2",
-      "size": 209093
+      "hash": "e5eb86627c89e23ca9e7005f855f6b91b7e6aa7386564ca5ea8ef307c3bbe51c",
+      "size": 209091
     },
     "originals/18.json": {
       "hash": "4c9504c179ce6fab29418544dd30b4aabc1bc4757b2cafcc685e472a4496a515",
       "size": 642103
     },
     "originals/19.json": {
-      "hash": "75d70d527995ed1624bc596854f9ac85d3ba9c97fc9542d7eef1cbc139e155c5",
-      "size": 1500134
+      "hash": "d3cbdc4e53b9647c3ad1c8f7260553b96852108ce5a16fce715429d954eccc65",
+      "size": 1500126
     },
     "originals/20.json": {
-      "hash": "9ac9b4dcd6c0ede808c5d3612f323bc96a16ca891697e6f813fb279ad8c5434f",
-      "size": 540726
+      "hash": "ec072a86a20e6f36d24048fe074fbd2f1f97f029aa9ea4d0f516d3320373f5a5",
+      "size": 540721
     },
     "originals/21.json": {
       "hash": "9d19a4ef64c157bca95f39db87ecb02e7d281ce560f267e35af28002c246c5b6",
@@ -111,20 +111,20 @@
       "size": 93027
     },
     "originals/23.json": {
-      "hash": "3c8766bd53bc5cc7b9bd8af8cebe3c743c440a5ba9777a34091f17bab0d7bc88",
-      "size": 1219887
+      "hash": "f6c1ace61b92bc0a369385f42d55618c3a67f6a049896c0bb7e757d289622e63",
+      "size": 1219890
     },
     "originals/24.json": {
-      "hash": "a871f4f2e9dffa5e6fe237890003aaff4ee59526177261f36200e3082a228bef",
-      "size": 1497641
+      "hash": "df8027865402274e55d2d3cbad61d8f830a7c4384770bbb2fc9865b155b4b9cb",
+      "size": 1497642
     },
     "originals/25.json": {
       "hash": "66effc7e0d84bc47ec4cd4e7bc41549e84db377e126a4108ce3c38a3deb18554",
       "size": 117233
     },
     "originals/26.json": {
-      "hash": "82d7a47b92418709d049410b7d47f632fa576b6c047d86db75fab0886ac3ecab",
-      "size": 1328126
+      "hash": "93f59b7f26741ac1c008cc727cd215235c9809f0e42aceb7ba671b459d6e6a99",
+      "size": 1328127
     },
     "originals/27.json": {
       "hash": "5b563c98dbae6463cef4c7be935b2a12445bc974b4c78ae07fe4a8fe884d9f98",
@@ -151,7 +151,7 @@
       "size": 47193
     },
     "originals/33.json": {
-      "hash": "54587487d8b27829ed9d8618c1de5d955fcc8241f1230476b62d2e6e9442e47d",
+      "hash": "3bf97de0b94100163f4cef4a66c880d0a1aba726d3a54adffdf044a3ef649c9f",
       "size": 100949
     },
     "originals/34.json": {
@@ -179,28 +179,28 @@
       "size": 61053
     },
     "originals/40.json": {
-      "hash": "8f39efd9f55b7aa00514f56bcdd016624055874bcfbfa0a253362513212da0e1",
-      "size": 1064422
+      "hash": "f392c5eb46891d769e194b52bb3c079b75bffd3bcdb2689239fe98f2eafe81c4",
+      "size": 1064424
     },
     "originals/41.json": {
-      "hash": "d74c7bf7555725620a2a3130e1713a40c544e8cd27bc4f8c74458dc275cc51a8",
-      "size": 660958
+      "hash": "e8b8e868fd68e8c004abb48855dc6b6e8b90da4329b3f111c7206820d6b3eb7f",
+      "size": 660959
     },
     "originals/42.json": {
-      "hash": "49da43a9833abe0165bff13e0a5de1e18624bd3385ff64ac35bd00afb7e2208e",
-      "size": 1137319
+      "hash": "02cefc56e8b093939703fc7a171c4c2c800712e5bbbae6e51bf81329298c233d",
+      "size": 1137322
     },
     "originals/43.json": {
       "hash": "8cad7d81087c5d082878948c982c3b738a9b0659bac475bfb153b20c5f8ecf17",
       "size": 879225
     },
     "originals/44.json": {
-      "hash": "b84dc9d138098253d32fda4ece2c53b5757493636d210903271ac025f14476f8",
-      "size": 1090106
+      "hash": "24c535e7e52c56eb96c67a5adf1f6b70ee3e5b22c4e1f1727661efe36cd9bf3c",
+      "size": 1090107
     },
     "originals/45.json": {
-      "hash": "6b3811a28644c32fe4f61496036c60ced121f423a562036847882a224a2fce1b",
-      "size": 419608
+      "hash": "2d991c8e17ea86d3cbad160d6a2c241cecc8a8a87ef54d80cbce8a98e382c01c",
+      "size": 419613
     },
     "originals/46.json": {
       "hash": "bb22766f10a27ca8790fbd917cb409ccb6f3c57c973c6ca164f22f00cc601573",
@@ -211,8 +211,8 @@
       "size": 266390
     },
     "originals/48.json": {
-      "hash": "4356e4527f3b4f28c202da5d25affd5c80281e0485118b25bb9772fba9d21828",
-      "size": 134940
+      "hash": "e228adf99a0452db56d139f7b86b52581fa36cecb30cae3d792f0626f19a406b",
+      "size": 134941
     },
     "originals/49.json": {
       "hash": "673026f3e74d00eb77d489abfcb83d61b66a9bdf858b7cbab1f7eb01a6d3098a",
@@ -251,8 +251,8 @@
       "size": 20216
     },
     "originals/58.json": {
-      "hash": "f29c6f7ec6d0bf90d7bdadcdcf9166a7dfd2fc3534e51880251c35170827641d",
-      "size": 305152
+      "hash": "a290ae5c021fd5e00468baf4e73398786777ceb8931aac117500cbb50c526fbb",
+      "size": 305154
     },
     "originals/59.json": {
       "hash": "42e2ad6add51cd094e7cd2c0c6c33581aade6d5a41aadef5cb14d6988fe054bb",
@@ -287,8 +287,8 @@
       "size": 540907
     },
     "lexicon.json": {
-      "hash": "86f303a9d31f9b8f0bc21c6cf027bddad6c3db93f7d11688f57dba839956c8af",
-      "size": 3217615
+      "hash": "6cd5e8b5c173ae143145021c963082e4e80a5dbe40da304f02346f3afa95d774",
+      "size": 3217652
     },
     "crossrefs.json": {
       "hash": "dd88c209ea6b0b49628f05a6a10dfc032ead008e31b7259ea20af5608c576580",
