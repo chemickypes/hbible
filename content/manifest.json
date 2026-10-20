@@ -1,14 +1,14 @@
 {
-  "version": "20261019T122724",
-  "generatedAt": "2026-10-19T12:27:24.462Z",
+  "version": "20261020T062517",
+  "generatedAt": "2026-10-20T06:25:17.492Z",
   "formats": {
     "originals": 2
   },
   "minApp": 1000010,
   "packages": {
     "bible/NTA.json": {
-      "hash": "26fe144dffd6275d94d71ab9fda7a039fcdbfe27117964feb2fe4e7dd4f89b97",
-      "size": 4942134
+      "hash": "50626dc1535011a6ba8987d3c8e1ca9fe1ba7bd2ac03bb24b4c3927d07c82d58",
+      "size": 4953344
     },
     "bible/R27.json": {
       "hash": "c7a5df9dbf258f021cf0c8258aee20266c087a3fdb47524f429109987b5329f7",
@@ -39,8 +39,8 @@
       "size": 1154911
     },
     "originals/05.json": {
-      "hash": "2dc08f0dd17197d1267cea9158022a324fe7e0ac2c97f188c0ca47c078d8ee31",
-      "size": 980056
+      "hash": "1a44646559ea02490c52457340a3856ba0b811f61c418c1bc8c52b8eede7a1e5",
+      "size": 979988
     },
     "originals/06.json": {
       "hash": "6cb82540cd3cd29dbd521636dfa9db347d2455e7ac311e84198ab8350f84bcd1",
@@ -99,8 +99,8 @@
       "size": 1500126
     },
     "originals/20.json": {
-      "hash": "ec072a86a20e6f36d24048fe074fbd2f1f97f029aa9ea4d0f516d3320373f5a5",
-      "size": 540721
+      "hash": "1fa7d98e1d5098439a6c5fa7bc63fccef7ab6fc88015c916b72b7ffc42e11c90",
+      "size": 540616
     },
     "originals/21.json": {
       "hash": "9d19a4ef64c157bca95f39db87ecb02e7d281ce560f267e35af28002c246c5b6",
@@ -111,8 +111,8 @@
       "size": 93027
     },
     "originals/23.json": {
-      "hash": "f6c1ace61b92bc0a369385f42d55618c3a67f6a049896c0bb7e757d289622e63",
-      "size": 1219890
+      "hash": "3672d1b1192847d2ce4f98d8b49f5555a9825e906a0d0527b67067787f6e5adb",
+      "size": 1219840
     },
     "originals/24.json": {
       "hash": "df8027865402274e55d2d3cbad61d8f830a7c4384770bbb2fc9865b155b4b9cb",
