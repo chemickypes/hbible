@@ -1,14 +1,14 @@
 {
-  "version": "20261022T061845",
-  "generatedAt": "2026-10-22T06:18:45.210Z",
+  "version": "20261022T075127",
+  "generatedAt": "2026-10-22T07:51:27.256Z",
   "formats": {
     "originals": 2
   },
   "minApp": 1000010,
   "packages": {
     "bible/NTA.json": {
-      "hash": "c4da0fb160cb9cb2bd29f24b7bf8a4ac1854c1dd4fc3ec471a30a3391b2684fd",
-      "size": 4962897
+      "hash": "7927216ef6301d9b1636de31224141eca828372db8d34112d6cea0836652af4a",
+      "size": 4962864
     },
     "bible/R27.json": {
       "hash": "c7a5df9dbf258f021cf0c8258aee20266c087a3fdb47524f429109987b5329f7",
@@ -67,8 +67,8 @@
       "size": 883952
     },
     "originals/12.json": {
-      "hash": "e58ce0462109c0a71b4989dc6cc6b33158d21b1158020b8e45ca5fdc2f60c7e6",
-      "size": 829263
+      "hash": "6f8092f26aed58ae1670b95e3c9b4caf9ae800a30394eca59db162be25ea9b48",
+      "size": 829257
     },
     "originals/13.json": {
       "hash": "3aa7a37f8503d988a94b2a5378114f10a2537399a51525c80254a475c1f3ba4d",
@@ -111,19 +111,19 @@
       "size": 93027
     },
     "originals/23.json": {
-      "hash": "3672d1b1192847d2ce4f98d8b49f5555a9825e906a0d0527b67067787f6e5adb",
+      "hash": "3b937c8d166191e296d3ed0da5b4e52523dd2dc23180e7d5fcc4319dc9cd2315",
       "size": 1219840
     },
     "originals/24.json": {
-      "hash": "18850a2d4f462cf4e1572a96488365bb3db7139fffa7b1a7575079b05d7f5e78",
-      "size": 1497420
+      "hash": "743f143323e3155a69e2cac8ba181c5eebaeda48f0a471d26daeff1d8eddb133",
+      "size": 1497418
     },
     "originals/25.json": {
       "hash": "66effc7e0d84bc47ec4cd4e7bc41549e84db377e126a4108ce3c38a3deb18554",
       "size": 117233
     },
     "originals/26.json": {
-      "hash": "93f59b7f26741ac1c008cc727cd215235c9809f0e42aceb7ba671b459d6e6a99",
+      "hash": "934d1be49bb34810aa884d84d1d6038702cac400cffd4e04a06ad8d0225e25fb",
       "size": 1328127
     },
     "originals/27.json": {
@@ -171,11 +171,11 @@
       "size": 40647
     },
     "originals/38.json": {
-      "hash": "773c7908a54d509434ae3e3a024581f8bccc2d26a09915133ac6993ce6a4ba50",
+      "hash": "93071739b4d1ad7f31f364f906b76c9375ab49527cb433e472b1ffb543719448",
       "size": 217262
     },
     "originals/39.json": {
-      "hash": "396ac1444863b28e4a064db4aa5fb25a26d7704f487bbb7b559307c76fd02a64",
+      "hash": "5089c673f3e5cd21b2155595d2757faa901695a801d091c0467b901b4d72d3e9",
       "size": 61053
     },
     "originals/40.json": {
