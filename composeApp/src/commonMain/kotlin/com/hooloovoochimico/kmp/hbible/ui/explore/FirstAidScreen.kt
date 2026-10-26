@@ -36,11 +36,12 @@ import com.hooloovoochimico.kmp.hbible.ui.common.HBibleCard
 import com.hooloovoochimico.kmp.hbible.ui.common.TonalIcon
 
 /**
- * Voce del "Pronto soccorso": riflessione scritta nel CMS e versetti da leggere
- * nella traduzione del lettore; un tocco sul versetto apre il passo.
+ * Voce del "Pronto soccorso" o di un "Temi": riflessione scritta nel CMS e
+ * versetti da leggere nella traduzione del lettore; un tocco sul versetto apre il passo.
  */
 @Composable
 fun FirstAidScreen(
+  section: CuratedSection,
   books: List<BookEntity>,
   onGoToVerse: (Int, Int, Int) -> Unit,
   onSaveToNote: (title: String, body: String) -> Unit,
@@ -52,6 +53,10 @@ fun FirstAidScreen(
   val state by viewModel.state.collectAsStateWithLifecycle()
   val bookNames = books.associate { it.n to it.name }
   val colors = MaterialTheme.colorScheme
+  val brush = if (section == CuratedSection.TOPICS) topicsBrush() else firstAidBrush()
+  val icon = if (section == CuratedSection.TOPICS) AppIcons.Topics else AppIcons.Favorite
+  val kicker = if (section == CuratedSection.TOPICS) "TEMA" else "PRONTO SOCCORSO"
+  val noteLabel = if (section == CuratedSection.TOPICS) "Tema" else "Pronto soccorso"
 
   Column(
     modifier
@@ -75,13 +80,13 @@ fun FirstAidScreen(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
                 .clip(MaterialTheme.shapes.extraLarge)
-                .background(firstAidBrush())
+                .background(brush)
                 .padding(20.dp),
             ) {
               Row(verticalAlignment = Alignment.CenterVertically) {
-                TonalIcon(AppIcons.Favorite, size = 32.dp, container = colors.secondary, content = colors.onSecondary)
+                TonalIcon(icon, size = 32.dp, container = colors.secondary, content = colors.onSecondary)
                 Text(
-                  "PRONTO SOCCORSO",
+                  kicker,
                   style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.5.sp),
                   color = colors.onSecondaryContainer,
                   modifier = Modifier.padding(start = 10.dp),
@@ -112,7 +117,7 @@ fun FirstAidScreen(
               Text("Riflessione", style = MaterialTheme.typography.labelLarge, color = colors.primary)
               Text(entry.body, style = ScriptureTypography.intro, modifier = Modifier.padding(top = 8.dp))
               TextButton(
-                onClick = { onSaveToNote("Pronto soccorso · ${entry.title}", entry.body) },
+                onClick = { onSaveToNote("$noteLabel · ${entry.title}", entry.body) },
                 modifier = Modifier.padding(top = 4.dp),
               ) {
                 Icon(AppIcons.Add, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -153,7 +158,12 @@ fun FirstAidScreen(
         EmptyState(
           AppIcons.Favorite,
           "Voce non disponibile",
-          hint = "Collegati a internet per scaricare le voci del pronto soccorso.",
+          hint =
+            if (section == CuratedSection.TOPICS) {
+              "Collegati a internet per scaricare i temi."
+            } else {
+              "Collegati a internet per scaricare le voci del pronto soccorso."
+            },
         )
     }
   }

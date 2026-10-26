@@ -59,6 +59,27 @@ class MigrationTest {
 
   @Test fun migrate15ToLatest() = migrateToLatest(15)
 
+  @Test fun migrate17ToLatest() = migrateToLatest(17)
+
+  /**
+   * 17→18: nasce la tabella `topics` (vuota, si riempie con topics.json); pronto
+   * soccorso e stato di sync dei pacchetti esistenti restano invariati.
+   */
+  @Test
+  fun migration18CreatesEmptyTopics() {
+    helper.createDatabase(17).use { connection ->
+      connection.execSQL(
+        "INSERT INTO first_aid (slug, title, subtitle, verses, body, order_index) VALUES ('pa', 'Titolo', '', '', '', 0)",
+      )
+      connection.execSQL("INSERT INTO content_state (package_id, hash, version, synced_at) VALUES ('first_aid.json', 'h', 'v', 0)")
+    }
+    helper.runMigrationsAndValidate(18, ALL_MIGRATIONS.toList()).use { connection ->
+      assertEquals(0L, count(connection, "SELECT COUNT(*) FROM topics"))
+      assertEquals(1L, count(connection, "SELECT COUNT(*) FROM first_aid"))
+      assertEquals(1L, count(connection, "SELECT COUNT(*) FROM content_state WHERE package_id = 'first_aid.json'"))
+    }
+  }
+
   /**
    * 15→16: via le traduzioni a licenza chiusa (versetti, metadati, stato di
    * sync), le aperte restano; original_verses/books svuotate (le ricopia
@@ -144,6 +165,6 @@ class MigrationTest {
   private companion object {
     const val TEST_DB = "migration-test.db"
     const val OLDEST_VERSION = 8
-    const val LATEST_VERSION = 17
+    const val LATEST_VERSION = 18
   }
 }

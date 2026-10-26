@@ -216,4 +216,18 @@ interface BibleDao {
 
   @Query("DELETE FROM first_aid")
   suspend fun deleteAllFirstAid()
+
+  // --- Temi ---
+
+  @Query("SELECT * FROM topics ORDER BY order_index, title")
+  fun topicEntries(): Flow<List<TopicEntity>>
+
+  @Query("SELECT * FROM topics WHERE slug = :slug LIMIT 1")
+  fun topic(slug: String): Flow<TopicEntity?>
+
+  @Insert(onConflict = OnConflictStrategy.REPLACE)
+  suspend fun insertTopics(entries: List<TopicEntity>)
+
+  @Query("DELETE FROM topics")
+  suspend fun deleteAllTopics()
 }
