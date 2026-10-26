@@ -150,9 +150,10 @@ class MigrationTest {
         assertEquals(16L, it.getLong(4))
         assertEquals(200L, it.getLong(5))
       }
-      connection.prepare("SELECT context_text FROM book_info WHERE book = 1").use {
-        check(it.step()) { "Info libro persa dopo la migrazione" }
-        assertEquals("contesto", it.getText(0))
+      // La cache AI di book_info si svuota apposta in 16→17: le schede arrivano dal CMS.
+      connection.prepare("SELECT COUNT(*) FROM book_info").use {
+        check(it.step())
+        assertEquals(0L, it.getLong(0))
       }
     }
   }
