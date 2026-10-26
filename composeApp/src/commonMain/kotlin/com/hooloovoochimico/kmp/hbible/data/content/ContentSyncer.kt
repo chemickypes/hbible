@@ -19,6 +19,7 @@ import com.hooloovoochimico.kmp.hbible.data.local.LexemeEntity
 import com.hooloovoochimico.kmp.hbible.data.local.OriginalAlignmentEntity
 import com.hooloovoochimico.kmp.hbible.data.local.OriginalVerseEntity
 import com.hooloovoochimico.kmp.hbible.data.local.PostEntity
+import com.hooloovoochimico.kmp.hbible.data.local.TopicEntity
 import com.hooloovoochimico.kmp.hbible.data.local.TranslationMetaEntity
 import com.hooloovoochimico.kmp.hbible.data.local.VerseEntity
 import com.hooloovoochimico.kmp.hbible.data.local.VotdEntity
@@ -85,20 +86,52 @@ data class BookInfoDto(
   val outline: String = "",
 )
 
-/** `/content/first_aid.json`: "Pronto soccorso" entries written in the CMS, in display order. */
+/**
+ * `/content/first_aid.json` ("Pronto soccorso") and `/content/topics.json` ("Temi"):
+ * entries written in the CMS, in display order. Same shape for both packages.
+ */
 @Serializable
-data class FirstAidDoc(
-  val entries: List<FirstAidDto> = emptyList(),
+data class CuratedDoc(
+  val entries: List<CuratedDto> = emptyList(),
 )
 
 @Serializable
-data class FirstAidDto(
+data class CuratedDto(
   val slug: String,
   val title: String,
   val subtitle: String = "",
   val verses: List<String> = emptyList(),
   val body: String = "",
 )
+
+private val curatedJson = Json { ignoreUnknownKeys = true }
+
+/** Decodes a `first_aid.json` or `topics.json` package. */
+internal fun decodeCuratedDoc(bytes: ByteArray): CuratedDoc = curatedJson.decodeFromString(bytes.decodeToString())
+
+internal fun CuratedDoc.toFirstAidEntities(): List<FirstAidEntity> =
+  entries.mapIndexed { index, e ->
+    FirstAidEntity(
+      slug = e.slug,
+      title = e.title,
+      subtitle = e.subtitle,
+      verses = e.verses.joinToString("\n"),
+      body = e.body,
+      orderIndex = index,
+    )
+  }
+
+internal fun CuratedDoc.toTopicEntities(): List<TopicEntity> =
+  entries.mapIndexed { index, e ->
+    TopicEntity(
+      slug = e.slug,
+      title = e.title,
+      subtitle = e.subtitle,
+      verses = e.verses.joinToString("\n"),
+      body = e.body,
+      orderIndex = index,
+    )
+  }
 
 /**
  * Downloads a single package on demand (e.g. the book introductions the first
@@ -122,10 +155,11 @@ fun interface PackageFetcher {
  *  - `crossrefs.json`      → full cross-references replace
  *  - `book_info.json`      → introductions of the books (full replace)
  *  - `first_aid.json`      → "Pronto soccorso" entries (full replace)
+ *  - `topics.json`         → "Temi" entries (full replace; absent from the manifest until the CMS publishes it)
  *  - `votd.json`, `posts.json` → verse of the day and feed (no UI yet)
  *
- * `book_info.json` and `first_aid.json` are not bundled: they arrive with the
- * first sync, or on demand through [ensurePackage].
+ * `book_info.json`, `first_aid.json` and `topics.json` are not bundled: they arrive
+ * with the first sync, or on demand through [ensurePackage].
  */
 class ContentSyncer(
   private val db: BibleDatabase,
@@ -258,6 +292,7 @@ class ContentSyncer(
       path == "posts.json" -> importPosts(bytes, version)
       path == "book_info.json" -> importBookInfo(bytes, version)
       path == "first_aid.json" -> importFirstAid(bytes, version)
+      path == "topics.json" -> importTopics(bytes, version)
     }
   }
 
@@ -424,23 +459,21 @@ class ContentSyncer(
   }
 
   private suspend fun importFirstAid(bytes: ByteArray, version: String) {
-    val doc = json.decodeFromString<FirstAidDoc>(bytes.decodeToString())
-    val entities =
-      doc.entries.mapIndexed { index, e ->
-        FirstAidEntity(
-          slug = e.slug,
-          title = e.title,
-          subtitle = e.subtitle,
-          verses = e.verses.joinToString("\n"),
-          body = e.body,
-          orderIndex = index,
-        )
-      }
+    val entities = decodeCuratedDoc(bytes).toFirstAidEntities()
     db.withTransaction {
       dao.deleteAllFirstAid()
       dao.insertFirstAid(entities)
     }
     dao.upsertContentState(ContentStateEntity("first_aid.json", Sha256.hexOf(bytes), version, epochMillis()))
+  }
+
+  private suspend fun importTopics(bytes: ByteArray, version: String) {
+    val entities = decodeCuratedDoc(bytes).toTopicEntities()
+    db.withTransaction {
+      dao.deleteAllTopics()
+      dao.insertTopics(entities)
+    }
+    dao.upsertContentState(ContentStateEntity("topics.json", Sha256.hexOf(bytes), version, epochMillis()))
   }
 
   /** Verifies the downloaded bytes against the manifest hash when provided. */

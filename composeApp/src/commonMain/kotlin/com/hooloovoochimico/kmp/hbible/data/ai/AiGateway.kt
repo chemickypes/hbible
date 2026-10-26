@@ -55,11 +55,14 @@ class AiGateway(
   private val configProvider: () -> AiConfig,
   private val clientFactory: (AiProviderConfig, AiConfig) -> AiChatClient =
     { p, c -> AiClientFactory.createForEntry(p, c) },
+  /** Interruttore delle funzioni IA: spento = nessuna chiamata, catena vuota. */
+  private val featuresEnabled: () -> Boolean = { true },
 ) {
 
-  /** The usable chain: enabled providers with a key, in priority order. */
+  /** The usable chain: enabled providers with a key, in priority order (empty when the AI features are off). */
   val chain: List<AiChatClient>
     get() {
+      if (!featuresEnabled()) return emptyList()
       val config = configProvider()
       return config.enabledChain().map { clientFactory(it, config) }
     }

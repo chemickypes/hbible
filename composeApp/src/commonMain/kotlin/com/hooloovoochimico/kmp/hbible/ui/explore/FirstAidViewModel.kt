@@ -4,21 +4,41 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hooloovoochimico.kmp.hbible.data.BibleRepository
 import com.hooloovoochimico.kmp.hbible.data.content.PackageFetcher
-import com.hooloovoochimico.kmp.hbible.data.local.FirstAidEntity
 import com.hooloovoochimico.kmp.hbible.ui.common.passageText
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 /** Content package with the "Pronto soccorso" entries (written in the CMS). */
 const val FIRST_AID_PACKAGE = "first_aid.json"
 
-/** State of one "Pronto soccorso" page. */
+/** Content package with the "Temi" entries (written in the CMS). */
+const val TOPICS_PACKAGE = "topics.json"
+
+/** Sezione del CMS da cui arriva una voce: stesso formato, pacchetto e tabella diversi. */
+enum class CuratedSection(val packageName: String) {
+  FIRST_AID(FIRST_AID_PACKAGE),
+  TOPICS(TOPICS_PACKAGE),
+}
+
+/** Voce di una sezione curata, ridotta ai campi mostrati nella pagina. */
+data class CuratedEntry(
+  val slug: String,
+  val title: String,
+  val subtitle: String,
+  /** Verse references separated by "\n". */
+  val verses: String,
+  val body: String,
+)
+
+/** State of one "Pronto soccorso" or "Temi" page. */
 data class FirstAidUiState(
   val slug: String = "",
-  val entry: FirstAidEntity? = null,
+  val entry: CuratedEntry? = null,
   /** Verses resolved against the books, first with references only, then with their text. */
   val verses: List<AiVerseMatch> = emptyList(),
   val loading: Boolean = true,
@@ -27,8 +47,8 @@ data class FirstAidUiState(
 )
 
 /**
- * Pagina di una voce del "Pronto soccorso": riflessione scritta nel CMS e
- * versetti mostrati nella traduzione del lettore. Legato alla destinazione.
+ * Pagina di una voce del "Pronto soccorso" o dei "Temi": riflessione scritta nel
+ * CMS e versetti mostrati nella traduzione del lettore. Legato alla destinazione.
  */
 class FirstAidViewModel(
   private val repository: BibleRepository,
@@ -40,16 +60,22 @@ class FirstAidViewModel(
 
   private var job: Job? = null
   private var translation: String = ""
+  private var section: CuratedSection = CuratedSection.FIRST_AID
 
-  fun open(slug: String, translation: String) {
-    if (slug == stateInternal.value.slug && translation == this.translation && job?.isActive == true) return
+  fun open(section: CuratedSection, slug: String, translation: String) {
+    if (section == this.section && slug == stateInternal.value.slug &&
+      translation == this.translation && job?.isActive == true
+    ) {
+      return
+    }
     this.translation = translation
+    this.section = section
     job?.cancel()
     stateInternal.value = FirstAidUiState(slug = slug)
     job =
       viewModelScope.launch {
-        if (repository.firstAid(slug).first() == null) fetcher.ensurePackage(FIRST_AID_PACKAGE)
-        repository.firstAid(slug).collect { entry ->
+        if (entry(section, slug).first() == null) fetcher.ensurePackage(section.packageName)
+        entry(section, slug).collect { entry ->
           if (entry == null) {
             stateInternal.value = FirstAidUiState(slug = slug, loading = false, unavailable = true)
             return@collect
@@ -62,4 +88,12 @@ class FirstAidViewModel(
         }
       }
   }
+
+  private fun entry(section: CuratedSection, slug: String): Flow<CuratedEntry?> =
+    when (section) {
+      CuratedSection.FIRST_AID ->
+        repository.firstAid(slug).map { e -> e?.let { CuratedEntry(it.slug, it.title, it.subtitle, it.verses, it.body) } }
+      CuratedSection.TOPICS ->
+        repository.topic(slug).map { e -> e?.let { CuratedEntry(it.slug, it.title, it.subtitle, it.verses, it.body) } }
+    }
 }

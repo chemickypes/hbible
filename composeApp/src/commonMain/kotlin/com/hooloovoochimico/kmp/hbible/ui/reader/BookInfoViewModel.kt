@@ -13,10 +13,10 @@ import com.hooloovoochimico.kmp.hbible.ui.explore.AiVerseMatch
 import com.hooloovoochimico.kmp.hbible.ui.explore.resolveAiMatch
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -92,18 +92,23 @@ class BookInfoViewModel(
     }
   }
 
+  /** Interruttore generale delle funzioni IA (Impostazioni → Versione x7); spento = niente elementi IA. */
+  val aiFeaturesEnabled: StateFlow<Boolean> = settingsRepository.aiFeaturesEnabled
+
   /**
-   * True when at least one AI provider is configured and usable. Reattivo:
-   * segue [SettingsRepository.aiConfig], stessa regola di AiGateway.chain
-   * (config.enabledChain()).
+   * True when the AI features are on and at least one AI provider is configured and usable.
+   * Reattivo: segue [SettingsRepository.aiConfig] e il flag, così la chat compare anche nel
+   * dettaglio già aperto dopo aver configurato un provider in Impostazioni
+   * (stessa regola di AiGateway.chain, config.enabledChain()).
    */
   val aiConfigured: StateFlow<Boolean> =
-    settingsRepository.aiConfig
-      .map { it.enabledChain().isNotEmpty() }
+    combine(settingsRepository.aiFeaturesEnabled, settingsRepository.aiConfig) { enabled, config ->
+      enabled && config.enabledChain().isNotEmpty()
+    }
       .stateIn(
         viewModelScope,
         SharingStarted.Eagerly,
-        settingsRepository.aiConfig.value.enabledChain().isNotEmpty(),
+        settingsRepository.aiFeaturesEnabled.value && settingsRepository.aiConfig.value.enabledChain().isNotEmpty(),
       )
 
   /** Multi-turn chat with the configured AI about the book. */

@@ -11,6 +11,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class AiGatewayTest {
@@ -163,5 +164,20 @@ class AiGatewayTest {
     assertEquals("amore", gateway(cfg, first, second).translateGloss("love", "gr"))
     assertEquals(1, first.calls.size)
     assertEquals(1, second.calls.size)
+  }
+
+  @Test
+  fun `con le funzioni IA spente nessun servizio viene chiamato`() = runTest {
+    val client = FakeClient(AiCompany.Z_AI) { "amore" }
+    val cfg = config(AiProviderConfig(AiCompany.Z_AI.name, apiKey = "zai", enabled = true))
+    val gateway =
+      AiGateway(
+        configProvider = { cfg },
+        clientFactory = { _, _ -> client },
+        featuresEnabled = { false },
+      )
+    assertTrue(gateway.chain.isEmpty())
+    assertFailsWith<IllegalStateException> { gateway.translateGloss("love", "gr") }
+    assertEquals(0, client.calls.size)
   }
 }

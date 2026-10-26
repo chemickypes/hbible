@@ -91,6 +91,7 @@ import com.hooloovoochimico.kmp.hbible.ui.notes.NoteEditorScreen
 import com.hooloovoochimico.kmp.hbible.ui.notes.NotesScreen
 import com.hooloovoochimico.kmp.hbible.ui.notes.NotesViewModel
 import com.hooloovoochimico.kmp.hbible.ui.reader.BookInfoScreen
+import com.hooloovoochimico.kmp.hbible.ui.explore.CuratedSection
 import com.hooloovoochimico.kmp.hbible.ui.explore.FirstAidScreen
 import com.hooloovoochimico.kmp.hbible.ui.explore.FirstAidViewModel
 import com.hooloovoochimico.kmp.hbible.ui.reader.PendingScroll
@@ -131,8 +132,6 @@ data class VerseDetailRoute(
   val verse: Int,
   val index: Int,
   val count: Int,
-  /** Word initially selected in the detail card (-1 = none), from Interlineare. */
-  val word: Int = -1,
 )
 
 @Serializable
@@ -141,6 +140,10 @@ data class BookInfoRoute(val book: Int)
 /** Voce del "Pronto soccorso" (contenuto del CMS), aperta da Esplora. */
 @Serializable
 data class FirstAidRoute(val slug: String)
+
+/** Voce della sezione "Temi" (contenuto del CMS), aperta da Esplora. */
+@Serializable
+data class TopicRoute(val slug: String)
 
 @Serializable
 data class NoteEditorRoute(val noteId: Long? = null)
@@ -395,19 +398,6 @@ private fun HBibleAppShell(
     }
   }
 
-  // Apre il dettaglio su una parola dalla tab Interlineare: stesso flusso di
-  // openDetailFor (sincronizza il lettore sul capitolo così il dettaglio mostra
-  // anche il versetto italiano) ma sempre come destinazione e senza popUpTo,
-  // così "indietro" torna all'interlineare, con la parola da selezionare.
-  val openInterlinearWord: (VerseRef, Int) -> Unit = { target, word ->
-    setDetail(listOf(target))
-    detailInPane = false
-    syncReaderTo(target)
-    navController.navigate(VerseDetailRoute(target.book, target.chapter, target.verse, 0, 1, word)) {
-      launchSingleTop = true
-    }
-  }
-
   // Cambio di larghezza con un dettaglio aperto (rotazione, resize, pieghevole):
   // pannello → pagina quando la finestra si stringe, pagina → pannello quando si
   // allarga (solo se la pagina è stata aperta dal lettore).
@@ -541,13 +531,12 @@ private fun HBibleAppShell(
   // Dettaglio versetto, identico come pagina e come pannello: cambiano solo la
   // chiusura e cosa succede aprendo un riferimento.
   @Composable
-  fun VerseDetail(initialWord: Int, fallback: VerseRef?, onClose: () -> Unit) {
+  fun VerseDetail(fallback: VerseRef?, onClose: () -> Unit) {
     VerseDetailContent(
       readerViewModel = readerViewModel,
       viewModel = verseDetailViewModel,
       set = detailSet.ifEmpty { listOfNotNull(fallback) },
       index = detailIndex,
-      initialWord = initialWord,
       onIndexChange = { detailIndex = it },
       onSaveAiToNote = { title, content, ref ->
         shellScope.launch { saveChatToNote(title, content, ref.book, ref.chapter, ref.verse) }
@@ -667,7 +656,7 @@ private fun HBibleAppShell(
                 if (twoPane && detailInPane && detailSet.isNotEmpty()) {
                   VerticalDivider()
                   Box(Modifier.width(Dimens.detailPaneWidth).fillMaxHeight()) {
-                    VerseDetail(initialWord = -1, fallback = null, onClose = {})
+                    VerseDetail(fallback = null, onClose = {})
                   }
                 }
                 if (twoPane && bookInfoInPane) {
@@ -787,6 +776,7 @@ private fun HBibleAppShell(
                         onGoToVerse = openDetailFromExplore,
                         onOpenNote = openNote,
                         onOpenFirstAid = { slug -> navController.navigate(FirstAidRoute(slug)) },
+                        onOpenTopic = { slug -> navController.navigate(TopicRoute(slug)) },
                         focusSearchRequest = exploreFocusSearchRequest,
                         viewModel = exploreViewModel,
                       )
@@ -795,7 +785,7 @@ private fun HBibleAppShell(
                   if (exploreDetailOpen && detailSet.isNotEmpty()) {
                     VerticalDivider()
                     Box(Modifier.width(Dimens.detailPaneWidth).fillMaxHeight()) {
-                      VerseDetail(initialWord = -1, fallback = null, onClose = { exploreDetailOpen = false })
+                      VerseDetail(fallback = null, onClose = { exploreDetailOpen = false })
                     }
                   }
                 }
@@ -808,6 +798,7 @@ private fun HBibleAppShell(
                     onGoToVerse = goToVerse,
                     onOpenNote = openNote,
                     onOpenFirstAid = { slug -> navController.navigate(FirstAidRoute(slug)) },
+                    onOpenTopic = { slug -> navController.navigate(TopicRoute(slug)) },
                     focusSearchRequest = exploreFocusSearchRequest,
                     viewModel = exploreViewModel,
                   )
@@ -824,7 +815,8 @@ private fun HBibleAppShell(
               }
               InterlineareScreen(
                 translationName = TRANSLATION_NAMES[selection?.translation ?: DEFAULT_TRANSLATION] ?: "",
-                onOpenWord = openInterlinearWord,
+                onOpenReference = { ref -> goToVerse(ref.book, ref.chapter, ref.verse) },
+                onOpenDetail = openDetailFor,
                 viewModel = interlineareViewModel,
               )
             }
@@ -844,7 +836,6 @@ private fun HBibleAppShell(
               val route = entry.toRoute<VerseDetailRoute>()
               ContentWidth {
                 VerseDetail(
-                  initialWord = route.word,
                   fallback = VerseRef(route.book, route.chapter, route.verse),
                   onClose = { navController.popBackStack() },
                 )
@@ -884,15 +875,40 @@ private fun HBibleAppShell(
               val translation = ready?.selection?.translation ?: DEFAULT_TRANSLATION
               // VM legato a questa destinazione: lo stato si azzera uscendo.
               val firstAidViewModel: FirstAidViewModel = koinViewModel()
-              LaunchedEffect(route.slug, translation) { firstAidViewModel.open(route.slug, translation) }
+              LaunchedEffect(route.slug, translation) {
+                firstAidViewModel.open(CuratedSection.FIRST_AID, route.slug, translation)
+              }
               val scope = rememberCoroutineScope()
               ContentWidth {
                 FirstAidScreen(
+                  section = CuratedSection.FIRST_AID,
                   books = ready?.books.orEmpty(),
                   onGoToVerse = goToVerse,
                   onSaveToNote = { title, body -> scope.launch { saveChatToNote(title, body, 0, 0, 0) } },
                   onDismiss = { navController.popBackStack() },
                   viewModel = firstAidViewModel,
+                )
+              }
+            }
+            composable<TopicRoute> { entry ->
+              val route = entry.toRoute<TopicRoute>()
+              val readerState by readerViewModel.uiState.collectAsStateWithLifecycle()
+              val ready = readerState as? ReaderUiState.Ready
+              val translation = ready?.selection?.translation ?: DEFAULT_TRANSLATION
+              // Stesso VM e stessa schermata della voce del pronto soccorso, sezione "Temi".
+              val topicViewModel: FirstAidViewModel = koinViewModel()
+              LaunchedEffect(route.slug, translation) {
+                topicViewModel.open(CuratedSection.TOPICS, route.slug, translation)
+              }
+              val scope = rememberCoroutineScope()
+              ContentWidth {
+                FirstAidScreen(
+                  section = CuratedSection.TOPICS,
+                  books = ready?.books.orEmpty(),
+                  onGoToVerse = goToVerse,
+                  onSaveToNote = { title, body -> scope.launch { saveChatToNote(title, body, 0, 0, 0) } },
+                  onDismiss = { navController.popBackStack() },
+                  viewModel = topicViewModel,
                 )
               }
             }
@@ -965,7 +981,6 @@ private fun VerseDetailContent(
   viewModel: VerseDetailViewModel,
   set: List<VerseRef>,
   index: Int,
-  initialWord: Int,
   onIndexChange: (Int) -> Unit,
   onSaveAiToNote: (title: String, content: String, ref: VerseRef) -> Unit,
   onDismiss: () -> Unit,
@@ -998,7 +1013,6 @@ private fun VerseDetailContent(
     translation = translation,
     translationName = TRANSLATION_NAMES[translation] ?: "",
     bookName = bookName,
-    initialWord = initialWord,
     onSaveAiToNote =
       if (aiConfigured) {
         { content ->

@@ -169,6 +169,22 @@ data class FirstAidEntity(
 )
 
 /**
+ * Entry of the "Temi" section (topics written in the CMS), downloaded with the
+ * `topics.json` package (replaced as a whole). Same columns as [FirstAidEntity].
+ */
+@Entity(tableName = "topics")
+data class TopicEntity(
+  @PrimaryKey val slug: String,
+  val title: String,
+  val subtitle: String = "",
+  /** Verse references separated by "\n" ("Gv 3:16"). */
+  val verses: String = "",
+  /** Reflection: plain text, paragraphs separated by a blank line. */
+  val body: String = "",
+  @ColumnInfo(name = "order_index") val orderIndex: Int = 0,
+)
+
+/**
  * Sync state of one content package (manifest path → last applied hash), used
  * by [com.hooloovoochimico.kmp.hbible.data.content.ContentSyncer] to decide
  * which packages changed and must be re-downloaded from the CMS.

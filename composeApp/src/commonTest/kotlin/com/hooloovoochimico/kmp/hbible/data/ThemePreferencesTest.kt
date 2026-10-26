@@ -3,6 +3,8 @@ package com.hooloovoochimico.kmp.hbible.data
 import com.hooloovoochimico.kmp.hbible.testing.InMemorySettings
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class ThemePreferencesTest {
 
@@ -30,5 +32,15 @@ class ThemePreferencesTest {
   @Test
   fun `senza valore salvato si parte da SYSTEM`() {
     assertEquals(ThemeMode.SYSTEM, ThemePreferences.load(InMemorySettings()))
+  }
+
+  @Test
+  fun `le funzioni IA sono spente di default e si accendono e spengono`() {
+    val settings = InMemorySettings()
+    assertFalse(ThemePreferences.loadAiFeaturesEnabled(settings))
+    ThemePreferences.saveAiFeaturesEnabled(settings, true)
+    assertTrue(ThemePreferences.loadAiFeaturesEnabled(settings))
+    ThemePreferences.saveAiFeaturesEnabled(settings, false)
+    assertFalse(ThemePreferences.loadAiFeaturesEnabled(settings))
   }
 }

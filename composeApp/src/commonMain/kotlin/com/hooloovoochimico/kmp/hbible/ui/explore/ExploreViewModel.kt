@@ -12,11 +12,13 @@ import com.hooloovoochimico.kmp.hbible.data.NotesRepository
 import com.hooloovoochimico.kmp.hbible.data.SavedAiSearch
 import com.hooloovoochimico.kmp.hbible.data.SearchHistoryEntry
 import com.hooloovoochimico.kmp.hbible.data.SearchScope
+import com.hooloovoochimico.kmp.hbible.data.SettingsRepository
 import com.hooloovoochimico.kmp.hbible.data.ai.AiGateway
 import com.hooloovoochimico.kmp.hbible.data.ai.AiMatches
 import com.hooloovoochimico.kmp.hbible.data.content.PackageFetcher
 import com.hooloovoochimico.kmp.hbible.data.local.BookEntity
 import com.hooloovoochimico.kmp.hbible.data.local.FirstAidEntity
+import com.hooloovoochimico.kmp.hbible.data.local.TopicEntity
 import com.hooloovoochimico.kmp.hbible.data.local.NoteEntity
 import com.hooloovoochimico.kmp.hbible.data.local.VerseEntity
 import com.hooloovoochimico.kmp.hbible.ui.common.displayAbbr
@@ -45,6 +47,8 @@ import kotlinx.coroutines.launch
 data class ExploreUiState(
   val query: String = "",
   val scope: SearchScope = SearchScope.ALL,
+  /** Funzioni IA attive: spento = niente interruttore IA, niente ricerca AI né voci AI in cronologia. */
+  val aiEnabled: Boolean = false,
   val aiMode: Boolean = false,
   val noteMode: Boolean = false,
   val searching: Boolean = false,
@@ -74,6 +78,7 @@ class ExploreViewModel(
   private val bibleRepository: BibleRepository,
   private val notesRepository: NotesRepository,
   private val aiGateway: AiGateway,
+  private val settingsRepository: SettingsRepository,
   private val fetcher: PackageFetcher,
 ) : ViewModel() {
 
@@ -82,9 +87,10 @@ class ExploreViewModel(
       ExploreUiState(
         query = exploreRepository.loadLastQuery(),
         scope = exploreRepository.loadLastScope(),
-        aiMode = exploreRepository.loadAiMode(),
-        ai = exploreRepository.loadSavedAi(),
-        history = exploreRepository.history(),
+        aiEnabled = settingsRepository.aiFeaturesEnabled.value,
+        aiMode = settingsRepository.aiFeaturesEnabled.value && exploreRepository.loadAiMode(),
+        ai = if (settingsRepository.aiFeaturesEnabled.value) exploreRepository.loadSavedAi() else null,
+        history = visibleHistory(settingsRepository.aiFeaturesEnabled.value),
       ),
     )
   val uiState: StateFlow<ExploreUiState> = _uiState.asStateFlow()
@@ -97,6 +103,10 @@ class ExploreViewModel(
   val firstAidEntries: StateFlow<List<FirstAidEntity>> =
     bibleRepository.firstAidEntries().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+  /** "Temi" entries written in the CMS (package `topics.json`); empty until the CMS publishes it. */
+  val topicEntries: StateFlow<List<TopicEntity>> =
+    bibleRepository.topicEntries().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
   /** Translation used to load verse previews; kept in sync with the reader. */
   private val translation = MutableStateFlow(DEFAULT_TRANSLATION)
 
@@ -107,9 +117,26 @@ class ExploreViewModel(
   private var aiSearchJob: Job? = null
 
   init {
-    // First opening before the daily sync: download the first-aid entries now.
+    // First opening before the daily sync: download the first-aid and topic entries now.
+    // Sequential, one manifest check at most per package; a missing topics.json is harmless.
     viewModelScope.launch {
       if (bibleRepository.firstAidEntries().first().isEmpty()) fetcher.ensurePackage(FIRST_AID_PACKAGE)
+      if (bibleRepository.topicEntries().first().isEmpty()) fetcher.ensurePackage(TOPICS_PACKAGE)
+    }
+    // Spegnendo le funzioni IA la ricerca AI si ferma e la modalità torna al testo.
+    viewModelScope.launch {
+      settingsRepository.aiFeaturesEnabled.collect { enabled ->
+        if (!enabled) aiSearchJob?.cancel()
+        _uiState.update {
+          it.copy(
+            aiEnabled = enabled,
+            aiMode = it.aiMode && enabled,
+            ai = if (enabled) it.ai else null,
+            aiSearching = it.aiSearching && enabled,
+            history = visibleHistory(enabled),
+          )
+        }
+      }
     }
     // Debounced live search: text verses or notes, never in AI mode.
     viewModelScope.launch {
@@ -196,6 +223,7 @@ class ExploreViewModel(
   }
 
   fun onToggleAiMode() {
+    if (!_uiState.value.aiEnabled) return
     val newMode = !_uiState.value.aiMode
     _uiState.update { it.copy(aiMode = newMode) }
     exploreRepository.saveAiMode(newMode)
@@ -208,7 +236,7 @@ class ExploreViewModel(
 
   fun runAiSearch() {
     val prompt = _uiState.value.query.trim()
-    if (prompt.isEmpty() || _uiState.value.aiSearching) return
+    if (!_uiState.value.aiEnabled || prompt.isEmpty() || _uiState.value.aiSearching) return
     aiSearchJob?.cancel()
     _uiState.update { it.copy(aiSearching = true, ai = null) }
     aiSearchJob =
@@ -229,7 +257,7 @@ class ExploreViewModel(
                       timestamp = Clock.System.now().toEpochMilliseconds(),
                     ),
                   )
-                  _uiState.update { s -> s.copy(history = exploreRepository.history()) }
+                  _uiState.update { s -> s.copy(history = visibleHistory(s.aiEnabled)) }
                 }
           exploreRepository.saveAi(prompt, matches, null)
           _uiState.update { it.copy(ai = SavedAiSearch(prompt, matches, null), aiSearching = false) }
@@ -251,18 +279,20 @@ class ExploreViewModel(
     exploreRepository.addHistory(
       SearchHistoryEntry(q, aiMode = false, timestamp = Clock.System.now().toEpochMilliseconds()),
     )
-    _uiState.update { it.copy(history = exploreRepository.history()) }
+    _uiState.update { it.copy(history = visibleHistory(it.aiEnabled)) }
   }
 
   /** Restores a past search, reusing the cached AI matches when present. */
   fun restoreHistory(entry: SearchHistoryEntry) {
     aiSearchJob?.cancel()
+    // Una voce AI riaperta con le funzioni IA spente diventa una ricerca di testo.
+    val aiMode = entry.aiMode && _uiState.value.aiEnabled
     _uiState.update {
       it.copy(
         query = entry.query,
-        aiMode = entry.aiMode,
+        aiMode = aiMode,
         ai =
-          if (entry.aiMode && entry.matches != null) {
+          if (aiMode && entry.matches != null) {
             SavedAiSearch(entry.query, entry.matches, null)
           } else {
             it.ai
@@ -270,13 +300,17 @@ class ExploreViewModel(
       )
     }
     exploreRepository.saveLastQuery(entry.query, _uiState.value.scope)
-    exploreRepository.saveAiMode(entry.aiMode)
+    exploreRepository.saveAiMode(aiMode)
   }
 
   fun clearHistory() {
     exploreRepository.clearHistory()
     _uiState.update { it.copy(history = emptyList()) }
   }
+
+  /** Cronologia da mostrare: con le funzioni IA spente le voci di ricerca AI restano nascoste. */
+  private fun visibleHistory(aiEnabled: Boolean): List<SearchHistoryEntry> =
+    exploreRepository.history().filter { aiEnabled || !it.aiMode }
 
   private suspend fun AiSearchResults.withTexts(): AiSearchResults =
     copy(

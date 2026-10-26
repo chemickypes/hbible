@@ -3,6 +3,7 @@ package com.hooloovoochimico.kmp.hbible.ui.notes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hooloovoochimico.kmp.hbible.data.NotesRepository
+import com.hooloovoochimico.kmp.hbible.data.SettingsRepository
 import com.hooloovoochimico.kmp.hbible.data.local.NoteEntity
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -12,7 +13,11 @@ import kotlin.time.Clock
 
 class NotesViewModel(
   private val notesRepository: NotesRepository,
+  settingsRepository: SettingsRepository,
 ) : ViewModel() {
+
+  /** Funzioni IA attive: con il flag spento il suggerimento della lista non nomina la chat AI. */
+  val aiFeaturesEnabled: StateFlow<Boolean> = settingsRepository.aiFeaturesEnabled
 
   /** All notes, newest first. */
   val notes: StateFlow<List<NoteEntity>> =

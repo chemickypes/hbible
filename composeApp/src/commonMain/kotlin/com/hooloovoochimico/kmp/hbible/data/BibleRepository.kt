@@ -4,6 +4,7 @@ import com.hooloovoochimico.kmp.hbible.data.local.BibleDatabase
 import com.hooloovoochimico.kmp.hbible.data.local.BookEntity
 import com.hooloovoochimico.kmp.hbible.data.local.BookInfoEntity
 import com.hooloovoochimico.kmp.hbible.data.local.FirstAidEntity
+import com.hooloovoochimico.kmp.hbible.data.local.TopicEntity
 import com.hooloovoochimico.kmp.hbible.data.local.CrossReferenceEntity
 import com.hooloovoochimico.kmp.hbible.data.local.LexemeEntity
 import com.hooloovoochimico.kmp.hbible.data.local.OriginalVerseEntity
@@ -37,6 +38,15 @@ const val DEFAULT_TRANSLATION = "NTA"
 /** [code] if it is a bundled translation, else [DEFAULT_TRANSLATION] (e.g. a removed one saved in settings). */
 fun bundledTranslationOrDefault(code: String?): String =
   code?.takeIf { it in TRANSLATION_NAMES } ?: DEFAULT_TRANSLATION
+
+/**
+ * The verse in every bundled translation that has it, in TRANSLATION_META display
+ * order (translations without text for the verse are skipped).
+ */
+suspend fun BibleRepository.verseInAllTranslations(book: Int, chapter: Int, verse: Int): List<VerseEntity> {
+  val byTranslation = verseAllTranslations(book, chapter, verse).associateBy { it.translation }
+  return TRANSLATION_META.mapNotNull { meta -> byTranslation[meta.abbr] }
+}
 
 /** Scripture data: books, chapters, verses, original text and cached book info. */
 interface BibleRepository {
@@ -86,6 +96,11 @@ interface BibleRepository {
   fun firstAidEntries(): Flow<List<FirstAidEntity>>
 
   fun firstAid(slug: String): Flow<FirstAidEntity?>
+
+  /** Voci del tema (sezione "Temi"), nell'ordine deciso nel CMS. */
+  fun topicEntries(): Flow<List<TopicEntity>>
+
+  fun topic(slug: String): Flow<TopicEntity?>
 }
 
 class DefaultBibleRepository(
@@ -143,6 +158,10 @@ class DefaultBibleRepository(
   override fun firstAidEntries(): Flow<List<FirstAidEntity>> = db.bibleDao().firstAidEntries()
 
   override fun firstAid(slug: String): Flow<FirstAidEntity?> = db.bibleDao().firstAid(slug)
+
+  override fun topicEntries(): Flow<List<TopicEntity>> = db.bibleDao().topicEntries()
+
+  override fun topic(slug: String): Flow<TopicEntity?> = db.bibleDao().topic(slug)
 
   override suspend fun ensureImported() = withContext(Dispatchers.Default) {
     val dao = db.bibleDao()

@@ -12,6 +12,7 @@ import com.hooloovoochimico.kmp.hbible.data.ai.AiConfig
 import com.hooloovoochimico.kmp.hbible.data.local.BookEntity
 import com.hooloovoochimico.kmp.hbible.data.local.BookInfoEntity
 import com.hooloovoochimico.kmp.hbible.data.local.FirstAidEntity
+import com.hooloovoochimico.kmp.hbible.data.local.TopicEntity
 import com.hooloovoochimico.kmp.hbible.data.local.CrossReferenceEntity
 import com.hooloovoochimico.kmp.hbible.data.local.LexemeEntity
 import com.hooloovoochimico.kmp.hbible.data.local.OriginalVerseEntity
@@ -38,6 +39,7 @@ internal class FakeBibleRepository(
   bookInfos: List<BookInfoEntity> = emptyList(),
   lexemes: List<LexemeEntity> = emptyList(),
   firstAid: List<FirstAidEntity> = emptyList(),
+  topics: List<TopicEntity> = emptyList(),
 ) : BibleRepository {
 
   private val booksData = books
@@ -47,6 +49,7 @@ internal class FakeBibleRepository(
   private val bookInfosData = bookInfos
   private val lexemesData = lexemes
   private val firstAidData = firstAid
+  private val topicsData = topics
 
   override fun books(): Flow<List<BookEntity>> = flowOf(booksData)
 
@@ -68,6 +71,9 @@ internal class FakeBibleRepository(
   override fun originalVerse(book: Int, chapter: Int, verse: Int): Flow<OriginalVerseEntity?> =
     flowOf(originalsData.firstOrNull { it.book == book && it.chapter == chapter && it.verse == verse })
 
+  /** Verses returned by [lemmaOccurrences] (the exclusion of the verse itself is not simulated). */
+  var lemmaOccurrencesData: List<VerseRefRow> = emptyList()
+
   /** Alignments by "book:chapter:verse" → translation → indices. */
   var alignmentsData: Map<String, Map<String, List<Int>>> = emptyMap()
 
@@ -86,7 +92,7 @@ internal class FakeBibleRepository(
     excludeChapter: Int,
     excludeVerse: Int,
     limit: Int,
-  ): List<VerseRefRow> = emptyList()
+  ): List<VerseRefRow> = lemmaOccurrencesData
 
   override suspend fun lexeme(lang: String, number: String): LexemeEntity? =
     lexemesData.firstOrNull { it.lang == lang && it.number == number }
@@ -101,10 +107,21 @@ internal class FakeBibleRepository(
   override fun firstAidEntries(): Flow<List<FirstAidEntity>> = flowOf(firstAidData)
 
   override fun firstAid(slug: String): Flow<FirstAidEntity?> = flowOf(firstAidData.firstOrNull { it.slug == slug })
+
+  override fun topicEntries(): Flow<List<TopicEntity>> = flowOf(topicsData)
+
+  override fun topic(slug: String): Flow<TopicEntity?> = flowOf(topicsData.firstOrNull { it.slug == slug })
 }
 
 internal class FakeSettingsRepository : SettingsRepository {
   override val aiConfig = MutableStateFlow(AiConfig())
+
+  // Spento di default, come nell'app: i test accendono il flag quando serve.
+  override val aiFeaturesEnabled = MutableStateFlow(false)
+
+  override fun saveAiFeaturesEnabled(enabled: Boolean) {
+    aiFeaturesEnabled.value = enabled
+  }
 
   override fun loadThemeMode(): ThemeMode = ThemeMode.SYSTEM
 

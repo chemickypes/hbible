@@ -41,8 +41,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -84,6 +88,7 @@ import com.hooloovoochimico.kmp.hbible.ui.settings.components.SettingsGroup
 import com.hooloovoochimico.kmp.hbible.ui.settings.components.SettingsItem
 import com.hooloovoochimico.kmp.hbible.ui.settings.components.SettingsTrailing
 import com.hooloovoochimico.kmp.hbible.ui.settings.components.SwitchItem
+import kotlinx.coroutines.flow.collectLatest
 
 /** Sub-pages of Settings: full screen on phones, right pane on wide windows. */
 enum class SettingsPage(val title: String) {
@@ -111,6 +116,9 @@ fun SettingsScreen(
   val state by viewModel.uiState.collectAsStateWithLifecycle()
   var page by rememberSaveable { mutableStateOf<SettingsPage?>(null) }
   var showTranslationSheet by rememberSaveable { mutableStateOf(false) }
+  val snackbarHost = remember { SnackbarHostState() }
+  // Messaggi dei tocchi sulla riga "Versione": l'ultimo sostituisce quello in corso.
+  LaunchedEffect(viewModel) { viewModel.messages.collectLatest { snackbarHost.showSnackbar(it) } }
 
   BoxWithConstraints(
     modifier
@@ -161,6 +169,10 @@ fun SettingsScreen(
         }
       }
     }
+    SnackbarHost(
+      snackbarHost,
+      Modifier.align(Alignment.BottomCenter).padding(start = 16.dp, end = 16.dp, bottom = LocalBottomBarClearance.current),
+    )
   }
 
   if (showTranslationSheet) {
@@ -259,23 +271,26 @@ private fun SettingsList(
         },
     )
 
-    val aiSummary = state.aiConfig.configuredSummary()
-    SettingsGroup(
-      "Assistente AI",
-      items =
-        listOf {
-          SettingsItem(
-            SettingsIcons.AutoAwesome,
-            "Assistente AI",
-            subtitle = aiSummary.ifBlank { "Non configurato · serve una tua chiave API" },
-            subtitleColor =
-              if (aiSummary.isBlank()) MaterialTheme.colorScheme.error
-              else MaterialTheme.colorScheme.onSurfaceVariant,
-            trailing = SettingsTrailing.CHEVRON,
-            onClick = onOpenAiSettings,
-          )
-        },
-    )
+    // Sezione IA visibile solo con le funzioni IA attivate dal nascosto (Versione x7).
+    if (state.aiFeaturesEnabled) {
+      val aiSummary = state.aiConfig.configuredSummary()
+      SettingsGroup(
+        "Assistente AI",
+        items =
+          listOf {
+            SettingsItem(
+              SettingsIcons.AutoAwesome,
+              "Assistente AI",
+              subtitle = aiSummary.ifBlank { "Non configurato · serve una tua chiave API" },
+              subtitleColor =
+                if (aiSummary.isBlank()) MaterialTheme.colorScheme.error
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+              trailing = SettingsTrailing.CHEVRON,
+              onClick = onOpenAiSettings,
+            )
+          },
+      )
+    }
 
     val sync = state.contentSync
     val status = sync.status()
@@ -363,7 +378,10 @@ private fun SettingsList(
               )
             }
           }
-          add { SettingsItem(AppIcons.Info, "Versione", subtitle = appVersion()) }
+          add {
+            // Sblocco nascosto delle funzioni IA: 7 tocchi, come le opzioni sviluppatore.
+            SettingsItem(AppIcons.Info, "Versione", subtitle = appVersion(), onClick = { viewModel.onVersionTap() })
+          }
         },
     )
 
