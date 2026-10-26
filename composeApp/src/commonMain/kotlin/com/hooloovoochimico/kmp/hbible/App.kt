@@ -131,8 +131,6 @@ data class VerseDetailRoute(
   val verse: Int,
   val index: Int,
   val count: Int,
-  /** Word initially selected in the detail card (-1 = none), from Interlineare. */
-  val word: Int = -1,
 )
 
 @Serializable
@@ -395,19 +393,6 @@ private fun HBibleAppShell(
     }
   }
 
-  // Apre il dettaglio su una parola dalla tab Interlineare: stesso flusso di
-  // openDetailFor (sincronizza il lettore sul capitolo così il dettaglio mostra
-  // anche il versetto italiano) ma sempre come destinazione e senza popUpTo,
-  // così "indietro" torna all'interlineare, con la parola da selezionare.
-  val openInterlinearWord: (VerseRef, Int) -> Unit = { target, word ->
-    setDetail(listOf(target))
-    detailInPane = false
-    syncReaderTo(target)
-    navController.navigate(VerseDetailRoute(target.book, target.chapter, target.verse, 0, 1, word)) {
-      launchSingleTop = true
-    }
-  }
-
   // Cambio di larghezza con un dettaglio aperto (rotazione, resize, pieghevole):
   // pannello → pagina quando la finestra si stringe, pagina → pannello quando si
   // allarga (solo se la pagina è stata aperta dal lettore).
@@ -541,13 +526,12 @@ private fun HBibleAppShell(
   // Dettaglio versetto, identico come pagina e come pannello: cambiano solo la
   // chiusura e cosa succede aprendo un riferimento.
   @Composable
-  fun VerseDetail(initialWord: Int, fallback: VerseRef?, onClose: () -> Unit) {
+  fun VerseDetail(fallback: VerseRef?, onClose: () -> Unit) {
     VerseDetailContent(
       readerViewModel = readerViewModel,
       viewModel = verseDetailViewModel,
       set = detailSet.ifEmpty { listOfNotNull(fallback) },
       index = detailIndex,
-      initialWord = initialWord,
       onIndexChange = { detailIndex = it },
       onSaveAiToNote = { title, content, ref ->
         shellScope.launch { saveChatToNote(title, content, ref.book, ref.chapter, ref.verse) }
@@ -667,7 +651,7 @@ private fun HBibleAppShell(
                 if (twoPane && detailInPane && detailSet.isNotEmpty()) {
                   VerticalDivider()
                   Box(Modifier.width(Dimens.detailPaneWidth).fillMaxHeight()) {
-                    VerseDetail(initialWord = -1, fallback = null, onClose = {})
+                    VerseDetail(fallback = null, onClose = {})
                   }
                 }
                 if (twoPane && bookInfoInPane) {
@@ -795,7 +779,7 @@ private fun HBibleAppShell(
                   if (exploreDetailOpen && detailSet.isNotEmpty()) {
                     VerticalDivider()
                     Box(Modifier.width(Dimens.detailPaneWidth).fillMaxHeight()) {
-                      VerseDetail(initialWord = -1, fallback = null, onClose = { exploreDetailOpen = false })
+                      VerseDetail(fallback = null, onClose = { exploreDetailOpen = false })
                     }
                   }
                 }
@@ -824,7 +808,8 @@ private fun HBibleAppShell(
               }
               InterlineareScreen(
                 translationName = TRANSLATION_NAMES[selection?.translation ?: DEFAULT_TRANSLATION] ?: "",
-                onOpenWord = openInterlinearWord,
+                onOpenReference = { ref -> goToVerse(ref.book, ref.chapter, ref.verse) },
+                onOpenDetail = openDetailFor,
                 viewModel = interlineareViewModel,
               )
             }
@@ -844,7 +829,6 @@ private fun HBibleAppShell(
               val route = entry.toRoute<VerseDetailRoute>()
               ContentWidth {
                 VerseDetail(
-                  initialWord = route.word,
                   fallback = VerseRef(route.book, route.chapter, route.verse),
                   onClose = { navController.popBackStack() },
                 )
@@ -965,7 +949,6 @@ private fun VerseDetailContent(
   viewModel: VerseDetailViewModel,
   set: List<VerseRef>,
   index: Int,
-  initialWord: Int,
   onIndexChange: (Int) -> Unit,
   onSaveAiToNote: (title: String, content: String, ref: VerseRef) -> Unit,
   onDismiss: () -> Unit,
@@ -998,7 +981,6 @@ private fun VerseDetailContent(
     translation = translation,
     translationName = TRANSLATION_NAMES[translation] ?: "",
     bookName = bookName,
-    initialWord = initialWord,
     onSaveAiToNote =
       if (aiConfigured) {
         { content ->

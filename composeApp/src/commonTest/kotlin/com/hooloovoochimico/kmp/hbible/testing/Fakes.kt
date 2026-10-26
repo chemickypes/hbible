@@ -68,6 +68,9 @@ internal class FakeBibleRepository(
   override fun originalVerse(book: Int, chapter: Int, verse: Int): Flow<OriginalVerseEntity?> =
     flowOf(originalsData.firstOrNull { it.book == book && it.chapter == chapter && it.verse == verse })
 
+  /** Verses returned by [lemmaOccurrences] (the exclusion of the verse itself is not simulated). */
+  var lemmaOccurrencesData: List<VerseRefRow> = emptyList()
+
   /** Alignments by "book:chapter:verse" → translation → indices. */
   var alignmentsData: Map<String, Map<String, List<Int>>> = emptyMap()
 
@@ -86,7 +89,7 @@ internal class FakeBibleRepository(
     excludeChapter: Int,
     excludeVerse: Int,
     limit: Int,
-  ): List<VerseRefRow> = emptyList()
+  ): List<VerseRefRow> = lemmaOccurrencesData
 
   override suspend fun lexeme(lang: String, number: String): LexemeEntity? =
     lexemesData.firstOrNull { it.lang == lang && it.number == number }

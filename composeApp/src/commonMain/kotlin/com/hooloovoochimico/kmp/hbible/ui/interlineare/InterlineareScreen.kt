@@ -1,17 +1,5 @@
 package com.hooloovoochimico.kmp.hbible.ui.interlineare
 
-import androidx.compose.foundation.layout.fillMaxHeight
-import com.hooloovoochimico.kmp.hbible.ui.reader.VerseStep
-import com.hooloovoochimico.kmp.hbible.ui.reader.BookChapterPicker
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.foundation.layout.height
-import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.unit.sp
-import com.hooloovoochimico.kmp.hbible.ui.common.AppIcons
-import com.hooloovoochimico.kmp.hbible.ui.common.GroupHeader
-import com.hooloovoochimico.kmp.hbible.ui.common.groupedShape
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,81 +9,78 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hooloovoochimico.kmp.hbible.data.TRANSLATION_META
-import com.hooloovoochimico.kmp.hbible.data.InterlinearPosition
-import com.hooloovoochimico.kmp.hbible.data.local.BookEntity
 import com.hooloovoochimico.kmp.hbible.data.local.OriginalVerseEntity
 import com.hooloovoochimico.kmp.hbible.data.local.VerseEntity
 import com.hooloovoochimico.kmp.hbible.data.local.alignmentTokens
 import com.hooloovoochimico.kmp.hbible.theme.ScriptureTypography
+import com.hooloovoochimico.kmp.hbible.ui.common.AppIcons
 import com.hooloovoochimico.kmp.hbible.ui.common.EmptyMessage
+import com.hooloovoochimico.kmp.hbible.ui.common.GroupHeader
+import com.hooloovoochimico.kmp.hbible.ui.common.OriginalWordCard
 import com.hooloovoochimico.kmp.hbible.ui.common.ScreenTitle
-import com.hooloovoochimico.kmp.hbible.ui.common.SectionHeader
+import com.hooloovoochimico.kmp.hbible.ui.common.TranslationVersionRow
 import com.hooloovoochimico.kmp.hbible.ui.common.VerseRef
-import com.hooloovoochimico.kmp.hbible.ui.common.displayAbbr
-import kotlinx.coroutines.launch
+import com.hooloovoochimico.kmp.hbible.ui.common.groupedShape
+import com.hooloovoochimico.kmp.hbible.ui.reader.BookChapterPicker
+import com.hooloovoochimico.kmp.hbible.ui.reader.VerseStep
 
 /**
  * Tab INTERLINEARE: un versetto alla volta in stile interlinearbible.org —
  * colonne di parole originali con numero Strong, traslitterazione e glossa
- * italiana. Il tap su una parola apre il dettaglio versetto esistente.
+ * italiana. Il tap su una parola apre la sua scheda (lessico, occorrenze) in un
+ * foglio; dalla scheda si può aprire un versetto citato o il dettaglio.
  */
 /** Punteggiatura che il token italiano allineato porta attaccato e che il gloss di fallback ignora. */
 private const val EDGE_PUNCT = ".,;:!?·«»\"'’‘()[]{}…—–"
+
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun InterlineareScreen(
   translationName: String,
-  onOpenWord: (VerseRef, Int) -> Unit,
+  onOpenReference: (VerseRef) -> Unit,
+  onOpenDetail: (VerseRef) -> Unit,
   modifier: Modifier = Modifier,
   viewModel: InterlineareViewModel,
 ) {
   val state by viewModel.uiState.collectAsStateWithLifecycle()
+  val selected by viewModel.selectedWord.collectAsStateWithLifecycle()
   var showPicker by rememberSaveable { mutableStateOf(false) }
   val position = state.position
   val bookName = state.books.firstOrNull { it.n == position.book }?.name.orEmpty()
@@ -186,16 +171,14 @@ fun InterlineareScreen(
             verse = state.verse,
             alignment = state.alignment,
             lexiconGlosses = state.lexiconGlosses,
-            onWordClick = { index ->
-              onOpenWord(VerseRef(position.book, position.chapter, position.verse), index)
-            },
+            onWordClick = viewModel::selectWord,
           )
           GroupHeader(
             "Il versetto nelle versioni",
             Modifier.padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 8.dp),
           )
           state.versions.forEachIndexed { index, version ->
-            VersionRow(
+            TranslationVersionRow(
               shape = groupedShape(index, state.versions.size),
               abbr = version.translation,
               name =
@@ -207,6 +190,42 @@ fun InterlineareScreen(
           }
           Spacer(Modifier.padding(bottom = 96.dp))
         }
+      }
+    }
+  }
+
+  // Scheda della parola toccata: foglio a tutta larghezza (telefono e tablet).
+  selected?.let { word ->
+    ModalBottomSheet(
+      onDismissRequest = viewModel::clearWord,
+      sheetState =
+        rememberBottomSheetState(
+          initialValue = SheetValue.Hidden,
+          enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
+        ),
+    ) {
+      Column(
+        Modifier
+          .fillMaxWidth()
+          .verticalScroll(rememberScrollState())
+          .padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
+      ) {
+        OriginalWordCard(
+          info = word.info,
+          lang = word.lang,
+          bookName = { n -> state.books.firstOrNull { it.n == n }?.name.orEmpty() },
+          loadVerse = { ref -> viewModel.verseText(ref) },
+          onOpenReference = { ref ->
+            viewModel.clearWord()
+            onOpenReference(ref)
+          },
+          onOpenDetail = { ref ->
+            viewModel.clearWord()
+            onOpenDetail(ref)
+          },
+          onTranslateGloss = { lexeme -> viewModel.translateGloss(word.lang, lexeme) },
+          onClose = viewModel::clearWord,
+        )
       }
     }
   }
@@ -244,7 +263,6 @@ fun InterlineareScreen(
       )
     }
   }
-
 }
 
 /** FlowRow of compact word columns, right-to-left for Hebrew. */
@@ -351,68 +369,6 @@ private fun OriginalWordColumn(
         gloss,
         style = MaterialTheme.typography.bodySmall,
         textAlign = TextAlign.Center,
-      )
-    }
-  }
-}
-
-/**
- * Compact row of the "Il versetto nelle versioni" section: abbr chip + name on
- * the first line, verse text below. The translation in use is highlighted like
- * the current book in the reader's book sheet (secondaryContainer + badge).
- */
-@Composable
-private fun VersionRow(
-  shape: Shape,
-  abbr: String,
-  name: String,
-  text: String,
-  current: Boolean,
-) {
-  Surface(
-    shape = shape,
-    color =
-      if (current) MaterialTheme.colorScheme.primaryContainer
-      else MaterialTheme.colorScheme.surfaceContainer,
-    contentColor =
-      if (current) MaterialTheme.colorScheme.onPrimaryContainer
-      else MaterialTheme.colorScheme.onSurface,
-    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 1.dp),
-  ) {
-    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
-      Row(verticalAlignment = Alignment.CenterVertically) {
-        Surface(
-          shape = MaterialTheme.shapes.extraLarge,
-          color =
-            if (current) MaterialTheme.colorScheme.primary
-            else MaterialTheme.colorScheme.surfaceContainerHighest,
-          contentColor =
-            if (current) MaterialTheme.colorScheme.onPrimary
-            else MaterialTheme.colorScheme.onSurfaceVariant,
-        ) {
-          Text(
-            abbr,
-            style = MaterialTheme.typography.labelSmall,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-          )
-        }
-        Text(
-          name,
-          style = MaterialTheme.typography.titleSmall,
-          modifier = Modifier.weight(1f).padding(start = 8.dp),
-        )
-        if (current) {
-          Text(
-            "In lettura",
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.SemiBold,
-          )
-        }
-      }
-      Text(
-        text,
-        style = ScriptureTypography.body.copy(fontSize = 16.sp, lineHeight = 24.sp),
-        modifier = Modifier.padding(top = 8.dp),
       )
     }
   }

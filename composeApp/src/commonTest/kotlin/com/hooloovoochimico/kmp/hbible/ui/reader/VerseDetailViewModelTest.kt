@@ -4,6 +4,7 @@ import com.hooloovoochimico.kmp.hbible.data.ai.AiCompany
 import com.hooloovoochimico.kmp.hbible.data.ai.AiConfig
 import com.hooloovoochimico.kmp.hbible.data.ai.AiGateway
 import com.hooloovoochimico.kmp.hbible.data.ai.AiProviderConfig
+import com.hooloovoochimico.kmp.hbible.data.local.VerseEntity
 import com.hooloovoochimico.kmp.hbible.testing.FakeBibleRepository
 import com.hooloovoochimico.kmp.hbible.testing.FakeSettingsRepository
 import com.hooloovoochimico.kmp.hbible.ui.common.VerseRef
@@ -85,11 +86,35 @@ class VerseDetailViewModelTest {
     assertEquals(null, viewModel.verseDetail.value)
   }
 
+  @Test
+  fun verseDetail_versionsFollowTranslationOrderAndSkipMissingText() = runTest {
+    val viewModel =
+      buildViewModel(
+        repository =
+          FakeBibleRepository(
+            verses =
+              listOf(
+                // MAR (Martini) manca per questo versetto: deve essere saltata.
+                VerseEntity("DIO", 1, 1, 1, null, "Diodati"),
+                VerseEntity("NTA", 1, 1, 1, null, "Nuova"),
+                VerseEntity("R27", 1, 1, 1, null, "Riveduta"),
+              ),
+          ),
+      )
+    viewModel.open(listOf(VerseRef(1, 1, 1)))
+    val detail = viewModel.verseDetail.filterNotNull().first()
+    // Ordine di TRANSLATION_META (NTA, R27, DIO, MAR); la traduzione corrente resta
+    // nell'elenco, lo schermo la filtra.
+    assertEquals(listOf("NTA", "R27", "DIO"), detail.versions.map { it.translation })
+    assertEquals(listOf("Nuova", "Riveduta", "Diodati"), detail.versions.map { it.text })
+  }
+
   private fun buildViewModel(
     settings: FakeSettingsRepository = FakeSettingsRepository(),
+    repository: FakeBibleRepository = FakeBibleRepository(),
   ): VerseDetailViewModel =
     VerseDetailViewModel(
-      FakeBibleRepository(),
+      repository,
       // Nessun provider all'avvio: il gateway fallisce sempre, per questo test
       // non serve una chiamata vera.
       AiGateway(configProvider = { settings.aiConfig.value }),

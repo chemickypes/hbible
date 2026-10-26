@@ -1,23 +1,11 @@
 package com.hooloovoochimico.kmp.hbible.ui.reader
 
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Surface
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.Box
-import androidx.compose.ui.text.font.FontFamily
-import com.hooloovoochimico.kmp.hbible.ui.common.GroupHeader
-import com.hooloovoochimico.kmp.hbible.ui.common.TonalIcon
-import com.hooloovoochimico.kmp.hbible.ui.settings.SettingsIcons
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,17 +15,19 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -50,39 +40,32 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hooloovoochimico.kmp.hbible.appLog
+import com.hooloovoochimico.kmp.hbible.data.TRANSLATION_META
 import com.hooloovoochimico.kmp.hbible.data.ai.AiChatMessage
 import com.hooloovoochimico.kmp.hbible.data.ai.AiPrompts
-import com.hooloovoochimico.kmp.hbible.data.local.LexemeEntity
 import com.hooloovoochimico.kmp.hbible.data.local.VerseEntity
-import com.hooloovoochimico.kmp.hbible.data.local.alignmentTokens
 import com.hooloovoochimico.kmp.hbible.platform.BackHandler
 import com.hooloovoochimico.kmp.hbible.theme.ScriptureTypography
 import com.hooloovoochimico.kmp.hbible.ui.common.AiChatPanel
 import com.hooloovoochimico.kmp.hbible.ui.common.AppIcons
 import com.hooloovoochimico.kmp.hbible.ui.common.EmptyMessage
+import com.hooloovoochimico.kmp.hbible.ui.common.GroupHeader
 import com.hooloovoochimico.kmp.hbible.ui.common.HBibleCard
-import com.hooloovoochimico.kmp.hbible.ui.common.SectionHeader
+import com.hooloovoochimico.kmp.hbible.ui.common.TonalIcon
+import com.hooloovoochimico.kmp.hbible.ui.common.TranslationVersionRow
 import com.hooloovoochimico.kmp.hbible.ui.common.VerseChipRow
 import com.hooloovoochimico.kmp.hbible.ui.common.VerseRef
+import com.hooloovoochimico.kmp.hbible.ui.common.groupedShape
+import com.hooloovoochimico.kmp.hbible.ui.settings.SettingsIcons
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
-
-private const val LEMMA_LIMIT = 40
 
 private val VERSE_CHAT_SUGGESTIONS =
   listOf(
@@ -92,8 +75,12 @@ private val VERSE_CHAT_SUGGESTIONS =
     "Come si applica oggi?",
   )
 
-/** Full-screen verse detail page: original text, transliteration, cross references. */
-@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
+/**
+ * Full-screen verse detail page: the verse, the interlinear shortcut, the verse
+ * in the other translations, the original text with its transliteration, cross
+ * references and the AI chat.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VerseDetailScreen(
   verse: VerseEntity?,
@@ -104,15 +91,13 @@ fun VerseDetailScreen(
   translation: String,
   translationName: String,
   bookName: (Int) -> String,
-  /** Word to select on open (from the interlinear tab); -1 = none. */
-  initialWord: Int = -1,
   onSaveAiToNote: ((String) -> Unit)?,
   onDismiss: () -> Unit,
   onPrev: () -> Unit,
   onNext: () -> Unit,
   onOpenReference: (VerseRef) -> Unit,
   onOpenDetail: (VerseRef) -> Unit,
-  /** Opens the interlinear tab on this verse (top bar action, wired by the shell). */
+  /** Opens the interlinear tab on this verse (wired by the shell). */
   onOpenInterlinear: () -> Unit,
   modifier: Modifier = Modifier,
   viewModel: VerseDetailViewModel,
@@ -189,61 +174,6 @@ fun VerseDetailScreen(
     }
   }
 
-  // --- selected original-language word (lemma concordance) ---
-  val original = detail?.original
-  val words = original?.text?.split(" ")?.filter { it.isNotEmpty() } ?: emptyList()
-  val lemmaTokens = original?.lemmas?.split(" ")?.filter { it.isNotEmpty() } ?: emptyList()
-  val translitWords = original?.transliteration?.split(" ")?.filter { it.isNotEmpty() } ?: emptyList()
-  val selectable = original != null && words.isNotEmpty() && words.size == lemmaTokens.size
-  var selectedWord by rememberSaveable(original, index) { mutableStateOf(initialWord) }
-  // aligned Italian token index for the selected word (per current translation)
-  val alignedArray =
-    remember(detail?.alignments, translation) { detail?.alignments?.get(translation).orEmpty() }
-  val italianVerseTokens = verse?.text?.let(::alignmentTokens) ?: emptyList()
-  val alignedItToken =
-    if (selectable && selectedWord in alignedArray.indices) alignedArray[selectedWord] else -1
-  val alignedItalianWord =
-    alignedItToken.takeIf { it in italianVerseTokens.indices }?.let { italianVerseTokens[it] } ?: ""
-  // Contextual interlinear gloss for the selected word (Italian when curated, else English).
-  val contextualGloss =
-    remember(original, selectedWord) {
-      val ge = original?.glosses?.split("\t") ?: emptyList()
-      val gi = original?.glossesIt?.split("\t") ?: emptyList()
-      if (selectedWord in gi.indices && gi[selectedWord].isNotEmpty()) {
-        gi[selectedWord]
-      } else if (selectedWord in ge.indices) {
-        ge[selectedWord]
-      } else {
-        ""
-      }
-    }
-  var occurrences by remember(original) { mutableStateOf(emptyList<VerseRef>()) }
-  var occurrencesLoading by remember(original) { mutableStateOf(false) }
-  val selectedLemma = if (selectable && selectedWord in lemmaTokens.indices) lemmaTokens[selectedWord] else ""
-  LaunchedEffect(original, selectedWord) {
-    val o = original
-    if (o == null || selectedLemma.isEmpty() || selectedLemma == "-") {
-      occurrences = emptyList()
-      occurrencesLoading = false
-      return@LaunchedEffect
-    }
-    occurrencesLoading = true
-    occurrences = viewModel.lemmaOccurrences(o.lang, selectedLemma, VerseRef(o.book, o.chapter, o.verse))
-    occurrencesLoading = false
-  }
-  var lexeme by remember(original, selectedWord) { mutableStateOf<LexemeEntity?>(null) }
-  var translating by remember(original, selectedWord) { mutableStateOf(false) }
-  var translateFailed by remember(original, selectedWord) { mutableStateOf(false) }
-  LaunchedEffect(original, selectedWord) {
-    val o = original
-    lexeme =
-      if (o == null || selectedLemma.isEmpty() || selectedLemma == "-") {
-        null
-      } else {
-        viewModel.lexeme(o.lang, selectedLemma)
-      }
-  }
-
   Column(
     modifier
       .fillMaxSize()
@@ -268,11 +198,6 @@ fun VerseDetailScreen(
           style = MaterialTheme.typography.labelSmall,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-      }
-      Spacer(Modifier.weight(1f))
-      // Stessa icona della tab Interlineare nella bottom bar.
-      IconButton(onClick = onOpenInterlinear) {
-        Icon(AppIcons.Menu, contentDescription = "Apri nell'interlineare")
       }
     }
 
@@ -307,23 +232,6 @@ fun VerseDetailScreen(
         .padding(bottom = 24.dp),
     ) {
       verse?.let { v ->
-        val annotated = buildAnnotatedString {
-          var start = 0
-          var tokenIdx = 0
-          Regex("\\S+").findAll(v.text).forEach { match ->
-            append(v.text.substring(start, match.range.first))
-            val highlight = tokenIdx == alignedItToken && alignedItToken >= 0
-            withStyle(
-              SpanStyle(
-                background =
-                  if (highlight) MaterialTheme.colorScheme.primaryContainer else Color.Unspecified,
-              ),
-            ) { append(match.value) }
-            start = match.range.last + 1
-            tokenIdx++
-          }
-          append(v.text.substring(start))
-        }
         // Il versetto come citazione: filetto oro a sinistra.
         Row(
           Modifier
@@ -336,214 +244,99 @@ fun VerseDetailScreen(
               .fillMaxHeight()
               .background(MaterialTheme.colorScheme.primary, CircleShape),
           )
-          Text(annotated, style = ScriptureTypography.detail, modifier = Modifier.padding(start = 16.dp))
+          Text(v.text, style = ScriptureTypography.detail, modifier = Modifier.padding(start = 16.dp))
         }
       }
 
-        GroupHeader(
-          "Testo originale",
-          Modifier.padding(start = 24.dp, end = 24.dp, top = 28.dp, bottom = 8.dp),
+      // Azione principale: il versetto nella tab Interlineare (parola per parola).
+      FilledTonalButton(
+        onClick = onOpenInterlinear,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp).height(52.dp),
+        shape = MaterialTheme.shapes.extraLarge,
+      ) {
+        Icon(AppIcons.Menu, contentDescription = null, modifier = Modifier.size(20.dp))
+        Text(
+          "Interlineare",
+          style = MaterialTheme.typography.titleMedium,
+          modifier = Modifier.padding(start = 10.dp),
         )
-        val original = detail?.original
-        if (original == null) {
-          EmptyMessage(
-            if (detail == null) "Caricamento…" else "Testo originale non disponibile per questo versetto.",
-            Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
-            MaterialTheme.typography.bodySmall,
-          )
-        } else {
+      }
+
+      // --- Altre traduzioni: il versetto come appare nelle altre versioni dell'app ---
+      GroupHeader("Altre traduzioni", Modifier.padding(start = 24.dp, end = 24.dp, top = 20.dp, bottom = 8.dp))
+      val others = detail?.versions.orEmpty().filter { it.translation != translation }
+      if (detail != null && others.isEmpty()) {
+        EmptyMessage(
+          "Nessun'altra traduzione per questo versetto.",
+          Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
+          MaterialTheme.typography.bodySmall,
+        )
+      }
+      others.forEachIndexed { i, version ->
+        TranslationVersionRow(
+          shape = groupedShape(i, others.size),
+          abbr = version.translation,
+          name = TRANSLATION_META.firstOrNull { it.abbr == version.translation }?.name ?: version.translation,
+          text = version.text,
+          current = false,
+        )
+      }
+
+      // --- Testo originale e traslitterazione ---
+      GroupHeader("Testo originale", Modifier.padding(start = 24.dp, end = 24.dp, top = 28.dp, bottom = 8.dp))
+      val original = detail?.original
+      if (original == null) {
+        EmptyMessage(
+          if (detail == null) "Caricamento…" else "Testo originale non disponibile per questo versetto.",
+          Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
+          MaterialTheme.typography.bodySmall,
+        )
+      } else {
+        HBibleCard(
+          modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+          shape = MaterialTheme.shapes.extraLarge,
+          color = MaterialTheme.colorScheme.surfaceContainer,
+          contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
+        ) {
           Surface(
             shape = CircleShape,
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
             contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 24.dp),
           ) {
             Text(
-              if (original.lang == "he") "Ebraico · tocca una parola" else "Greco · tocca una parola",
+              if (original.lang == "he") "Ebraico" else "Greco",
               style = MaterialTheme.typography.labelSmall,
               modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
             )
           }
-          val wordStyle = ScriptureTypography.original(original.lang)
-          if (selectable) {
-            val wordRow = @Composable { word: String, idx: Int ->
-              val selected = idx == selectedWord
-              Text(
-                word,
-                style = wordStyle,
-                color =
-                  if (selected) MaterialTheme.colorScheme.onPrimary
-                  else MaterialTheme.colorScheme.onSurface,
-                modifier =
-                  Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(
-                      if (selected) MaterialTheme.colorScheme.primary else Color.Transparent,
-                    )
-                    .clickable { selectedWord = if (selected) -1 else idx }
-                    .padding(horizontal = 2.dp),
-              )
-            }
-            val content: @Composable () -> Unit = {
-              FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
-              ) {
-                words.forEachIndexed { idx, word -> wordRow(word, idx) }
-              }
-            }
-            if (original.lang == "he") {
-              CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-                content()
-              }
-            } else {
-              content()
-            }
-          } else {
+          val originalText: @Composable () -> Unit = {
             Text(
               original.text,
-              style = wordStyle,
-              modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+              style = ScriptureTypography.original(original.lang),
+              modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
             )
           }
-
-          if (selectedWord >= 0 && selectedWord < words.size) {
-            HBibleCard(
-              shape = MaterialTheme.shapes.extraLarge,
-              modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 4.dp),
-              contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
-            ) {
-              Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                  words[selectedWord],
-                  style = ScriptureTypography.original(original.lang).copy(lineHeight = TextUnit.Unspecified),
-                  modifier = Modifier.weight(1f),
-                )
-                IconButton(onClick = { selectedWord = -1 }) {
-                  Icon(
-                    AppIcons.Close,
-                    contentDescription = "Deseleziona parola",
-                    modifier = Modifier.size(20.dp),
-                  )
-                }
-              }
-              if (selectedWord < translitWords.size) {
-                Text(
-                  translitWords[selectedWord],
-                  style = ScriptureTypography.originalGloss,
-                  color = MaterialTheme.colorScheme.primary,
-                  fontWeight = FontWeight.Bold,
-                )
-              }
-              if (contextualGloss.isNotEmpty()) {
-                Text(
-                  contextualGloss,
-                  style = MaterialTheme.typography.bodyMedium,
-                  fontStyle = FontStyle.Italic,
-                  modifier = Modifier.padding(top = 2.dp),
-                )
-              }
-                if (alignedItalianWord.isNotEmpty()) {
-                  Text(
-                    "In italiano:",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 8.dp),
-                  )
-                  Text(
-                    alignedItalianWord,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                  )
-                }
-                lexeme?.let { lx ->
-                  Column(Modifier.padding(top = 6.dp)) {
-                    val italian = lx.glossIt
-                    if (italian.isNotBlank()) {
-                      Text(
-                        italian,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
-                      )
-                      Text(
-                        lx.gloss,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 2.dp),
-                      )
-                    } else {
-                      Text(
-                        lx.gloss,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                      )
-                      TextButton(onClick = {
-                        scope.launch {
-                          translating = true
-                          translateFailed = false
-                          val result = viewModel.translateGloss(original.lang, lx.number, lx.gloss)
-                          if (result != null) {
-                            lexeme = lx.copy(glossIt = result)
-                          } else {
-                            translateFailed = true
-                          }
-                          translating = false
-                        }
-                      }) {
-                        Text(
-                          if (translating) "Traduzione in corso…" else "Traduci in italiano (AI)",
-                        )
-                      }
-                      if (translateFailed && !translating) {
-                        Text(
-                          "Traduzione non riuscita: configura un servizio AI in Impostazioni → Assistente AI.",
-                          style = MaterialTheme.typography.labelSmall,
-                          color = MaterialTheme.colorScheme.error,
-                        )
-                      }
-                    }
-                  }
-                }
-                val count = occurrences.size
-                val countLabel =
-                  when {
-                    occurrencesLoading -> "Ricerca in corso…"
-                    selectedLemma == "-" -> "Lemma non disponibile"
-                    count == 0 -> "Nessuna altra occorrenza"
-                    count == 1 -> "Ricorre in 1 altro versetto"
-                    count == LEMMA_LIMIT -> "Ricorre in $count+ altri versetti"
-                    else -> "Ricorre in $count altri versetti"
-                  }
-                Text(
-                  countLabel,
-                  style = MaterialTheme.typography.labelSmall,
-                  color = MaterialTheme.colorScheme.onSurfaceVariant,
-                  modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
-                )
-                 if (!occurrencesLoading && occurrences.isNotEmpty()) {
-                   VerseChipRow(
-                     refs = occurrences,
-                     bookName = bookName,
-                     loadVerse = occurrencesTextLoader,
-                     onOpenReference = onOpenReference,
-                     // Velatura dell'accento sopra il fondo della scheda: secondaryContainer
-                     // al buio è più scuro della scheda (verde su grigio-blu senza contrasto).
-                     color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.16f)
-                       .compositeOver(MaterialTheme.colorScheme.surfaceContainerHigh),
-                     contentColor = MaterialTheme.colorScheme.onSurface,
-                     onOpenDetail = onOpenDetail,
-                   )
-                 }
+          // Ebraico: il testo resta da destra a sinistra anche in un blocco misto.
+          if (original.lang == "he") {
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+              originalText()
             }
+          } else {
+            originalText()
           }
-
           Text(
             original.transliteration,
             style = ScriptureTypography.transliteration,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 24.dp),
+            modifier = Modifier.padding(top = 10.dp),
           )
+        }
+        Text(
+          "Parola per parola nell'interlineare.",
+          style = MaterialTheme.typography.labelSmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+          modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 6.dp),
+        )
       }
 
       GroupHeader("Riferimenti", Modifier.padding(start = 24.dp, end = 24.dp, top = 28.dp, bottom = 8.dp))
