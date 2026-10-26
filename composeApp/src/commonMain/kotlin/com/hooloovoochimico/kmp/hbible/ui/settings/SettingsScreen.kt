@@ -171,7 +171,7 @@ fun SettingsScreen(
     }
     SnackbarHost(
       snackbarHost,
-      Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(16.dp),
+      Modifier.align(Alignment.BottomCenter).padding(start = 16.dp, end = 16.dp, bottom = LocalBottomBarClearance.current),
     )
   }
 

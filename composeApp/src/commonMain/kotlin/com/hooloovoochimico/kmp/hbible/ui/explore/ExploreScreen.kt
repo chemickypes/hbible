@@ -236,8 +236,10 @@ fun ExploreScreen(
         if (aiMode) {
           "Descrivi con parole tue il versetto che cerchi: l'AI trova i riferimenti più " +
             "probabili (Tutta la Bibbia, $translationName)."
-        } else {
+        } else if (state.aiEnabled) {
           "Cerca nel testo, vai a un passo o chiedi all'AI"
+        } else {
+          "Cerca nel testo o vai a un passo"
         },
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -401,7 +403,12 @@ fun ExploreScreen(
                 EmptyState(
                   AppIcons.Search,
                   "Nessun risultato",
-                  hint = "Prova con meno parole, cambia ambito o chiedi all'AI.",
+                  hint =
+                    if (state.aiEnabled) {
+                      "Prova con meno parole, cambia ambito o chiedi all'AI."
+                    } else {
+                      "Prova con meno parole o cambia ambito."
+                    },
                 )
               }
             } else {
