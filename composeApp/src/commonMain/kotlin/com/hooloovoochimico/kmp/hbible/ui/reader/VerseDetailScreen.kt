@@ -193,7 +193,7 @@ fun VerseDetailScreen(
       IconButton(onClick = onDismiss) {
         Icon(AppIcons.Close, contentDescription = "Chiudi dettaglio")
       }
-      Column(Modifier.padding(start = 4.dp)) {
+      Column(Modifier.padding(start = 4.dp).weight(1f)) {
         Text(reference, style = MaterialTheme.typography.titleLarge.copy(fontFamily = FontFamily.Serif))
         Text(
           translationName,
@@ -201,27 +201,22 @@ fun VerseDetailScreen(
           color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
       }
-    }
-
-    if (count > 1) {
-      Surface(
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = Modifier.align(Alignment.CenterHorizontally).padding(vertical = 4.dp),
-      ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-          IconButton(onClick = onPrev, enabled = index > 0) {
-            Icon(AppIcons.ChevronLeft, contentDescription = "Versetto precedente")
-          }
-          Text(
-            "${index + 1} di $count",
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 8.dp),
-          )
-          IconButton(onClick = onNext, enabled = index < count - 1) {
-            Icon(AppIcons.ChevronRight, contentDescription = "Versetto successivo")
+      // Più versetti selezionati: navigatore in alto a destra, accanto al riferimento.
+      if (count > 1) {
+        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainer) {
+          Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onPrev, enabled = index > 0) {
+              Icon(AppIcons.ChevronLeft, contentDescription = "Versetto precedente")
+            }
+            Text(
+              "${index + 1}/$count",
+              style = MaterialTheme.typography.labelLarge,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+              textAlign = TextAlign.Center,
+            )
+            IconButton(onClick = onNext, enabled = index < count - 1) {
+              Icon(AppIcons.ChevronRight, contentDescription = "Versetto successivo")
+            }
           }
         }
       }

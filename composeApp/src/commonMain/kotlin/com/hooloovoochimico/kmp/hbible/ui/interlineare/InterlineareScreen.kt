@@ -1,6 +1,7 @@
 package com.hooloovoochimico.kmp.hbible.ui.interlineare
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -45,19 +46,15 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.hooloovoochimico.kmp.hbible.data.TRANSLATION_META
 import com.hooloovoochimico.kmp.hbible.data.local.OriginalVerseEntity
 import com.hooloovoochimico.kmp.hbible.data.local.VerseEntity
 import com.hooloovoochimico.kmp.hbible.data.local.alignmentTokens
 import com.hooloovoochimico.kmp.hbible.theme.ScriptureTypography
 import com.hooloovoochimico.kmp.hbible.ui.common.AppIcons
 import com.hooloovoochimico.kmp.hbible.ui.common.EmptyMessage
-import com.hooloovoochimico.kmp.hbible.ui.common.GroupHeader
 import com.hooloovoochimico.kmp.hbible.ui.common.OriginalWordCard
 import com.hooloovoochimico.kmp.hbible.ui.common.ScreenTitle
-import com.hooloovoochimico.kmp.hbible.ui.common.TranslationVersionRow
 import com.hooloovoochimico.kmp.hbible.ui.common.VerseRef
-import com.hooloovoochimico.kmp.hbible.ui.common.groupedShape
 import com.hooloovoochimico.kmp.hbible.ui.reader.BookChapterPicker
 import com.hooloovoochimico.kmp.hbible.ui.reader.VerseStep
 
@@ -172,66 +169,44 @@ fun InterlineareScreen(
             verse = state.verse,
             alignment = state.alignment,
             lexiconGlosses = state.lexiconGlosses,
+            selectedIndex = selected?.index,
             onWordClick = viewModel::selectWord,
           )
-          GroupHeader(
-            "Il versetto nelle versioni",
-            Modifier.padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 8.dp),
-          )
-          state.versions.forEachIndexed { index, version ->
-            TranslationVersionRow(
-              shape = groupedShape(index, state.versions.size),
-              abbr = version.translation,
-              name =
-                TRANSLATION_META.firstOrNull { it.abbr == version.translation }?.name
-                  ?: version.translation,
-              text = version.text,
-              current = version.translation == state.translation,
+          // Scheda della parola toccata, sotto il versetto (al posto del foglio dal basso).
+          val word = selected
+          if (word != null) {
+            OriginalWordCard(
+              info = word.info,
+              lang = word.lang,
+              bookName = { n -> state.books.firstOrNull { it.n == n }?.name.orEmpty() },
+              loadVerse = { ref -> viewModel.verseText(ref) },
+              onOpenReference = { ref ->
+                viewModel.clearWord()
+                onOpenReference(ref)
+              },
+              onOpenDetail = { ref ->
+                viewModel.clearWord()
+                onOpenDetail(ref)
+              },
+              onTranslateGloss =
+                if (aiFeaturesOn) {
+                  { lexeme -> viewModel.translateGloss(word.lang, lexeme) }
+                } else {
+                  null
+                },
+              onClose = viewModel::clearWord,
+              modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+          } else {
+            Text(
+              "Tocca una parola per vederne lemma, significato e occorrenze.",
+              style = MaterialTheme.typography.bodyMedium,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+              modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
             )
           }
           Spacer(Modifier.padding(bottom = 96.dp))
         }
-      }
-    }
-  }
-
-  // Scheda della parola toccata: foglio a tutta larghezza (telefono e tablet).
-  selected?.let { word ->
-    ModalBottomSheet(
-      onDismissRequest = viewModel::clearWord,
-      sheetState =
-        rememberBottomSheetState(
-          initialValue = SheetValue.Hidden,
-          enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
-        ),
-    ) {
-      Column(
-        Modifier
-          .fillMaxWidth()
-          .verticalScroll(rememberScrollState())
-          .padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
-      ) {
-        OriginalWordCard(
-          info = word.info,
-          lang = word.lang,
-          bookName = { n -> state.books.firstOrNull { it.n == n }?.name.orEmpty() },
-          loadVerse = { ref -> viewModel.verseText(ref) },
-          onOpenReference = { ref ->
-            viewModel.clearWord()
-            onOpenReference(ref)
-          },
-          onOpenDetail = { ref ->
-            viewModel.clearWord()
-            onOpenDetail(ref)
-          },
-          onTranslateGloss =
-            if (aiFeaturesOn) {
-              { lexeme -> viewModel.translateGloss(word.lang, lexeme) }
-            } else {
-              null
-            },
-          onClose = viewModel::clearWord,
-        )
       }
     }
   }
@@ -279,6 +254,7 @@ private fun WordColumns(
   verse: VerseEntity?,
   alignment: List<Int>,
   lexiconGlosses: Map<String, String>,
+  selectedIndex: Int?,
   onWordClick: (Int) -> Unit,
 ) {
   val words = original.text.split(" ").filter { it.isNotEmpty() }
@@ -310,6 +286,7 @@ private fun WordColumns(
           transliteration = translitWords.getOrNull(index).orEmpty(),
           gloss = gloss,
           lang = original.lang,
+          selected = index == selectedIndex,
           onClick = { onWordClick(index) },
         )
       }
@@ -338,6 +315,7 @@ private fun OriginalWordColumn(
   transliteration: String,
   gloss: String,
   lang: String,
+  selected: Boolean,
   onClick: () -> Unit,
 ) {
   Column(
@@ -345,6 +323,7 @@ private fun OriginalWordColumn(
     modifier =
       Modifier
         .clip(MaterialTheme.shapes.medium)
+        .background(if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent)
         .clickable(onClick = onClick)
         .padding(horizontal = 6.dp, vertical = 4.dp),
   ) {

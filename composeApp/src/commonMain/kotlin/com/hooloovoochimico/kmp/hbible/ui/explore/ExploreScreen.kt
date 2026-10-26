@@ -678,15 +678,12 @@ private fun LazyListScope.exploreHome(
       modifier = Modifier.padding(horizontal = ScreenPadding, vertical = 8.dp),
     )
   }
-  // "Temi" compare solo quando il CMS ha pubblicato topics.json (nessun errore se manca).
-  if (topics.isNotEmpty()) {
-    item(key = "temi") {
-      TemiSection(
-        entries = topics,
-        onOpen = onTopic,
-        modifier = Modifier.padding(horizontal = ScreenPadding, vertical = 8.dp),
-      )
-    }
+  item(key = "temi") {
+    TemiSection(
+      entries = topics,
+      onOpen = onTopic,
+      modifier = Modifier.padding(horizontal = ScreenPadding, vertical = 8.dp),
+    )
   }
   if (history.isNotEmpty()) {
     item(key = "recenti") {
@@ -833,7 +830,7 @@ private fun ProntoSoccorsoSection(entries: List<FirstAidEntity>, onOpen: (String
   )
 }
 
-/** Sezione "Temi": stessa forma del pronto soccorso, colori del terziario. Nascosta se vuota. */
+/** Sezione "Temi": stessa forma del pronto soccorso, colori del terziario. */
 @Composable
 private fun TemiSection(entries: List<TopicEntity>, onOpen: (String) -> Unit, modifier: Modifier = Modifier) {
   val colors = MaterialTheme.colorScheme
@@ -846,7 +843,7 @@ private fun TemiSection(entries: List<TopicEntity>, onOpen: (String) -> Unit, mo
     iconContent = colors.onTertiary,
     textColor = colors.onTertiaryContainer,
     entries = entries.map { it.slug to it.title },
-    emptyHint = null,
+    emptyHint = "Le voci si scaricano con l'aggiornamento dei contenuti: collegati a internet e riapri Esplora.",
     onOpen = onOpen,
     modifier = modifier,
   )

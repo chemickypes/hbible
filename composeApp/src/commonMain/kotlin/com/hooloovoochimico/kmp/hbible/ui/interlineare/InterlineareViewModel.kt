@@ -44,8 +44,6 @@ data class InterlineareUiState(
   /** Alignment of [original] against [translation] (0-based token indices, -1 = none). */
   val alignment: List<Int> = emptyList(),
   val verse: VerseEntity? = null,
-  /** The same verse in every bundled translation, in TRANSLATION_META order. */
-  val versions: List<VerseEntity> = emptyList(),
   /** Short Italian lexicon glosses for the verse's Strong numbers ("h7971" -> "mandare via"). */
   val lexiconGlosses: Map<String, String> = emptyMap(),
   /** Number of the last verse of the open chapter (0 while unknown). */
@@ -54,7 +52,7 @@ data class InterlineareUiState(
   val hasNext: Boolean = false,
 )
 
-/** Word selected in the interlinear (scheda sotto il foglio): its index and its content. */
+/** Word selected in the interlinear (scheda sotto il versetto): its index and its content. */
 data class SelectedWord(
   val index: Int,
   val lang: String,
@@ -105,9 +103,8 @@ class InterlineareViewModel(
           repository.originalVerse(pos.book, pos.chapter, pos.verse),
           repository.chapter(tr, pos.book, pos.chapter),
           flow { emit(repository.verse(tr, pos.book, pos.chapter, pos.verse)) },
-          flow { emit(repository.verseInAllTranslations(pos.book, pos.chapter, pos.verse)) },
           repository.alignments(pos.book, pos.chapter, pos.verse),
-        ) { original, chapterVerses, verse, versions, alignments ->
+        ) { original, chapterVerses, verse, alignments ->
           val book = b.firstOrNull { it.n == pos.book }
           val chapterMax = chapterVerses.maxOfOrNull { it.verse } ?: 0
           InterlineareUiState(
@@ -117,7 +114,6 @@ class InterlineareViewModel(
             original = original,
             alignment = alignments[tr].orEmpty(),
             verse = verse,
-            versions = versions,
             lexiconGlosses = lexiconGlosses(original),
             chapterMaxVerse = chapterMax,
             hasPrev = pos.verse > 1 || pos.chapter > 1 || pos.book > 1,
