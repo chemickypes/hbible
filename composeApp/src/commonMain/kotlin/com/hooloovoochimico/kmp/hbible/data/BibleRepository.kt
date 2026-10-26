@@ -4,6 +4,7 @@ import com.hooloovoochimico.kmp.hbible.data.local.BibleDatabase
 import com.hooloovoochimico.kmp.hbible.data.local.BookEntity
 import com.hooloovoochimico.kmp.hbible.data.local.BookInfoEntity
 import com.hooloovoochimico.kmp.hbible.data.local.FirstAidEntity
+import com.hooloovoochimico.kmp.hbible.data.local.TopicEntity
 import com.hooloovoochimico.kmp.hbible.data.local.CrossReferenceEntity
 import com.hooloovoochimico.kmp.hbible.data.local.LexemeEntity
 import com.hooloovoochimico.kmp.hbible.data.local.OriginalVerseEntity
@@ -86,6 +87,11 @@ interface BibleRepository {
   fun firstAidEntries(): Flow<List<FirstAidEntity>>
 
   fun firstAid(slug: String): Flow<FirstAidEntity?>
+
+  /** Voci del tema (sezione "Temi"), nell'ordine deciso nel CMS. */
+  fun topicEntries(): Flow<List<TopicEntity>>
+
+  fun topic(slug: String): Flow<TopicEntity?>
 }
 
 class DefaultBibleRepository(
@@ -143,6 +149,10 @@ class DefaultBibleRepository(
   override fun firstAidEntries(): Flow<List<FirstAidEntity>> = db.bibleDao().firstAidEntries()
 
   override fun firstAid(slug: String): Flow<FirstAidEntity?> = db.bibleDao().firstAid(slug)
+
+  override fun topicEntries(): Flow<List<TopicEntity>> = db.bibleDao().topicEntries()
+
+  override fun topic(slug: String): Flow<TopicEntity?> = db.bibleDao().topic(slug)
 
   override suspend fun ensureImported() = withContext(Dispatchers.Default) {
     val dao = db.bibleDao()

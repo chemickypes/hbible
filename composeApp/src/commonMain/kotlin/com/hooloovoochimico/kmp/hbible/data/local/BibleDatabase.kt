@@ -30,8 +30,9 @@ expect object BibleDatabaseConstructor : RoomDatabaseConstructor<BibleDatabase> 
     VotdEntity::class,
     PostEntity::class,
     FirstAidEntity::class,
+    TopicEntity::class,
   ],
-  version = 17,
+  version = 18,
   exportSchema = true,
 )
 abstract class BibleDatabase : RoomDatabase() {

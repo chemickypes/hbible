@@ -95,6 +95,7 @@ import com.hooloovoochimico.kmp.hbible.data.SearchHistoryEntry
 import com.hooloovoochimico.kmp.hbible.data.SearchScope
 import com.hooloovoochimico.kmp.hbible.data.aiReportUrl
 import com.hooloovoochimico.kmp.hbible.data.local.FirstAidEntity
+import com.hooloovoochimico.kmp.hbible.data.local.TopicEntity
 import com.hooloovoochimico.kmp.hbible.data.local.NoteEntity
 import com.hooloovoochimico.kmp.hbible.platform.BackHandler
 import com.hooloovoochimico.kmp.hbible.platform.formatDate
@@ -183,6 +184,7 @@ fun ExploreScreen(
   onGoToVerse: (Int, Int, Int) -> Unit,
   onOpenNote: (Long) -> Unit,
   onOpenFirstAid: (String) -> Unit,
+  onOpenTopic: (String) -> Unit,
   focusSearchRequest: Int = 0,
   modifier: Modifier = Modifier,
   viewModel: ExploreViewModel,
@@ -192,6 +194,7 @@ fun ExploreScreen(
   val books by viewModel.books.collectAsStateWithLifecycle()
   val aiResults by viewModel.aiResults.collectAsStateWithLifecycle()
   val firstAid by viewModel.firstAidEntries.collectAsStateWithLifecycle()
+  val topics by viewModel.topicEntries.collectAsStateWithLifecycle()
 
   // Verse previews are loaded in the translation the reader is showing.
   LaunchedEffect(translation) { viewModel.setTranslation(translation) }
@@ -289,6 +292,11 @@ fun ExploreScreen(
               onFirstAid = {
                 keyboard?.hide()
                 onOpenFirstAid(it)
+              },
+              topics = topics,
+              onTopic = {
+                keyboard?.hide()
+                onOpenTopic(it)
               },
               onRestoreHistory = {
                 keyboard?.hide()
@@ -645,6 +653,8 @@ private fun LazyListScope.exploreHome(
   history: List<SearchHistoryEntry>,
   firstAid: List<FirstAidEntity>,
   onFirstAid: (String) -> Unit,
+  topics: List<TopicEntity>,
+  onTopic: (String) -> Unit,
   onRestoreHistory: (SearchHistoryEntry) -> Unit,
   onClearHistory: () -> Unit,
   onExample: (String) -> Unit,
@@ -655,6 +665,16 @@ private fun LazyListScope.exploreHome(
       onOpen = onFirstAid,
       modifier = Modifier.padding(horizontal = ScreenPadding, vertical = 8.dp),
     )
+  }
+  // "Temi" compare solo quando il CMS ha pubblicato topics.json (nessun errore se manca).
+  if (topics.isNotEmpty()) {
+    item(key = "temi") {
+      TemiSection(
+        entries = topics,
+        onOpen = onTopic,
+        modifier = Modifier.padding(horizontal = ScreenPadding, vertical = 8.dp),
+      )
+    }
   }
   if (history.isNotEmpty()) {
     item(key = "recenti") {
@@ -775,40 +795,100 @@ internal fun firstAidBrush(): Brush =
     listOf(MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.primaryContainer),
   )
 
+/** Gradient of the "Temi" cards: tertiary container fading into the surface (readable on every theme). */
+@Composable
+internal fun topicsBrush(): Brush =
+  Brush.linearGradient(
+    listOf(MaterialTheme.colorScheme.tertiaryContainer, MaterialTheme.colorScheme.surfaceContainerHigh),
+  )
+
 /** Sezione "pronto soccorso": voci scritte nel CMS, ognuna apre riflessione e versetti. */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ProntoSoccorsoSection(entries: List<FirstAidEntity>, onOpen: (String) -> Unit, modifier: Modifier = Modifier) {
+  val colors = MaterialTheme.colorScheme
+  CuratedCard(
+    title = "Pronto soccorso",
+    subtitle = "Versetti e una riflessione per i momenti difficili",
+    icon = AppIcons.Favorite,
+    brush = firstAidBrush(),
+    iconContainer = colors.secondary,
+    iconContent = colors.onSecondary,
+    textColor = colors.onSecondaryContainer,
+    entries = entries.map { it.slug to it.title },
+    emptyHint = "Le voci si scaricano con l'aggiornamento dei contenuti: collegati a internet e riapri Esplora.",
+    onOpen = onOpen,
+    modifier = modifier,
+  )
+}
+
+/** Sezione "Temi": stessa forma del pronto soccorso, colori del terziario. Nascosta se vuota. */
+@Composable
+private fun TemiSection(entries: List<TopicEntity>, onOpen: (String) -> Unit, modifier: Modifier = Modifier) {
+  val colors = MaterialTheme.colorScheme
+  CuratedCard(
+    title = "Temi",
+    subtitle = "Argomenti della Bibbia con i versetti chiave e una riflessione",
+    icon = AppIcons.Topics,
+    brush = topicsBrush(),
+    iconContainer = colors.tertiary,
+    iconContent = colors.onTertiary,
+    textColor = colors.onTertiaryContainer,
+    entries = entries.map { it.slug to it.title },
+    emptyHint = null,
+    onOpen = onOpen,
+    modifier = modifier,
+  )
+}
+
+/** Card a cartelle di voci: titolo, icona e un chip per voce (scorrimento laterale). */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun CuratedCard(
+  title: String,
+  subtitle: String,
+  icon: ImageVector,
+  brush: Brush,
+  iconContainer: Color,
+  iconContent: Color,
+  textColor: Color,
+  entries: List<Pair<String, String>>,
+  /** Shown when there are no entries yet; null hides the card instead. */
+  emptyHint: String?,
+  onOpen: (String) -> Unit,
+  modifier: Modifier = Modifier,
+) {
   val colors = MaterialTheme.colorScheme
   Column(
     modifier
       .fillMaxWidth()
       .clip(MaterialTheme.shapes.extraLarge)
-      .background(firstAidBrush())
+      .background(brush)
       .padding(vertical = 20.dp),
   ) {
     Row(Modifier.padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
-      TonalIcon(AppIcons.Favorite, size = 44.dp, container = colors.secondary, content = colors.onSecondary)
+      TonalIcon(icon, size = 44.dp, container = iconContainer, content = iconContent)
       Column(Modifier.padding(start = 14.dp)) {
         Text(
-          "Pronto soccorso",
+          title,
           style = MaterialTheme.typography.headlineSmall,
-          color = colors.onSecondaryContainer,
+          color = textColor,
         )
         Text(
-          "Versetti e una riflessione per i momenti difficili",
+          subtitle,
           style = MaterialTheme.typography.bodyMedium,
-          color = colors.onSecondaryContainer.copy(alpha = 0.8f),
+          color = textColor.copy(alpha = 0.8f),
         )
       }
     }
     if (entries.isEmpty()) {
-      Text(
-        "Le voci si scaricano con l'aggiornamento dei contenuti: collegati a internet e riapri Esplora.",
-        style = MaterialTheme.typography.bodyMedium,
-        color = colors.onSecondaryContainer.copy(alpha = 0.8f),
-        modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 16.dp),
-      )
+      if (emptyHint != null) {
+        Text(
+          emptyHint,
+          style = MaterialTheme.typography.bodyMedium,
+          color = textColor.copy(alpha = 0.8f),
+          modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 16.dp),
+        )
+      }
       return@Column
     }
     // Two rows that scroll sideways together, instead of a tall wall of chips.
@@ -821,15 +901,15 @@ private fun ProntoSoccorsoSection(entries: List<FirstAidEntity>, onOpen: (String
       verticalArrangement = Arrangement.spacedBy(8.dp),
       maxItemsInEachRow = (entries.size + 1) / 2,
     ) {
-      entries.forEach { entry ->
+      entries.forEach { (slug, label) ->
         Surface(
-          onClick = { onOpen(entry.slug) },
+          onClick = { onOpen(slug) },
           shape = CircleShape,
           color = colors.surface.copy(alpha = 0.75f),
           contentColor = colors.onSurface,
         ) {
           Text(
-            entry.title,
+            label,
             style = MaterialTheme.typography.labelLarge,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
           )

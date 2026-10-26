@@ -17,6 +17,7 @@ import com.hooloovoochimico.kmp.hbible.data.ai.AiMatches
 import com.hooloovoochimico.kmp.hbible.data.content.PackageFetcher
 import com.hooloovoochimico.kmp.hbible.data.local.BookEntity
 import com.hooloovoochimico.kmp.hbible.data.local.FirstAidEntity
+import com.hooloovoochimico.kmp.hbible.data.local.TopicEntity
 import com.hooloovoochimico.kmp.hbible.data.local.NoteEntity
 import com.hooloovoochimico.kmp.hbible.data.local.VerseEntity
 import com.hooloovoochimico.kmp.hbible.ui.common.displayAbbr
@@ -97,6 +98,10 @@ class ExploreViewModel(
   val firstAidEntries: StateFlow<List<FirstAidEntity>> =
     bibleRepository.firstAidEntries().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+  /** "Temi" entries written in the CMS (package `topics.json`); empty until the CMS publishes it. */
+  val topicEntries: StateFlow<List<TopicEntity>> =
+    bibleRepository.topicEntries().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
   /** Translation used to load verse previews; kept in sync with the reader. */
   private val translation = MutableStateFlow(DEFAULT_TRANSLATION)
 
@@ -107,9 +112,11 @@ class ExploreViewModel(
   private var aiSearchJob: Job? = null
 
   init {
-    // First opening before the daily sync: download the first-aid entries now.
+    // First opening before the daily sync: download the first-aid and topic entries now.
+    // Sequential, one manifest check at most per package; a missing topics.json is harmless.
     viewModelScope.launch {
       if (bibleRepository.firstAidEntries().first().isEmpty()) fetcher.ensurePackage(FIRST_AID_PACKAGE)
+      if (bibleRepository.topicEntries().first().isEmpty()) fetcher.ensurePackage(TOPICS_PACKAGE)
     }
     // Debounced live search: text verses or notes, never in AI mode.
     viewModelScope.launch {

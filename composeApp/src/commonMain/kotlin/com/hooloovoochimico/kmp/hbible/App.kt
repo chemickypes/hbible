@@ -91,6 +91,7 @@ import com.hooloovoochimico.kmp.hbible.ui.notes.NoteEditorScreen
 import com.hooloovoochimico.kmp.hbible.ui.notes.NotesScreen
 import com.hooloovoochimico.kmp.hbible.ui.notes.NotesViewModel
 import com.hooloovoochimico.kmp.hbible.ui.reader.BookInfoScreen
+import com.hooloovoochimico.kmp.hbible.ui.explore.CuratedSection
 import com.hooloovoochimico.kmp.hbible.ui.explore.FirstAidScreen
 import com.hooloovoochimico.kmp.hbible.ui.explore.FirstAidViewModel
 import com.hooloovoochimico.kmp.hbible.ui.reader.PendingScroll
@@ -141,6 +142,10 @@ data class BookInfoRoute(val book: Int)
 /** Voce del "Pronto soccorso" (contenuto del CMS), aperta da Esplora. */
 @Serializable
 data class FirstAidRoute(val slug: String)
+
+/** Voce della sezione "Temi" (contenuto del CMS), aperta da Esplora. */
+@Serializable
+data class TopicRoute(val slug: String)
 
 @Serializable
 data class NoteEditorRoute(val noteId: Long? = null)
@@ -787,6 +792,7 @@ private fun HBibleAppShell(
                         onGoToVerse = openDetailFromExplore,
                         onOpenNote = openNote,
                         onOpenFirstAid = { slug -> navController.navigate(FirstAidRoute(slug)) },
+                        onOpenTopic = { slug -> navController.navigate(TopicRoute(slug)) },
                         focusSearchRequest = exploreFocusSearchRequest,
                         viewModel = exploreViewModel,
                       )
@@ -808,6 +814,7 @@ private fun HBibleAppShell(
                     onGoToVerse = goToVerse,
                     onOpenNote = openNote,
                     onOpenFirstAid = { slug -> navController.navigate(FirstAidRoute(slug)) },
+                    onOpenTopic = { slug -> navController.navigate(TopicRoute(slug)) },
                     focusSearchRequest = exploreFocusSearchRequest,
                     viewModel = exploreViewModel,
                   )
@@ -884,15 +891,40 @@ private fun HBibleAppShell(
               val translation = ready?.selection?.translation ?: DEFAULT_TRANSLATION
               // VM legato a questa destinazione: lo stato si azzera uscendo.
               val firstAidViewModel: FirstAidViewModel = koinViewModel()
-              LaunchedEffect(route.slug, translation) { firstAidViewModel.open(route.slug, translation) }
+              LaunchedEffect(route.slug, translation) {
+                firstAidViewModel.open(CuratedSection.FIRST_AID, route.slug, translation)
+              }
               val scope = rememberCoroutineScope()
               ContentWidth {
                 FirstAidScreen(
+                  section = CuratedSection.FIRST_AID,
                   books = ready?.books.orEmpty(),
                   onGoToVerse = goToVerse,
                   onSaveToNote = { title, body -> scope.launch { saveChatToNote(title, body, 0, 0, 0) } },
                   onDismiss = { navController.popBackStack() },
                   viewModel = firstAidViewModel,
+                )
+              }
+            }
+            composable<TopicRoute> { entry ->
+              val route = entry.toRoute<TopicRoute>()
+              val readerState by readerViewModel.uiState.collectAsStateWithLifecycle()
+              val ready = readerState as? ReaderUiState.Ready
+              val translation = ready?.selection?.translation ?: DEFAULT_TRANSLATION
+              // Stesso VM e stessa schermata della voce del pronto soccorso, sezione "Temi".
+              val topicViewModel: FirstAidViewModel = koinViewModel()
+              LaunchedEffect(route.slug, translation) {
+                topicViewModel.open(CuratedSection.TOPICS, route.slug, translation)
+              }
+              val scope = rememberCoroutineScope()
+              ContentWidth {
+                FirstAidScreen(
+                  section = CuratedSection.TOPICS,
+                  books = ready?.books.orEmpty(),
+                  onGoToVerse = goToVerse,
+                  onSaveToNote = { title, body -> scope.launch { saveChatToNote(title, body, 0, 0, 0) } },
+                  onDismiss = { navController.popBackStack() },
+                  viewModel = topicViewModel,
                 )
               }
             }

@@ -250,6 +250,24 @@ private val MIGRATION_16_17 =
     }
   }
 
+/**
+ * Sezione "Temi": nuova tabella `topics` (stesse colonne di `first_aid`), che si
+ * riempie scaricando `topics.json`. Il pacchetto non è ancora nel manifest del
+ * CMS in tutte le installazioni: finché manca la tabella resta vuota e la
+ * sezione non compare. Nessuna riga di `content_state` da ripulire: il pacchetto
+ * non è mai stato applicato.
+ */
+private val MIGRATION_17_18 =
+  object : Migration(17, 18) {
+    override fun migrate(connection: SQLiteConnection) {
+      connection.execSQL(
+        "CREATE TABLE IF NOT EXISTS `topics` (`slug` TEXT NOT NULL, `title` TEXT NOT NULL, " +
+          "`subtitle` TEXT NOT NULL, `verses` TEXT NOT NULL, `body` TEXT NOT NULL, " +
+          "`order_index` INTEGER NOT NULL, PRIMARY KEY(`slug`))",
+      )
+    }
+  }
+
 val ALL_MIGRATIONS: Array<Migration> =
   arrayOf(
     MIGRATION_1_2,
@@ -268,4 +286,5 @@ val ALL_MIGRATIONS: Array<Migration> =
     MIGRATION_14_15,
     MIGRATION_15_16,
     MIGRATION_16_17,
+    MIGRATION_17_18,
   )
