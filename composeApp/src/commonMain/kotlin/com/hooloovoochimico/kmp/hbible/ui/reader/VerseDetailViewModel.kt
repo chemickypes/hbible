@@ -2,22 +2,21 @@ package com.hooloovoochimico.kmp.hbible.ui.reader
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.hooloovoochimico.kmp.hbible.appLog
 import com.hooloovoochimico.kmp.hbible.data.BibleRepository
 import com.hooloovoochimico.kmp.hbible.data.SettingsRepository
+import com.hooloovoochimico.kmp.hbible.data.verseInAllTranslations
 import com.hooloovoochimico.kmp.hbible.data.ai.AiChatMessage
 import com.hooloovoochimico.kmp.hbible.data.ai.AiGateway
-import com.hooloovoochimico.kmp.hbible.data.local.LexemeEntity
 import com.hooloovoochimico.kmp.hbible.data.local.OriginalVerseEntity
 import com.hooloovoochimico.kmp.hbible.data.local.VerseEntity
 import com.hooloovoochimico.kmp.hbible.ui.common.VerseRef
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -26,8 +25,11 @@ import kotlinx.coroutines.flow.stateIn
 data class VerseDetail(
   val ref: VerseRef,
   val original: OriginalVerseEntity?,
-  /** Word alignments of the original verse by translation code (0-based token indices). */
-  val alignments: Map<String, List<Int>> = emptyMap(),
+  /**
+   * The verse in every bundled translation that has it, in display order (the
+   * current translation included: the screen filters it out).
+   */
+  val versions: List<VerseEntity> = emptyList(),
   val references: List<VerseRef>,
   /** Number of verses in the opened set and current index (0-based). */
   val count: Int,
@@ -35,8 +37,9 @@ data class VerseDetail(
 )
 
 /**
- * Dettaglio versetto: testo originale, riferimenti incrociati, lessico Strong e
- * chat AI. Condiviso a livello di guscio perché lo stesso dettaglio si mostra
+ * Dettaglio versetto: testo originale, altre traduzioni, riferimenti incrociati
+ * e chat AI. La parola originale (lessico, occorrenze) sta nell'interlineare.
+ * Condiviso a livello di guscio perché lo stesso dettaglio si mostra
  * come destinazione a tutto schermo (telefono) o come pannello accanto al
  * lettore (finestre larghe).
  */
@@ -53,19 +56,19 @@ class VerseDetailViewModel(
   val verseDetail: StateFlow<VerseDetail?> =
     detailRequest.flatMapLatest { req ->
       if (req == null) {
-        flowOf(null)
+        flowOf<VerseDetail?>(null)
       } else {
         val (verses, index) = req
         val ref = verses[index]
         combine(
           repository.originalVerse(ref.book, ref.chapter, ref.verse),
           repository.crossReferences(ref.book, ref.chapter, ref.verse),
-          repository.alignments(ref.book, ref.chapter, ref.verse),
-        ) { original, refs, alignments ->
+          flow { emit(repository.verseInAllTranslations(ref.book, ref.chapter, ref.verse)) },
+        ) { original, refs, versions: List<VerseEntity> ->
           VerseDetail(
             ref = ref,
             original = original,
-            alignments = alignments,
+            versions = versions,
             references = refs.map { VerseRef(it.toBook, it.toChapter, it.toVerse) },
             count = verses.size,
             index = index,
@@ -86,32 +89,6 @@ class VerseDetailViewModel(
   /** A verse in the given translation (verse text of references and occurrences). */
   suspend fun verse(translation: String, book: Int, chapter: Int, verse: Int): VerseEntity? =
     repository.verse(translation, book, chapter, verse)
-
-  /** Other verses containing the same original-language lemma (Strong's number). */
-  suspend fun lemmaOccurrences(lang: String, lemma: String, ref: VerseRef): List<VerseRef> =
-    repository
-      .lemmaOccurrences(lang, lemma, ref.book, ref.chapter, ref.verse)
-      .map { VerseRef(it.book, it.chapter, it.verse) }
-
-  /** Strong's dictionary entry for a lemma, if bundled. */
-  suspend fun lexeme(lang: String, number: String): LexemeEntity? = repository.lexeme(lang, number)
-
-  /** Translates a dictionary gloss to Italian with the configured AI and caches it. */
-  suspend fun translateGloss(lang: String, number: String, gloss: String): String? =
-    try {
-      val translation = aiGateway.translateGloss(gloss, lang)
-      if (translation.isNotBlank()) {
-        repository.saveGlossIt(lang, number, translation)
-        translation
-      } else {
-        null
-      }
-    } catch (e: CancellationException) {
-      throw e
-    } catch (t: Throwable) {
-      appLog.w(t) { "Traduzione glossa Strong $number fallita" }
-      null
-    }
 
   /** Interruttore generale delle funzioni IA (Impostazioni → Versione x7); spento = niente elementi IA. */
   val aiFeaturesEnabled: StateFlow<Boolean> = settingsRepository.aiFeaturesEnabled

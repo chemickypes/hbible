@@ -27,6 +27,6 @@ val viewModelModule = module {
     viewModel { FirstAidViewModel(get(), get<ContentSyncer>()) }
     viewModel { NotesViewModel(get(), get()) }
     viewModel { ExploreViewModel(get(), get(), get(), get(), get(), get<ContentSyncer>()) }
-    viewModel { InterlineareViewModel(get(), get()) }
+    viewModel { InterlineareViewModel(get(), get(), get()) }
     viewModel { SettingsViewModel(get(), get()) }
 }

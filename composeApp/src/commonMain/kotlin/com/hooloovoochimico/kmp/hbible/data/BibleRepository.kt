@@ -39,6 +39,15 @@ const val DEFAULT_TRANSLATION = "NTA"
 fun bundledTranslationOrDefault(code: String?): String =
   code?.takeIf { it in TRANSLATION_NAMES } ?: DEFAULT_TRANSLATION
 
+/**
+ * The verse in every bundled translation that has it, in TRANSLATION_META display
+ * order (translations without text for the verse are skipped).
+ */
+suspend fun BibleRepository.verseInAllTranslations(book: Int, chapter: Int, verse: Int): List<VerseEntity> {
+  val byTranslation = verseAllTranslations(book, chapter, verse).associateBy { it.translation }
+  return TRANSLATION_META.mapNotNull { meta -> byTranslation[meta.abbr] }
+}
+
 /** Scripture data: books, chapters, verses, original text and cached book info. */
 interface BibleRepository {
   fun books(): Flow<List<BookEntity>>
