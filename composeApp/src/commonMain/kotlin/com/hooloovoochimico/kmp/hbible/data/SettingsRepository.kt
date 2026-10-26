@@ -117,6 +117,16 @@ interface SettingsRepository {
 
   /** True when at least one AI provider is enabled with a key set. */
   fun isAiConfigured(): Boolean
+
+  // --- Funzioni IA (flag nascosto, Impostazioni → Versione x7) ---
+
+  /**
+   * Interruttore generale delle funzioni IA. Spento di default: senza di lui
+   * nessuna schermata mostra elementi IA, ma la config dei servizi resta salvata.
+   */
+  val aiFeaturesEnabled: StateFlow<Boolean>
+
+  fun saveAiFeaturesEnabled(enabled: Boolean)
 }
 
 class DefaultSettingsRepository(
@@ -130,6 +140,9 @@ class DefaultSettingsRepository(
 
   private val aiConfigState = MutableStateFlow(AiSettingsStore.load(secretStore, aiSettings))
   override val aiConfig: StateFlow<AiConfig> = aiConfigState
+
+  private val aiFeaturesState = MutableStateFlow(ThemePreferences.loadAiFeaturesEnabled(settings))
+  override val aiFeaturesEnabled: StateFlow<Boolean> = aiFeaturesState
 
   override fun loadThemeMode(): ThemeMode = ThemePreferences.load(settings)
 
@@ -194,6 +207,11 @@ class DefaultSettingsRepository(
   }
 
   override fun isAiConfigured(): Boolean = AiSettingsStore.isConfigured(secretStore, aiSettings)
+
+  override fun saveAiFeaturesEnabled(enabled: Boolean) {
+    ThemePreferences.saveAiFeaturesEnabled(settings, enabled)
+    aiFeaturesState.value = enabled
+  }
 }
 
 /** Theme and reader preferences (file "settings", come nel sorgente). */
@@ -214,6 +232,7 @@ object ThemePreferences {
   private const val CMS_BASE_URL_KEY = "cms_base_url"
   private const val AUTO_UPDATE_CHECK_KEY = "auto_update_check"
   private const val LAST_CONTENT_CHECK_KEY = "last_content_check"
+  private const val AI_FEATURES_KEY = "ai_features_enabled"
 
   fun load(settings: Settings): ThemeMode {
     val name = settings.getStringOrNull(KEY)
@@ -300,5 +319,12 @@ object ThemePreferences {
 
   fun saveLastContentCheck(settings: Settings, epochMillis: Long) {
     settings.putLong(LAST_CONTENT_CHECK_KEY, epochMillis)
+  }
+
+  /** Funzioni IA: spente finché l'utente non le attiva dal nascosto in Impostazioni. */
+  fun loadAiFeaturesEnabled(settings: Settings): Boolean = settings.getBoolean(AI_FEATURES_KEY, false)
+
+  fun saveAiFeaturesEnabled(settings: Settings, enabled: Boolean) {
+    settings.putBoolean(AI_FEATURES_KEY, enabled)
   }
 }

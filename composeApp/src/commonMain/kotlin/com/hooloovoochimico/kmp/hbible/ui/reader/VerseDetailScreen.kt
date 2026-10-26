@@ -120,6 +120,8 @@ fun VerseDetailScreen(
   BackHandler(enabled = true, onBack = onDismiss)
   val scope = rememberCoroutineScope()
   val aiConfigured by viewModel.aiConfigured.collectAsStateWithLifecycle()
+  // Funzioni IA spente (Impostazioni → Versione x7): nessun elemento IA nella pagina.
+  val aiFeaturesOn by viewModel.aiFeaturesEnabled.collectAsStateWithLifecycle()
   val scrollState = rememberScrollState()
   LaunchedEffect(index) { scrollState.scrollTo(0) }
   val loadVerse: suspend (VerseRef) -> VerseEntity? = { ref ->
@@ -478,7 +480,7 @@ fun VerseDetailScreen(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                       )
-                      TextButton(onClick = {
+                      if (aiFeaturesOn) TextButton(onClick = {
                         scope.launch {
                           translating = true
                           translateFailed = false
@@ -495,7 +497,7 @@ fun VerseDetailScreen(
                           if (translating) "Traduzione in corso…" else "Traduci in italiano (AI)",
                         )
                       }
-                      if (translateFailed && !translating) {
+                      if (aiFeaturesOn && translateFailed && !translating) {
                         Text(
                           "Traduzione non riuscita: configura un servizio AI in Impostazioni → Assistente AI.",
                           style = MaterialTheme.typography.labelSmall,
@@ -565,8 +567,8 @@ fun VerseDetailScreen(
         )
       }
 
-      GroupHeader("Chiedi all'AI", Modifier.padding(start = 24.dp, end = 24.dp, top = 28.dp, bottom = 8.dp))
-      HBibleCard(
+      if (aiFeaturesOn) GroupHeader("Chiedi all'AI", Modifier.padding(start = 24.dp, end = 24.dp, top = 28.dp, bottom = 8.dp))
+      if (aiFeaturesOn) HBibleCard(
         onClick = if (aiConfigured) ({ showChat = true }) else null,
         color = MaterialTheme.colorScheme.surfaceContainer,
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),

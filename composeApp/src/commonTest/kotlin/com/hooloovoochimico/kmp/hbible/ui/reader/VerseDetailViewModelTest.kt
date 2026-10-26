@@ -49,6 +49,7 @@ class VerseDetailViewModelTest {
   @Test
   fun aiConfigured_trueWhenAProviderIsEnabledWithKey() = runTest {
     val settings = FakeSettingsRepository()
+    settings.saveAiFeaturesEnabled(true)
     val viewModel = buildViewModel(settings)
     assertEquals(false, viewModel.aiConfigured.value)
 
@@ -72,6 +73,29 @@ class VerseDetailViewModelTest {
       order = listOf(AiCompany.Z_AI.name),
     )
     assertEquals(false, viewModel.aiConfigured.value)
+  }
+
+  @Test
+  fun aiConfigured_falseWhenFeaturesOffEvenWithAProvider() = runTest {
+    val settings = FakeSettingsRepository()
+    val viewModel = buildViewModel(settings)
+    settings.aiConfig.value = AiConfig(
+      providers = listOf(
+        AiProviderConfig(company = AiCompany.Z_AI.name, apiKey = "chiave-finta", enabled = true),
+      ),
+      order = listOf(AiCompany.Z_AI.name),
+    )
+    // Flag spento (default): la config c'è ma nessun elemento IA è usabile.
+    assertEquals(false, viewModel.aiFeaturesEnabled.value)
+    assertEquals(false, viewModel.aiConfigured.value)
+
+    settings.saveAiFeaturesEnabled(true)
+    assertEquals(true, viewModel.aiConfigured.value)
+
+    settings.saveAiFeaturesEnabled(false)
+    assertEquals(false, viewModel.aiConfigured.value)
+    // Spegnere il flag non cancella la config salvata.
+    assertEquals(true, settings.aiConfig.value.enabledChain().isNotEmpty())
   }
 
   @Test

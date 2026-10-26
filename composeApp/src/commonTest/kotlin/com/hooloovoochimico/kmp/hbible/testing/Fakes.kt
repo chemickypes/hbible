@@ -106,6 +106,13 @@ internal class FakeBibleRepository(
 internal class FakeSettingsRepository : SettingsRepository {
   override val aiConfig = MutableStateFlow(AiConfig())
 
+  // Spento di default, come nell'app: i test accendono il flag quando serve.
+  override val aiFeaturesEnabled = MutableStateFlow(false)
+
+  override fun saveAiFeaturesEnabled(enabled: Boolean) {
+    aiFeaturesEnabled.value = enabled
+  }
+
   override fun loadThemeMode(): ThemeMode = ThemeMode.SYSTEM
 
   override fun saveThemeMode(mode: ThemeMode) {}

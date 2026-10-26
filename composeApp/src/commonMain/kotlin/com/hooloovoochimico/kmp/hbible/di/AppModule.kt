@@ -74,6 +74,7 @@ val coreModule = module {
             clientFactory = { p, c ->
                 AiClientFactory.createForEntry(p, c, client = get())
             },
+            featuresEnabled = { get<SettingsRepository>().aiFeaturesEnabled.value },
         )
     }
 }

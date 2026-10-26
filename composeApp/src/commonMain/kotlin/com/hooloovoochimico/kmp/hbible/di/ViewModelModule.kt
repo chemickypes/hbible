@@ -25,8 +25,8 @@ val viewModelModule = module {
     viewModel { VerseDetailViewModel(get(), get(), get()) }
     viewModel { BookInfoViewModel(get(), get(), get(), get<ContentSyncer>()) }
     viewModel { FirstAidViewModel(get(), get<ContentSyncer>()) }
-    viewModel { NotesViewModel(get()) }
-    viewModel { ExploreViewModel(get(), get(), get(), get(), get<ContentSyncer>()) }
+    viewModel { NotesViewModel(get(), get()) }
+    viewModel { ExploreViewModel(get(), get(), get(), get(), get(), get<ContentSyncer>()) }
     viewModel { InterlineareViewModel(get(), get()) }
     viewModel { SettingsViewModel(get(), get()) }
 }

@@ -242,6 +242,7 @@ fun ExploreScreen(
       )
       SearchBar(
         query = query,
+        aiEnabled = state.aiEnabled,
         aiMode = aiMode,
         noteMode = state.noteMode,
         aiSearching = state.aiSearching,
@@ -430,6 +431,7 @@ private const val SEARCH_LIMIT = 300
 @Composable
 private fun SearchBar(
   query: String,
+  aiEnabled: Boolean,
   aiMode: Boolean,
   noteMode: Boolean,
   aiSearching: Boolean,
@@ -529,8 +531,11 @@ private fun SearchBar(
         } else {
           Row(verticalAlignment = Alignment.CenterVertically) {
             clearQueryButton()
-            fieldDivider()
-            aiModeToggle()
+            // Interruttore IA solo con le funzioni IA attive.
+            if (aiEnabled) {
+              fieldDivider()
+              aiModeToggle()
+            }
           }
         }
       },

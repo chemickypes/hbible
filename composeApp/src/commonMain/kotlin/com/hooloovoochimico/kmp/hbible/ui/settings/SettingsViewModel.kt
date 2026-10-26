@@ -12,8 +12,11 @@ import com.hooloovoochimico.kmp.hbible.data.content.ContentSyncer
 import com.hooloovoochimico.kmp.hbible.data.content.UpdateCheck
 import com.hooloovoochimico.kmp.hbible.data.content.shouldAutoCheck
 import com.hooloovoochimico.kmp.hbible.platform.formatDate
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -74,6 +77,8 @@ data class SettingsUiState(
   val dynamicColor: Boolean = false,
   val readerFontSize: ReaderFontSize = ReaderFontSize.NORMAL,
   val aiConfig: AiConfig = AiConfig(),
+  /** Funzioni IA attivate dal nascosto (7 tocchi su "Versione"): spento = sezione IA nascosta. */
+  val aiFeaturesEnabled: Boolean = false,
   val contentSync: ContentSyncUiState = ContentSyncUiState(),
 )
 
@@ -89,6 +94,7 @@ class SettingsViewModel(
         dynamicColor = settingsRepository.loadDynamicColor(),
         readerFontSize = settingsRepository.loadFontSize(),
         aiConfig = settingsRepository.loadAiConfig(),
+        aiFeaturesEnabled = settingsRepository.aiFeaturesEnabled.value,
         contentSync = ContentSyncUiState(
           baseUrl = settingsRepository.loadCmsBaseUrl(),
           serverUrl = contentSyncer.baseUrl(),
@@ -98,6 +104,12 @@ class SettingsViewModel(
       ),
     )
   val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
+
+  /** Messaggi brevi (Snackbar) per i tocchi sulla riga "Versione". */
+  private val _messages = MutableSharedFlow<String>(extraBufferCapacity = 4)
+  val messages: SharedFlow<String> = _messages.asSharedFlow()
+
+  private val aiTaps = AiFeatureTapCounter()
 
   fun setThemeMode(mode: ThemeMode) {
     settingsRepository.saveThemeMode(mode)
@@ -112,6 +124,27 @@ class SettingsViewModel(
   fun setReaderFontSize(size: ReaderFontSize) {
     settingsRepository.saveFontSize(size)
     _uiState.update { it.copy(readerFontSize = size) }
+  }
+
+  // --- Funzioni IA (sblocco nascosto) ---
+
+  /** Un tocco sulla riga "Versione": accende/spegne le funzioni IA ogni [AI_TAPS_TO_TOGGLE] tocchi. */
+  fun onVersionTap(now: Long = Clock.System.now().toEpochMilliseconds()) {
+    val enabled = _uiState.value.aiFeaturesEnabled
+    when (val result = aiTaps.tap(now)) {
+      AiTapResult.None -> Unit
+      is AiTapResult.Hint -> {
+        val word = if (result.remaining == 1) "tocco" else "tocchi"
+        val verb = if (enabled) "disattivare" else "attivare"
+        _messages.tryEmit("Ancora ${result.remaining} $word per $verb le funzioni IA")
+      }
+      AiTapResult.Toggle -> {
+        val next = !enabled
+        settingsRepository.saveAiFeaturesEnabled(next)
+        _uiState.update { it.copy(aiFeaturesEnabled = next) }
+        _messages.tryEmit(if (next) "Funzioni IA attivate" else "Funzioni IA disattivate")
+      }
+    }
   }
 
   // --- AI configuration ---

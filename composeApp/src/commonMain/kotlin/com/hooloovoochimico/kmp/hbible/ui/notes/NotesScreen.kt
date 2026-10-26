@@ -67,6 +67,7 @@ fun NotesScreen(
 ) {
   BackHandler(enabled = true, onBack = onDismiss)
   val notes by viewModel.notes.collectAsStateWithLifecycle()
+  val aiFeaturesOn by viewModel.aiFeaturesEnabled.collectAsStateWithLifecycle()
   var query by rememberSaveable { mutableStateOf("") }
   var pendingDelete by remember { mutableStateOf<Long?>(null) }
 
@@ -147,7 +148,9 @@ fun NotesScreen(
           EmptyState(
             AppIcons.Notes,
             "Nessuna nota",
-            hint = "Tocca \"Nuova\" per iniziare, o salva una risposta dalla chat AI.",
+            hint =
+              if (aiFeaturesOn) "Tocca \"Nuova\" per iniziare, o salva una risposta dalla chat AI."
+              else "Tocca \"Nuova\" per iniziare.",
           )
         filtered.isEmpty() ->
           EmptyState(AppIcons.Search, "Nessun risultato", hint = "Nessuna nota corrisponde alla ricerca.")

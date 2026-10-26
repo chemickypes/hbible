@@ -1,7 +1,9 @@
 package com.hooloovoochimico.kmp.hbible.ui.reader
 
+import com.hooloovoochimico.kmp.hbible.data.ai.AiCompany
 import com.hooloovoochimico.kmp.hbible.data.ai.AiConfig
 import com.hooloovoochimico.kmp.hbible.data.ai.AiGateway
+import com.hooloovoochimico.kmp.hbible.data.ai.AiProviderConfig
 import com.hooloovoochimico.kmp.hbible.data.content.PackageFetcher
 import com.hooloovoochimico.kmp.hbible.data.local.BookInfoEntity
 import com.hooloovoochimico.kmp.hbible.testing.FakeBibleRepository
@@ -46,6 +48,26 @@ class BookInfoViewModelTest {
       FakeSettingsRepository(),
       PackageFetcher { path -> fetched += path; false },
     )
+
+  @Test
+  fun aiConfigured_falseWhenFeaturesOffEvenWithAProvider() = runTest {
+    val settings = FakeSettingsRepository()
+    settings.aiConfig.value = AiConfig(
+      providers = listOf(
+        AiProviderConfig(company = AiCompany.Z_AI.name, apiKey = "chiave-finta", enabled = true),
+      ),
+      order = listOf(AiCompany.Z_AI.name),
+    )
+    val vm = BookInfoViewModel(
+      FakeBibleRepository(),
+      AiGateway(configProvider = { settings.aiConfig.value }),
+      settings,
+      PackageFetcher { _ -> false },
+    )
+    assertFalse(vm.aiConfigured.value)
+    settings.saveAiFeaturesEnabled(true)
+    assertTrue(vm.aiConfigured.value)
+  }
 
   @Test
   fun open_withDownloadedInfo_showsItWithKeyVerseText() = runTest {

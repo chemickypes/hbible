@@ -79,6 +79,8 @@ fun BookInfoScreen(
   BackHandler(enabled = true, onBack = onDismiss)
   val state by viewModel.state.collectAsStateWithLifecycle()
   val aiConfigured by viewModel.aiConfigured.collectAsStateWithLifecycle()
+  // Funzioni IA spente (Impostazioni → Versione x7): nessuna card di chat.
+  val aiFeaturesOn by viewModel.aiFeaturesEnabled.collectAsStateWithLifecycle()
   val testament = if (book.n <= 39) "Antico Testamento" else "Nuovo Testamento"
 
   // --- chat state (transient) ---
@@ -193,7 +195,7 @@ fun BookInfoScreen(
       }
     }
 
-    HBibleCard(
+    if (aiFeaturesOn) HBibleCard(
       onClick = if (aiConfigured) ({ showChat = true }) else null,
       color = MaterialTheme.colorScheme.surfaceContainer,
       modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
