@@ -1,6 +1,6 @@
 name: Release
 
-# Rilascio sul Play Store (task R09). Gira solo nel repo pubblico chemickypes/hbible, dove ci sono i
+# Rilascio sul Play Store (task R09). Gira solo nel repo pubblico hooloovoochimico/hbible, dove ci sono i
 # secret (firma e account di servizio).
 # - tag → AAB firmato + GitHub Release con AAB e mapping; la traccia dipende dal tag
 #   (tools/release_version.py): vX.Y.Z-test1 → internal, -alpha3 → alpha (test chiuso),
@@ -40,7 +40,7 @@ env:
 jobs:
   metadata:
     name: Scheda dello store
-    if: github.repository == 'chemickypes/hbible' && inputs.metadata_only
+    if: github.repository == 'hooloovoochimico/hbible' && inputs.metadata_only
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -78,7 +78,7 @@ jobs:
 
   release:
     name: Build firmata e caricamento
-    if: github.repository == 'chemickypes/hbible' && !inputs.metadata_only
+    if: github.repository == 'hooloovoochimico/hbible' && !inputs.metadata_only
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:

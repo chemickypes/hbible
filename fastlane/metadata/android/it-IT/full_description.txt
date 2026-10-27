@@ -29,7 +29,7 @@ Tema chiaro e scuro, colori dinamici, tre dimensioni del testo, layout per table
 Le correzioni al testo e all'interlineare arrivano in automatico, senza aggiornare l'app.
 
 <b>Codice aperto</b>
-HBible è software libero (GPL-3.0): github.com/chemickypes/hbible
+HBible è software libero (GPL-3.0): github.com/hooloovoochimico/hbible
 
 <b>Crediti e licenze</b>
 • Bibbia Aperta © Open Translation Bible (openbible.uk), CC BY-SA 4.0. Testo adattato da HBible.

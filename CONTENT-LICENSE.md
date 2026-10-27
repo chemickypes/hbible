@@ -8,7 +8,7 @@ include **solo testi con licenza aperta o di pubblico dominio**.
 
 | Contenuto | File | Fonte | Licenza |
 |---|---|---|---|
-| Bibbia Aperta (Open Translation Bible, edizione italiana) | `bibbia_aperta.json` | [Open Translation Bible](https://openbible.uk), fork con le correzioni di HBible: [chemickypes/open-bible](https://github.com/chemickypes/open-bible/tree/hbible-correzioni) | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/deed.it). Testo adattato: numerazione dei versetti ricondotta a quella delle altre versioni e correzioni elencate nel fork |
+| Bibbia Aperta (Open Translation Bible, edizione italiana) | `bibbia_aperta.json` | [Open Translation Bible](https://openbible.uk), fork con le correzioni di HBible: [hooloovoochimico/open-bible](https://github.com/hooloovoochimico/open-bible/tree/hbible-correzioni) | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/deed.it). Testo adattato: numerazione dei versetti ricondotta a quella delle altre versioni e correzioni elencate nel fork |
 | Riveduta 1927 (Giovanni Luzzi) | `riveduta_1927.json` | Società Biblica Britannica e Forestiera | Pubblico dominio |
 | Diodati (ed. 1877) | `diodati.json` | trascrizione di laparola.net | Pubblico dominio |
 | Martini (1781) | `martini.json` | trascrizione di laparola.net | Pubblico dominio |

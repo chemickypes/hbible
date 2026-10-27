@@ -13,7 +13,7 @@ import kotlinx.serialization.json.Json
  * Public content site (GitHub Pages of the app's public repo, branch `gh-pages`): the CMS publishes
  * `content/manifest.json` and the packages there with `npm run deploy:content` (task R02).
  */
-const val DEFAULT_CONTENT_URL = "https://chemickypes.github.io/hbible"
+const val DEFAULT_CONTENT_URL = "https://hooloovoochimico.github.io/hbible"
 
 /** Minimum time between two automatic checks at app open. */
 const val AUTO_CHECK_INTERVAL_MS = 24L * 60 * 60 * 1000

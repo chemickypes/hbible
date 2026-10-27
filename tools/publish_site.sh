@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Pubblica le pagine statiche di site/ (privacy policy, …) nel branch gh-pages del repo pubblico,
-# servito da GitHub Pages su https://chemickypes.github.io/hbible/ (task R08). Non tocca content/,
+# servito da GitHub Pages su https://hooloovoochimico.github.io/hbible/ (task R08). Non tocca content/,
 # che è gestito dal CMS (npm run deploy:content).
 #
 # Uso: tools/publish_site.sh [--push]   (senza --push mostra solo cosa cambierebbe)
@@ -30,4 +30,4 @@ git diff --cached --stat
 if [ "$PUSH" = 0 ]; then echo "Prova: niente commit né push. Per pubblicare: tools/publish_site.sh --push"; exit 0; fi
 git commit -q -m "Pagine del sito: $(cd "$ROOT" && git log -1 --format=%h -- site)"
 git push -q origin gh-pages
-echo "Pubblicato su https://chemickypes.github.io/hbible/"
+echo "Pubblicato su https://hooloovoochimico.github.io/hbible/"
